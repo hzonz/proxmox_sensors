@@ -14,8 +14,10 @@ from .const import (
     DOMAIN,
     CONF_HOST,
     CONF_USER,
-    CONF_PASSWORD,
+    CONF_TOKEN_ID,
+    CONF_TOKEN_SECRET,
     CONF_NODE,
+    CONF_PLATFORM_TYPE,
 )
 
 from .api import ProxmoxClient
@@ -32,9 +34,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     host = data[CONF_HOST]
     user = data[CONF_USER]
-    password = data[CONF_PASSWORD]
+    token_id = data[CONF_TOKEN_ID]
+    token_secret = data[CONF_TOKEN_SECRET]
     node = data[CONF_NODE]
-    server_type = data["server_type"]
+    server_type = data[CONF_PLATFORM_TYPE]
 
     features = data["features"]
 
@@ -48,10 +51,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     cts_selected = data.get("cts")
     datastores_selected = data.get("datastores")
 
+    # Create client using API Token
     client = ProxmoxClient(
-        host,
-        user,
-        password,
+        host=host,
+        user=user,
+        token_id=token_id,
+        token_secret=token_secret,
         server_type=server_type,
     )
 
@@ -132,7 +137,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                 result["pbs_datastores"] = stores
 
             # ---------------------------------------------------------
-            # PBS TASKS (always automatic)
+            # PBS TASKS
             # ---------------------------------------------------------
             if server_type == "PBS" and features.get("enable_pbs_tasks"):
                 last_task = await client.get_pbs_tasks()
@@ -183,3 +188,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
+
