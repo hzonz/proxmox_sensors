@@ -4,7 +4,15 @@ import aiohttp
 class ProxmoxClient:
     """Async client for Proxmox PVE/PBS using API Token authentication."""
 
-    def __init__(self, host, user, token_id, token_secret, server_type="PVE", verify_ssl=False):
+    def __init__(
+        self,
+        host,
+        user,
+        token_id,
+        token_secret,
+        server_type="PVE",
+        verify_ssl=False,
+    ):
         self.host = host
         self.user = user
         self.token_id = token_id
@@ -22,7 +30,7 @@ class ProxmoxClient:
     # ---------------------------------------------------------
     async def _ensure_session(self):
         if self.session is None:
-            # SSL DESACTIVADO CORRECTAMENTE
+            # SSL desactivado (certificados autofirmados)
             self.session = aiohttp.ClientSession(
                 connector=aiohttp.TCPConnector(ssl=False)
             )
@@ -34,33 +42,46 @@ class ProxmoxClient:
         """Internal helper for authenticated requests using API Token."""
         await self._ensure_session()
 
+        # Selección automática del tipo de token
+        if self.server_type == "PBS":
+            auth_type = "PBSAPIToken"
+        else:
+            auth_type = "PVEAPIToken"
+
         headers = {
-            "Authorization": f"PVEAPIToken={self.user}!{self.token_id}={self.token_secret}"
+            "Authorization": f"{auth_type}={self.user}!{self.token_id}={self.token_secret}"
         }
 
         url = f"{self.base}{path}"
 
-        async with self.session.request(
-            method, url, headers=headers
-        ) as resp:
+        async with self.session.request(method, url, headers=headers) as resp:
 
             if resp.status == 401:
                 raise Exception("auth_failed")
 
             if resp.status != 200:
-                raise Exception(f"api_error_{resp.status}")
+                text = await resp.text()
+                raise Exception(f"api_error_{resp.status}: {text}")
 
             data = await resp.json()
-            return data["data"]
+            return data.get("data")
 
     # ---------------------------------------------------------
-    # HARDWARE SENSORS
+    # CONNECTION TEST
+    # ---------------------------------------------------------
+    async def test_connection(self):
+        """Simple connectivity test valid for both PVE and PBS."""
+        await self._request("GET", "/version")
+        return True
+
+    # ---------------------------------------------------------
+    # HARDWARE SENSORS (PVE)
     # ---------------------------------------------------------
     async def get_sensors(self, node):
         sensors = await self._request("GET", f"/nodes/{node}/hardware/sensors")
 
         normalized = []
-        for s in sensors:
+        for s in sensors or []:
             normalized.append({
                 "id": s.get("id"),
                 "name": s.get("name", s.get("id")),
@@ -71,14 +92,14 @@ class ProxmoxClient:
         return normalized
 
     # ---------------------------------------------------------
-    # NODE STATUS
+    # NODE STATUS (PVE)
     # ---------------------------------------------------------
     async def get_node_status(self, node):
         data = await self._request("GET", f"/nodes/{node}/status")
 
-        cpu_pct = round(data["cpu"] * 100, 2) if "cpu" in data else None
-        ram_used = data.get("mem")
-        ram_total = data.get("maxmem")
+        cpu_pct = round(data["cpu"] * 100, 2) if data and "cpu" in data else None
+        ram_used = data.get("mem") if data else None
+        ram_total = data.get("maxmem") if data else None
         ram_pct = round((ram_used / ram_total) * 100, 2) if ram_total else None
 
         return {
@@ -86,18 +107,18 @@ class ProxmoxClient:
             "ram_usage_pct": ram_pct,
             "ram_used": ram_used,
             "ram_total": ram_total,
-            "uptime": data.get("uptime"),
-            "loadavg": data.get("loadavg"),
+            "uptime": data.get("uptime") if data else None,
+            "loadavg": data.get("loadavg") if data else None,
         }
 
     # ---------------------------------------------------------
-    # DISKS
+    # DISKS (PVE)
     # ---------------------------------------------------------
     async def get_disks(self, node):
         disks = await self._request("GET", f"/nodes/{node}/disks/list")
 
         normalized = []
-        for d in disks:
+        for d in disks or []:
             size = d.get("size")
             used = d.get("used")
             pct = round((used / size) * 100, 2) if size else None
@@ -115,26 +136,29 @@ class ProxmoxClient:
         return normalized
 
     # ---------------------------------------------------------
-    # VIRTUAL MACHINES
+    # VIRTUAL MACHINES (PVE)
     # ---------------------------------------------------------
     async def get_vms(self, node):
         vms = await self._request("GET", f"/nodes/{node}/qemu")
 
         normalized = []
-        for vm in vms:
+        for vm in vms or []:
             vmid = vm["vmid"]
-            status = await self._request("GET", f"/nodes/{node}/qemu/{vmid}/status/current")
+            status = await self._request(
+                "GET",
+                f"/nodes/{node}/qemu/{vmid}/status/current"
+            )
 
-            cpu_pct = round(status["cpu"] * 100, 2) if "cpu" in status else None
-            mem_used = status.get("mem")
-            mem_total = status.get("maxmem")
+            cpu_pct = round(status["cpu"] * 100, 2) if status and "cpu" in status else None
+            mem_used = status.get("mem") if status else None
+            mem_total = status.get("maxmem") if status else None
             mem_pct = round((mem_used / mem_total) * 100, 2) if mem_total else None
 
             normalized.append({
                 "id": f"vm_{vmid}",
                 "vmid": vmid,
                 "name": vm.get("name", f"VM {vmid}"),
-                "status": status.get("status"),
+                "status": status.get("status") if status else None,
                 "cpu_pct": cpu_pct,
                 "mem_pct": mem_pct,
             })
@@ -142,26 +166,29 @@ class ProxmoxClient:
         return normalized
 
     # ---------------------------------------------------------
-    # CONTAINERS
+    # CONTAINERS (PVE)
     # ---------------------------------------------------------
     async def get_containers(self, node):
         cts = await self._request("GET", f"/nodes/{node}/lxc")
 
         normalized = []
-        for ct in cts:
+        for ct in cts or []:
             vmid = ct["vmid"]
-            status = await self._request("GET", f"/nodes/{node}/lxc/{vmid}/status/current")
+            status = await self._request(
+                "GET",
+                f"/nodes/{node}/lxc/{vmid}/status/current"
+            )
 
-            cpu_pct = round(status["cpu"] * 100, 2) if "cpu" in status else None
-            mem_used = status.get("mem")
-            mem_total = status.get("maxmem")
+            cpu_pct = round(status["cpu"] * 100, 2) if status and "cpu" in status else None
+            mem_used = status.get("mem") if status else None
+            mem_total = status.get("maxmem") if status else None
             mem_pct = round((mem_used / mem_total) * 100, 2) if mem_total else None
 
             normalized.append({
                 "id": f"ct_{vmid}",
                 "vmid": vmid,
                 "name": ct.get("name", f"CT {vmid}"),
-                "status": status.get("status"),
+                "status": status.get("status") if status else None,
                 "cpu_pct": cpu_pct,
                 "mem_pct": mem_pct,
             })
@@ -173,13 +200,13 @@ class ProxmoxClient:
     # ---------------------------------------------------------
     async def get_pbs_datastores(self):
         stores = await self._request("GET", "/admin/datastore")
-        return [s["store"] for s in stores]
+        return [s.get("store") for s in stores or []]
 
     async def get_pbs_datastore_status(self, store):
         data = await self._request("GET", f"/admin/datastore/{store}/status")
 
-        size = data.get("total")
-        used = data.get("used")
+        size = data.get("total") if data else None
+        used = data.get("used") if data else None
         pct = round((used / size) * 100, 2) if size else None
 
         return {
@@ -187,10 +214,10 @@ class ProxmoxClient:
             "store": store,
             "total": size,
             "used": used,
-            "free": data.get("avail"),
+            "free": data.get("avail") if data else None,
             "usage_pct": pct,
-            "backup_count": data.get("backup-count"),
-            "gc_status": data.get("gc-status"),
+            "backup_count": data.get("backup-count") if data else None,
+            "gc_status": data.get("gc-status") if data else None,
         }
 
     # ---------------------------------------------------------
@@ -220,5 +247,3 @@ class ProxmoxClient:
         if self.session:
             await self.session.close()
             self.session = None
-
-
