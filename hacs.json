@@ -1,0 +1,8 @@
+{
+  "name": "Proxmox Sensors Extended",
+  "render_readme": true,
+  "country": "ES",
+  "homeassistant": "2023.6.0",
+  "domains": ["sensor"],
+  "iot_class": "local_polling"
+}
