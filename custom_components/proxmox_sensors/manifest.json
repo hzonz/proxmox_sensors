@@ -2,6 +2,7 @@
   "domain": "proxmox_sensors",
   "name": "Proxmox Sensors Extended",
   "version": "1.0.0",
+  "description": "Proxmox sensors integration using API Token authentication",
   "documentation": "https://github.com/Javisen/proxmox_sensors",
   "issue_tracker": "https://github.com/Javisen/proxmox_sensors/issues",
   "requirements": [
@@ -15,4 +16,5 @@
   "integration_type": "hub",
   "config_flow": true
 }
+
 
