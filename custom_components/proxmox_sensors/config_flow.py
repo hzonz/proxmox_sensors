@@ -9,8 +9,10 @@ from .const import (
     DOMAIN,
     CONF_HOST,
     CONF_USER,
-    CONF_PASSWORD,
+    CONF_TOKEN_ID,
+    CONF_TOKEN_SECRET,
     CONF_NODE,
+    CONF_PLATFORM_TYPE,
     CONF_SENSORS,
 )
 
@@ -435,3 +437,4 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=schema,
             errors=errors,
         )
+
