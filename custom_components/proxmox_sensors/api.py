@@ -1,8 +1,9 @@
 import aiohttp
+import asyncio
 
 
 class ProxmoxClient:
-    """Async client for Proxmox PVE/PBS using API Token authentication."""
+    """Async client for Proxmox PVE / PBS using API Token authentication."""
 
     def __init__(
         self,
@@ -12,6 +13,7 @@ class ProxmoxClient:
         token_secret,
         server_type="PVE",
         verify_ssl=False,
+        timeout=10,
     ):
         self.host = host
         self.user = user
@@ -19,59 +21,82 @@ class ProxmoxClient:
         self.token_secret = token_secret
         self.server_type = server_type
         self.verify_ssl = verify_ssl
+        self.timeout = timeout
 
         port = 8006 if server_type == "PVE" else 8007
         self.base = f"https://{host}:{port}/api2/json"
 
-        self.session = None
+        self.session: aiohttp.ClientSession | None = None
 
     # ---------------------------------------------------------
     # SESSION
     # ---------------------------------------------------------
     async def _ensure_session(self):
         if self.session is None:
-            # SSL desactivado (certificados autofirmados)
+            timeout = aiohttp.ClientTimeout(total=self.timeout)
             self.session = aiohttp.ClientSession(
-                connector=aiohttp.TCPConnector(ssl=False)
+                timeout=timeout,
+                connector=aiohttp.TCPConnector(ssl=self.verify_ssl is True),
             )
 
-    # ---------------------------------------------------------
-    # REQUEST (TOKEN AUTH)
-    # ---------------------------------------------------------
-    async def _request(self, method, path):
-        """Internal helper for authenticated requests using API Token."""
-        await self._ensure_session()
+    async def close(self):
+        if self.session:
+            await self.session.close()
+            self.session = None
 
-        # Selección automática del tipo de token
-        if self.server_type == "PBS":
-            auth_type = "PBSAPIToken"
-        else:
-            auth_type = "PVEAPIToken"
+    # ---------------------------------------------------------
+    # AUTH HEADER
+    # ---------------------------------------------------------
+    def _build_auth_header(self):
+        """
+        PVE  -> PVEAPIToken=user@pam!tokenid=secret
+        PBS  -> PBSAPIToken=user@pam!tokenid=secret
+        """
+        prefix = "PVEAPIToken" if self.server_type == "PVE" else "PBSAPIToken"
 
-        headers = {
-            "Authorization": f"{auth_type}={self.user}!{self.token_id}={self.token_secret}"
+        token = f"{self.user}!{self.token_id}={self.token_secret}"
+        return {
+            "Authorization": f"{prefix}={token}"
         }
 
+    # ---------------------------------------------------------
+    # REQUEST
+    # ---------------------------------------------------------
+    async def _request(self, method, path):
+        await self._ensure_session()
+
+        headers = self._build_auth_header()
         url = f"{self.base}{path}"
 
-        async with self.session.request(method, url, headers=headers) as resp:
+        try:
+            async with self.session.request(method, url, headers=headers) as resp:
+                if resp.status == 401:
+                    raise Exception("auth_failed")
 
-            if resp.status == 401:
-                raise Exception("auth_failed")
+                if resp.status != 200:
+                    text = await resp.text()
+                    raise Exception(f"api_error_{resp.status}: {text}")
 
-            if resp.status != 200:
-                text = await resp.text()
-                raise Exception(f"api_error_{resp.status}: {text}")
+                payload = await resp.json()
+                return payload.get("data")
 
-            data = await resp.json()
-            return data.get("data")
+        except asyncio.TimeoutError:
+            raise Exception("timeout")
+
+        except aiohttp.ClientError as err:
+            raise Exception(f"connection_error: {err}")
 
     # ---------------------------------------------------------
-    # CONNECTION TEST
+    # CONNECTION TEST  (MUY IMPORTANTE PARA EL FLOW)
     # ---------------------------------------------------------
     async def test_connection(self):
-        """Simple connectivity test valid for both PVE and PBS."""
-        await self._request("GET", "/version")
+        """
+        Simple endpoint to validate auth + connectivity.
+        """
+        if self.server_type == "PVE":
+            await self._request("GET", "/version")
+        else:
+            await self._request("GET", "/version")
         return True
 
     # ---------------------------------------------------------
@@ -92,7 +117,7 @@ class ProxmoxClient:
         return normalized
 
     # ---------------------------------------------------------
-    # NODE STATUS (PVE)
+    # NODE STATUS
     # ---------------------------------------------------------
     async def get_node_status(self, node):
         data = await self._request("GET", f"/nodes/{node}/status")
@@ -112,7 +137,7 @@ class ProxmoxClient:
         }
 
     # ---------------------------------------------------------
-    # DISKS (PVE)
+    # DISKS
     # ---------------------------------------------------------
     async def get_disks(self, node):
         disks = await self._request("GET", f"/nodes/{node}/disks/list")
@@ -136,7 +161,7 @@ class ProxmoxClient:
         return normalized
 
     # ---------------------------------------------------------
-    # VIRTUAL MACHINES (PVE)
+    # VIRTUAL MACHINES
     # ---------------------------------------------------------
     async def get_vms(self, node):
         vms = await self._request("GET", f"/nodes/{node}/qemu")
@@ -166,7 +191,7 @@ class ProxmoxClient:
         return normalized
 
     # ---------------------------------------------------------
-    # CONTAINERS (PVE)
+    # CONTAINERS
     # ---------------------------------------------------------
     async def get_containers(self, node):
         cts = await self._request("GET", f"/nodes/{node}/lxc")
@@ -200,7 +225,7 @@ class ProxmoxClient:
     # ---------------------------------------------------------
     async def get_pbs_datastores(self):
         stores = await self._request("GET", "/admin/datastore")
-        return [s.get("store") for s in stores or []]
+        return [s["store"] for s in stores or []]
 
     async def get_pbs_datastore_status(self, store):
         data = await self._request("GET", f"/admin/datastore/{store}/status")
@@ -239,11 +264,3 @@ class ProxmoxClient:
             "starttime": last.get("starttime"),
             "endtime": last.get("endtime"),
         }
-
-    # ---------------------------------------------------------
-    # CLOSE SESSION
-    # ---------------------------------------------------------
-    async def close(self):
-        if self.session:
-            await self.session.close()
-            self.session = None
