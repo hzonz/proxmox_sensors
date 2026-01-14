@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
@@ -16,7 +15,6 @@ from .const import (
     CONF_SENSORS,
 )
 
-
 from .api import ProxmoxClient
 
 
@@ -24,7 +22,6 @@ SERVER_TYPES = {
     "PVE": "Proxmox VE",
     "PBS": "Proxmox Backup Server",
 }
-
 
 NODE_SENSOR_DEFINITIONS = {
     "cpu_usage_pct": {"name": "CPU Usage", "unit": "%"},
@@ -44,13 +41,14 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self):
         self._host = None
         self._user = None
-        self._password = None
+        self._token_id = None
+        self._token_secret = None
         self._node = None
         self._server_type = None
 
         self._client = None
 
-        # Data discovered
+        # Discovered data
         self._hardware_sensors = None
         self._disks = None
         self._vms = None
@@ -68,8 +66,6 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._selected_cts = None
         self._selected_datastores = None
 
-        self._reauth_entry = None
-
     # ---------------------------------------------------------
     # STEP 1 — USER SETUP
     # ---------------------------------------------------------
@@ -79,15 +75,17 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._host = user_input[CONF_HOST]
             self._user = user_input[CONF_USER]
-            self._password = user_input[CONF_PASSWORD]
+            self._token_id = user_input[CONF_TOKEN_ID]
+            self._token_secret = user_input[CONF_TOKEN_SECRET]
             self._node = user_input[CONF_NODE]
-            self._server_type = user_input["server_type"]
+            self._server_type = user_input[CONF_PLATFORM_TYPE]
 
             try:
                 self._client = ProxmoxClient(
-                    self._host,
-                    self._user,
-                    self._password,
+                    host=self._host,
+                    user=self._user,
+                    token_id=self._token_id,
+                    token_secret=self._token_secret,
                     server_type=self._server_type,
                 )
 
@@ -121,9 +119,10 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             {
                 vol.Required(CONF_HOST): str,
                 vol.Required(CONF_USER): str,
-                vol.Required(CONF_PASSWORD): str,
+                vol.Required(CONF_TOKEN_ID): str,
+                vol.Required(CONF_TOKEN_SECRET): str,
                 vol.Required(CONF_NODE): str,
-                vol.Required("server_type", default="PVE"): vol.In(SERVER_TYPES),
+                vol.Required(CONF_PLATFORM_TYPE, default="PVE"): vol.In(SERVER_TYPES),
             }
         )
 
@@ -137,8 +136,6 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     # STEP 2 — SELECT FEATURES
     # ---------------------------------------------------------
     async def async_step_select_features(self, user_input=None) -> FlowResult:
-        errors = {}
-
         if user_input is not None:
             self._features = user_input
             return await self._next_feature_step()
@@ -158,12 +155,9 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="select_features",
             data_schema=schema,
-            errors=errors,
         )
 
     async def _next_feature_step(self):
-        """Decide next step based on selected features."""
-
         if self._features.get("enable_hardware"):
             return await self.async_step_select_hardware_sensors()
 
@@ -198,9 +192,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
 
         schema = vol.Schema(
-            {
-                vol.Required("hardware_sensors"): vol.MultipleChoice(options)
-            }
+            {vol.Required("hardware_sensors"): vol.MultipleChoice(options)}
         )
 
         return self.async_show_form(
@@ -222,9 +214,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
 
         schema = vol.Schema(
-            {
-                vol.Required("node_sensors"): vol.MultipleChoice(options)
-            }
+            {vol.Required("node_sensors"): vol.MultipleChoice(options)}
         )
 
         return self.async_show_form(
@@ -246,9 +236,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
 
         schema = vol.Schema(
-            {
-                vol.Required("disks"): vol.MultipleChoice(options)
-            }
+            {vol.Required("disks"): vol.MultipleChoice(options)}
         )
 
         return self.async_show_form(
@@ -267,11 +255,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self._next_feature_step()
 
         schema = vol.Schema(
-            {
-                vol.Required("vm_mode", default="auto"): vol.In(
-                    {"auto": "Automático", "manual": "Manual"}
-                )
-            }
+            {vol.Required("vm_mode", default="auto"): vol.In({"auto": "Automático", "manual": "Manual"})}
         )
 
         return self.async_show_form(
@@ -290,9 +274,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
 
         schema = vol.Schema(
-            {
-                vol.Required("vms"): vol.MultipleChoice(options)
-            }
+            {vol.Required("vms"): vol.MultipleChoice(options)}
         )
 
         return self.async_show_form(
@@ -311,11 +293,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self._next_feature_step()
 
         schema = vol.Schema(
-            {
-                vol.Required("ct_mode", default="auto"): vol.In(
-                    {"auto": "Automático", "manual": "Manual"}
-                )
-            }
+            {vol.Required("ct_mode", default="auto"): vol.In({"auto": "Automático", "manual": "Manual"})}
         )
 
         return self.async_show_form(
@@ -334,9 +312,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
 
         schema = vol.Schema(
-            {
-                vol.Required("cts"): vol.MultipleChoice(options)
-            }
+            {vol.Required("cts"): vol.MultipleChoice(options)}
         )
 
         return self.async_show_form(
@@ -355,9 +331,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         options = {store: store for store in self._datastores}
 
         schema = vol.Schema(
-            {
-                vol.Required("datastores"): vol.MultipleChoice(options)
-            }
+            {vol.Required("datastores"): vol.MultipleChoice(options)}
         )
 
         return self.async_show_form(
@@ -374,9 +348,10 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data = {
             CONF_HOST: self._host,
             CONF_USER: self._user,
-            CONF_PASSWORD: self._password,
+            CONF_TOKEN_ID: self._token_id,
+            CONF_TOKEN_SECRET: self._token_secret,
             CONF_NODE: self._node,
-            "server_type": self._server_type,
+            CONF_PLATFORM_TYPE: self._server_type,
             "features": self._features,
             "hardware_sensors": self._selected_hardware,
             "node_sensors": self._selected_node_sensors,
@@ -392,51 +367,3 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             title=f"Proxmox {self._node}",
             data=data,
         )
-
-    # ---------------------------------------------------------
-    # REAUTH
-    # ---------------------------------------------------------
-    async def async_step_reauth(self, entry_data) -> FlowResult:
-        self._reauth_entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
-        return await self.async_step_reauth_confirm()
-
-    async def async_step_reauth_confirm(self, user_input=None) -> FlowResult:
-        errors = {}
-
-        if user_input is not None:
-            new_password = user_input[CONF_PASSWORD]
-
-            try:
-                client = ProxmoxClient(
-                    self._reauth_entry.data[CONF_HOST],
-                    self._reauth_entry.data[CONF_USER],
-                    new_password,
-                    server_type=self._reauth_entry.data["server_type"],
-                )
-                await client.get_sensors(self._reauth_entry.data[CONF_NODE])
-
-                new_data = {**self._reauth_entry.data}
-                new_data[CONF_PASSWORD] = new_password
-
-                self.hass.config_entries.async_update_entry(
-                    self._reauth_entry, data=new_data
-                )
-
-                return self.async_abort(reason="reauth_successful")
-
-            except Exception:
-                errors["base"] = "invalid_auth"
-
-        schema = vol.Schema(
-            {
-                vol.Required(CONF_PASSWORD): str,
-            }
-        )
-
-        return self.async_show_form(
-            step_id="reauth_confirm",
-            data_schema=schema,
-            errors=errors,
-        )
-
-
