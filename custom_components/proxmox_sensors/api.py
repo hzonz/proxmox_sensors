@@ -6,10 +6,10 @@ class ProxmoxClient:
 
     def __init__(self, host, user, token_id, token_secret, server_type="PVE", verify_ssl=False):
         self.host = host
-        self.user = user                  # ej: ha@pve
-        self.token_id = token_id          # ej: homeassistant
-        self.token_secret = token_secret  # secret generado en Proxmox
-        self.server_type = server_type    # "PVE" o "PBS"
+        self.user = user
+        self.token_id = token_id
+        self.token_secret = token_secret
+        self.server_type = server_type
         self.verify_ssl = verify_ssl
 
         port = 8006 if server_type == "PVE" else 8007
@@ -22,7 +22,10 @@ class ProxmoxClient:
     # ---------------------------------------------------------
     async def _ensure_session(self):
         if self.session is None:
-            self.session = aiohttp.ClientSession()
+            # SSL DESACTIVADO CORRECTAMENTE
+            self.session = aiohttp.ClientSession(
+                connector=aiohttp.TCPConnector(ssl=False)
+            )
 
     # ---------------------------------------------------------
     # REQUEST (TOKEN AUTH)
@@ -38,7 +41,7 @@ class ProxmoxClient:
         url = f"{self.base}{path}"
 
         async with self.session.request(
-            method, url, headers=headers, ssl=self.verify_ssl
+            method, url, headers=headers
         ) as resp:
 
             if resp.status == 401:
@@ -51,7 +54,7 @@ class ProxmoxClient:
             return data["data"]
 
     # ---------------------------------------------------------
-    # HARDWARE SENSORS (PVE & PBS)
+    # HARDWARE SENSORS
     # ---------------------------------------------------------
     async def get_sensors(self, node):
         sensors = await self._request("GET", f"/nodes/{node}/hardware/sensors")
@@ -217,4 +220,5 @@ class ProxmoxClient:
         if self.session:
             await self.session.close()
             self.session = None
+
 
