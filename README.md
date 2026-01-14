@@ -126,3 +126,63 @@ Entities are grouped by category:
 - sensor.node_uptime
 
 ...
+
+### Disks
+
+- sensor.disk_nvme0_usage
+
+- sensor.disk_sda_usage
+
+...
+
+### Virtual Machines
+
+- sensor.vm_101_cpu
+
+- sensor.vm_101_ram
+
+- sensor.vm_102_cpu
+
+...
+
+### Containers
+
+- sensor.ct_201_cpu
+
+- sensor.ct_201_ram
+
+...
+
+### PBS
+
+- sensor.pbs_datastore_backup_usage
+
+- sensor.pbs_last_task_status
+
+...
+
+
+---
+
+## 🚀 Roadmap
+
+- Add network RX/TX sensors for VMs and CTs  
+- Add more detailed host CPU/RAM metrics  
+- Add custom Lovelace cards  
+- Add support for API tokens  
+- Publish to HACS  
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome!  
+Feel free to open issues or pull requests:
+
+https://github.com/Javisen/proxmox_sensors
+
+---
+
+## 📄 License
+
+MIT License.
