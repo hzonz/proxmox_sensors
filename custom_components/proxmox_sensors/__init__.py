@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from datetime import timedelta
 import logging
 
@@ -14,6 +13,7 @@ from .const import (
     DOMAIN,
     CONF_HOST,
     CONF_USER,
+    CONF_PASSWORD,
     CONF_TOKEN_ID,
     CONF_TOKEN_SECRET,
     CONF_NODE,
@@ -28,122 +28,123 @@ PLATFORMS = ["sensor"]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Set up Proxmox Sensors from a config entry."""
-
     data = entry.data
 
     host = data[CONF_HOST]
     user = data[CONF_USER]
-    token_id = data[CONF_TOKEN_ID]
-    token_secret = data[CONF_TOKEN_SECRET]
     node = data[CONF_NODE]
     server_type = data[CONF_PLATFORM_TYPE]
 
-    features = data["features"]
+    features = data.get("features", {})
 
-    # User selections
-    hardware_selected = data.get("hardware_sensors")
-    node_selected = data.get("node_sensors")
-    disks_selected = data.get("disks")
-    vm_mode = data.get("vm_mode")
-    vms_selected = data.get("vms")
-    ct_mode = data.get("ct_mode")
-    cts_selected = data.get("cts")
-    datastores_selected = data.get("datastores")
+    vm_mode = data.get("vm_mode", "auto")
+    vms_selected = data.get("vms", [])
+    ct_mode = data.get("ct_mode", "auto")
+    cts_selected = data.get("cts", [])
+    datastores_selected = data.get("datastores", [])
 
-    # Create client using API Token
+    password = data.get(CONF_PASSWORD)
+    token_id = data.get(CONF_TOKEN_ID)
+    token_secret = data.get(CONF_TOKEN_SECRET)
+
     client = ProxmoxClient(
         host=host,
         user=user,
+        password=password,
         token_id=token_id,
         token_secret=token_secret,
         server_type=server_type,
+        verify_ssl=False,
     )
 
     async def async_update_data():
-        """Fetch all enabled sensor data from Proxmox/PBS."""
         result = {}
-
         try:
-            # ---------------------------------------------------------
-            # HARDWARE SENSORS
-            # ---------------------------------------------------------
-            if features.get("enable_hardware"):
-                sensors = await client.get_sensors(node)
-                result["hardware"] = {
-                    s["id"]: s["value"]
-                    for s in sensors
-                    if s["id"] in hardware_selected
-                }
+            _LOGGER.debug("FEATURES: %s", features)
 
-            # ---------------------------------------------------------
-            # NODE SENSORS
-            # ---------------------------------------------------------
-            if features.get("enable_node"):
-                node_status = await client.get_node_status(node)
-                result["node"] = {
-                    key: node_status.get(key)
-                    for key in node_selected
-                }
+            sensors = await client.get_sensors(hass, node)
+            node_status = await client.get_node_status(hass, node)
+            disks = await client.get_disks(hass, node)
+            vms = await client.get_vms(hass, node)
+            cts = await client.get_containers(hass, node)
 
-            # ---------------------------------------------------------
-            # DISKS
-            # ---------------------------------------------------------
-            if features.get("enable_disks"):
-                disks = await client.get_disks(node)
-                result["disks"] = {
-                    d["id"]: d
-                    for d in disks
-                    if d["id"] in disks_selected
-                }
+            local_temps = await client.get_local_temperatures()
 
-            # ---------------------------------------------------------
+            # HARDWARE
+            if features.get("enable_hardware", True):
+                result["hardware"] = {s["id"]: s["value"] for s in sensors}
+                for name, value in local_temps.items():
+                    result["hardware"][name] = value
+
+            # NODE
+            if features.get("enable_node", True):
+                clean_node_status = {k: v for k, v in node_status.items() if k != "cpuinfo"}
+                cpuinfo = node_status.get("cpuinfo", {})
+                cpuinfo_clean = {k: v for k, v in cpuinfo.items() if k != "flags"}
+                clean_node_status["cpuinfo"] = cpuinfo_clean
+                result["node"] = clean_node_status
+
+            # DISKS — CORREGIDO
+            if features.get("enable_disks", True):
+                result["disks"] = {}
+                for i, d in enumerate(disks):
+                    disk_id = d.get("devpath") or d.get("path") or f"disk_{i}"
+
+                    total = d.get("size") or 0
+                    used = 0  # Proxmox no da uso real en este endpoint
+
+                    result["disks"][disk_id] = {
+                        "disk_total": total,
+                        "disk_used": used,
+                        "disk_read": None,
+                        "disk_write": None,
+
+                        # Información extendida útil
+                        "model": d.get("model"),
+                        "serial": d.get("serial"),
+                        "type": d.get("type"),
+                        "size": d.get("size"),
+                        "health": d.get("health"),
+                        "wearout": d.get("wearout"),
+                        "temperature": d.get("temperature"),
+                        "rpm": d.get("rpm"),
+                        "devpath": d.get("devpath"),
+
+                        "raw": d,
+                    }
+
             # VMs
-            # ---------------------------------------------------------
-            if features.get("enable_vms"):
-                vms = await client.get_vms(node)
-
+            if features.get("enable_vms", True):
                 if vm_mode == "auto":
-                    result["vms"] = {vm["id"]: vm for vm in vms}
+                    result["vms"] = {vm["vmid"]: vm for vm in vms}
                 else:
                     result["vms"] = {
-                        vm["id"]: vm
-                        for vm in vms
-                        if vm["id"] in vms_selected
+                        vm["vmid"]: vm for vm in vms if vm["vmid"] in vms_selected
                     }
 
-            # ---------------------------------------------------------
-            # CONTAINERS
-            # ---------------------------------------------------------
-            if features.get("enable_cts"):
-                cts = await client.get_containers(node)
-
+            # CTs
+            if features.get("enable_cts", True):
                 if ct_mode == "auto":
-                    result["cts"] = {ct["id"]: ct for ct in cts}
+                    result["cts"] = {ct["vmid"]: ct for ct in cts}
                 else:
                     result["cts"] = {
-                        ct["id"]: ct
-                        for ct in cts
-                        if ct["id"] in cts_selected
+                        ct["vmid"]: ct for ct in cts if ct["vmid"] in cts_selected
                     }
 
-            # ---------------------------------------------------------
             # PBS DATASTORES
-            # ---------------------------------------------------------
-            if server_type == "PBS" and features.get("enable_pbs_datastores"):
+            if server_type == "PBS" and features.get("enable_pbs_datastores", True):
                 stores = {}
                 for store in datastores_selected:
-                    stores[store] = await client.get_pbs_datastore_status(store)
+                    stores[store] = await client.get_pbs_datastore_status(hass, store)
                 result["pbs_datastores"] = stores
 
-            # ---------------------------------------------------------
             # PBS TASKS
-            # ---------------------------------------------------------
-            if server_type == "PBS" and features.get("enable_pbs_tasks"):
-                last_task = await client.get_pbs_tasks()
+            if server_type == "PBS" and features.get("enable_pbs_tasks", True):
+                last_task = await client.get_pbs_tasks(hass)
                 result["pbs_tasks"] = last_task
 
         except Exception as err:
+            _LOGGER.error("Error fetching data from Proxmox: %s", err)
             raise UpdateFailed(f"Error fetching data: {err}") from err
 
         return result
@@ -165,27 +166,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         "node": node,
         "server_type": server_type,
         "features": features,
-        "hardware_sensors": hardware_selected,
-        "node_sensors": node_selected,
-        "disks": disks_selected,
-        "vm_mode": vm_mode,
-        "vms": vms_selected,
-        "ct_mode": ct_mode,
-        "cts": cts_selected,
-        "datastores": datastores_selected,
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
-
     return unload_ok
-

@@ -1,266 +1,165 @@
-import aiohttp
-import asyncio
+from typing import Any, List, Dict, Optional
+import logging
+import subprocess
+import re
+
+from proxmoxer import ProxmoxAPI
+from requests.exceptions import ConnectTimeout
+from proxmoxer.core import ResourceException
+
+LOGGER = logging.getLogger(__name__)
 
 
 class ProxmoxClient:
-    """Async client for Proxmox PVE / PBS using API Token authentication."""
+    """Async-safe wrapper around proxmoxer ProxmoxAPI for PVE and PBS."""
 
     def __init__(
         self,
-        host,
-        user,
-        token_id,
-        token_secret,
-        server_type="PVE",
-        verify_ssl=False,
-        timeout=10,
+        host: str,
+        user: str,
+        password: Optional[str] = None,
+        token_id: Optional[str] = None,
+        token_secret: Optional[str] = None,
+        server_type: str = "PVE",
+        port: Optional[int] = None,
+        verify_ssl: bool = True,
     ):
-        self.host = host
-        self.user = user
-        self.token_id = token_id
-        self.token_secret = token_secret
-        self.server_type = server_type
-        self.verify_ssl = verify_ssl
-        self.timeout = timeout
+        self._host = host
+        self._user = user
+        self._password = password
+        self._token_id = token_id
+        self._token_secret = token_secret
+        self._server_type = server_type
+        self._port = port
+        self._verify_ssl = verify_ssl
 
-        port = 8006 if server_type == "PVE" else 8007
-        self.base = f"https://{host}:{port}/api2/json"
+        self._proxmox: Optional[ProxmoxAPI] = None
 
-        self.session: aiohttp.ClientSession | None = None
-
-    # ---------------------------------------------------------
-    # SESSION
-    # ---------------------------------------------------------
-    async def _ensure_session(self):
-        if self.session is None:
-            timeout = aiohttp.ClientTimeout(total=self.timeout)
-            self.session = aiohttp.ClientSession(
-                timeout=timeout,
-                connector=aiohttp.TCPConnector(ssl=self.verify_ssl is True),
-            )
-
-    async def close(self):
-        if self.session:
-            await self.session.close()
-            self.session = None
-
-    # ---------------------------------------------------------
-    # AUTH HEADER
-    # ---------------------------------------------------------
-    def _build_auth_header(self):
-        """
-        PVE  -> PVEAPIToken=user@pam!tokenid=secret
-        PBS  -> PBSAPIToken=user@pam!tokenid=secret
-        """
-        prefix = "PVEAPIToken" if self.server_type == "PVE" else "PBSAPIToken"
-
-        token = f"{self.user}!{self.token_id}={self.token_secret}"
-        return {
-            "Authorization": f"{prefix}={token}"
-        }
-
-    # ---------------------------------------------------------
-    # REQUEST
-    # ---------------------------------------------------------
-    async def _request(self, method, path):
-        await self._ensure_session()
-
-        headers = self._build_auth_header()
-        url = f"{self.base}{path}"
-
-        try:
-            async with self.session.request(method, url, headers=headers) as resp:
-                if resp.status == 401:
-                    raise Exception("auth_failed")
-
-                if resp.status != 200:
-                    text = await resp.text()
-                    raise Exception(f"api_error_{resp.status}: {text}")
-
-                payload = await resp.json()
-                return payload.get("data")
-
-        except asyncio.TimeoutError:
-            raise Exception("timeout")
-
-        except aiohttp.ClientError as err:
-            raise Exception(f"connection_error: {err}")
-
-    # ---------------------------------------------------------
-    # CONNECTION TEST  (MUY IMPORTANTE PARA EL FLOW)
-    # ---------------------------------------------------------
-    async def test_connection(self):
-        """
-        Simple endpoint to validate auth + connectivity.
-        """
-        if self.server_type == "PVE":
-            await self._request("GET", "/version")
+    # ------------------------------
+    # CLIENT INITIALIZATION (SYNC)
+    # ------------------------------
+    def _build_client_sync(self):
+        port = self._port
+        if self._server_type == "PVE":
+            port = port or 8006
+        elif self._server_type == "PBS":
+            port = port or 8007
         else:
-            await self._request("GET", "/version")
-        return True
+            raise ValueError(f"Unsupported server type: {self._server_type}")
 
-    # ---------------------------------------------------------
-    # HARDWARE SENSORS (PVE)
-    # ---------------------------------------------------------
-    async def get_sensors(self, node):
-        sensors = await self._request("GET", f"/nodes/{node}/hardware/sensors")
-
-        normalized = []
-        for s in sensors or []:
-            normalized.append({
-                "id": s.get("id"),
-                "name": s.get("name", s.get("id")),
-                "value": s.get("value"),
-                "unit": s.get("unit", ""),
-            })
-
-        return normalized
-
-    # ---------------------------------------------------------
-    # NODE STATUS
-    # ---------------------------------------------------------
-    async def get_node_status(self, node):
-        data = await self._request("GET", f"/nodes/{node}/status")
-
-        cpu_pct = round(data["cpu"] * 100, 2) if data and "cpu" in data else None
-        ram_used = data.get("mem") if data else None
-        ram_total = data.get("maxmem") if data else None
-        ram_pct = round((ram_used / ram_total) * 100, 2) if ram_total else None
-
-        return {
-            "cpu_usage_pct": cpu_pct,
-            "ram_usage_pct": ram_pct,
-            "ram_used": ram_used,
-            "ram_total": ram_total,
-            "uptime": data.get("uptime") if data else None,
-            "loadavg": data.get("loadavg") if data else None,
-        }
-
-    # ---------------------------------------------------------
-    # DISKS
-    # ---------------------------------------------------------
-    async def get_disks(self, node):
-        disks = await self._request("GET", f"/nodes/{node}/disks/list")
-
-        normalized = []
-        for d in disks or []:
-            size = d.get("size")
-            used = d.get("used")
-            pct = round((used / size) * 100, 2) if size else None
-
-            normalized.append({
-                "id": d.get("devpath"),
-                "name": d.get("devpath"),
-                "size": size,
-                "used": used,
-                "usage_pct": pct,
-                "health": d.get("health"),
-                "wearout": d.get("wearout"),
-            })
-
-        return normalized
-
-    # ---------------------------------------------------------
-    # VIRTUAL MACHINES
-    # ---------------------------------------------------------
-    async def get_vms(self, node):
-        vms = await self._request("GET", f"/nodes/{node}/qemu")
-
-        normalized = []
-        for vm in vms or []:
-            vmid = vm["vmid"]
-            status = await self._request(
-                "GET",
-                f"/nodes/{node}/qemu/{vmid}/status/current"
+        if self._token_id and self._token_secret:
+            LOGGER.debug("Building ProxmoxAPI client with token for user %s", self._user)
+            self._proxmox = ProxmoxAPI(
+                self._host,
+                user=self._user,
+                token_name=self._token_id,
+                token_value=self._token_secret,
+                verify_ssl=self._verify_ssl,
+                port=port,
+                timeout=30,
+            )
+        else:
+            LOGGER.debug("Building ProxmoxAPI client with password for user %s", self._user)
+            self._proxmox = ProxmoxAPI(
+                self._host,
+                user=self._user,
+                password=self._password,
+                verify_ssl=self._verify_ssl,
+                port=port,
+                timeout=30,
             )
 
-            cpu_pct = round(status["cpu"] * 100, 2) if status and "cpu" in status else None
-            mem_used = status.get("mem") if status else None
-            mem_total = status.get("maxmem") if status else None
-            mem_pct = round((mem_used / mem_total) * 100, 2) if mem_total else None
+    async def get_api_client(self, hass):
+        if self._proxmox is None:
+            await hass.async_add_executor_job(self._build_client_sync)
+        return self._proxmox
 
-            normalized.append({
-                "id": f"vm_{vmid}",
-                "vmid": vmid,
-                "name": vm.get("name", f"VM {vmid}"),
-                "status": status.get("status") if status else None,
-                "cpu_pct": cpu_pct,
-                "mem_pct": mem_pct,
-            })
+    # ------------------------------
+    # GENERIC API HELPERS
+    # ------------------------------
+    async def get(self, hass, path: str) -> Any:
+        proxmox = await self.get_api_client(hass)
+        try:
+            result = await hass.async_add_executor_job(proxmox.get, path)
+            LOGGER.debug("GET %s -> %s", path, result)
+            return result
+        except (ResourceException, ConnectTimeout) as err:
+            LOGGER.error("Proxmox GET error %s: %s", path, err)
+            raise
 
-        return normalized
+    async def post(self, hass, path: str, data: Optional[dict] = None) -> Any:
+        proxmox = await self.get_api_client(hass)
+        try:
+            result = await hass.async_add_executor_job(proxmox.post, path, data or {})
+            LOGGER.debug("POST %s -> %s", path, result)
+            return result
+        except (ResourceException, ConnectTimeout) as err:
+            LOGGER.error("Proxmox POST error %s: %s", path, err)
+            raise
 
-    # ---------------------------------------------------------
-    # CONTAINERS
-    # ---------------------------------------------------------
-    async def get_containers(self, node):
-        cts = await self._request("GET", f"/nodes/{node}/lxc")
+    # ------------------------------
+    # LOCAL TEMPERATURES (lm-sensors)
+    # ------------------------------
+    async def get_local_temperatures(self) -> Dict[str, float]:
+        """Parse output of `sensors` command."""
+        try:
+            output = subprocess.check_output(["sensors"], text=True)
+        except Exception as err:
+            LOGGER.error("Error running sensors: %s", err)
+            return {}
 
-        normalized = []
-        for ct in cts or []:
-            vmid = ct["vmid"]
-            status = await self._request(
-                "GET",
-                f"/nodes/{node}/lxc/{vmid}/status/current"
-            )
+        temps = {}
+        regex = re.compile(r"(.+?):\s+\+?([0-9]+\.[0-9]+)°C")
 
-            cpu_pct = round(status["cpu"] * 100, 2) if status and "cpu" in status else None
-            mem_used = status.get("mem") if status else None
-            mem_total = status.get("maxmem") if status else None
-            mem_pct = round((mem_used / mem_total) * 100, 2) if mem_total else None
+        for line in output.splitlines():
+            match = regex.search(line)
+            if match:
+                name = match.group(1).strip().replace(" ", "_").lower()
+                value = float(match.group(2))
+                temps[name] = value
 
-            normalized.append({
-                "id": f"ct_{vmid}",
-                "vmid": vmid,
-                "name": ct.get("name", f"CT {vmid}"),
-                "status": status.get("status") if status else None,
-                "cpu_pct": cpu_pct,
-                "mem_pct": mem_pct,
-            })
+        LOGGER.debug("Local temperatures parsed: %s", temps)
+        return temps
 
-        return normalized
+    # ------------------------------
+    # PVE METHODS
+    # ------------------------------
+    async def get_sensors(self, hass, node: str) -> List[Dict[str, Any]]:
+        status = await self.get(hass, f"nodes/{node}/status")
+        return [
+            {"id": "cpu", "name": "CPU Usage", "value": status.get("cpu"), "unit": "%"},
+            {"id": "mem", "name": "Memory Usage", "value": status.get("mem"), "unit": "%"},
+            {"id": "uptime", "name": "Uptime", "value": status.get("uptime"), "unit": "s"},
+        ]
 
-    # ---------------------------------------------------------
-    # PBS DATASTORES
-    # ---------------------------------------------------------
-    async def get_pbs_datastores(self):
-        stores = await self._request("GET", "/admin/datastore")
-        return [s["store"] for s in stores or []]
+    async def get_node_status(self, hass, node: str) -> Dict[str, Any]:
+        return await self.get(hass, f"nodes/{node}/status")
 
-    async def get_pbs_datastore_status(self, store):
-        data = await self._request("GET", f"/admin/datastore/{store}/status")
+    async def get_disks(self, hass, node: str) -> List[Dict[str, Any]]:
+        return await self.get(hass, f"nodes/{node}/disks/list")
 
-        size = data.get("total") if data else None
-        used = data.get("used") if data else None
-        pct = round((used / size) * 100, 2) if size else None
+    async def get_vms(self, hass, node: str) -> List[Dict[str, Any]]:
+        return await self.get(hass, f"nodes/{node}/qemu")
 
-        return {
-            "id": f"pbs_store_{store}",
-            "store": store,
-            "total": size,
-            "used": used,
-            "free": data.get("avail") if data else None,
-            "usage_pct": pct,
-            "backup_count": data.get("backup-count") if data else None,
-            "gc_status": data.get("gc-status") if data else None,
-        }
+    async def get_containers(self, hass, node: str) -> List[Dict[str, Any]]:
+        return await self.get(hass, f"nodes/{node}/lxc")
 
-    # ---------------------------------------------------------
-    # PBS TASKS
-    # ---------------------------------------------------------
-    async def get_pbs_tasks(self):
-        tasks = await self._request("GET", "/admin/tasks")
+    # ------------------------------
+    # PBS METHODS
+    # ------------------------------
+    async def get_pbs_datastores(self, hass) -> List[str]:
+        if self._server_type != "PBS":
+            return []
+        storage = await self.get(hass, "storage")
+        return [d["store"] for d in storage if "store" in d]
 
-        if not tasks:
-            return None
+    async def get_pbs_datastore_status(self, hass, store: str) -> Dict[str, Any]:
+        if self._server_type != "PBS":
+            return {}
+        return await self.get(hass, f"storage/{store}/status")
 
-        last = tasks[0]
-
-        return {
-            "id": "pbs_last_task",
-            "upid": last.get("upid"),
-            "status": last.get("status"),
-            "type": last.get("type"),
-            "starttime": last.get("starttime"),
-            "endtime": last.get("endtime"),
-        }
+    async def get_pbs_tasks(self, hass) -> Dict[str, Any]:
+        if self._server_type != "PBS":
+            return {}
+        tasks = await self.get(hass, "tasks")
+        return tasks[-1] if tasks else {}

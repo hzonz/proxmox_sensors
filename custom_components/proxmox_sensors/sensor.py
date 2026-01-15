@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -7,127 +5,99 @@ from .const import DOMAIN
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    """Set up all Proxmox sensors."""
-
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
     features = data["features"]
+    node = data["node"]
+    server_type = data["server_type"]
 
     entities = []
 
-    # ---------------------------------------------------------
-    # HARDWARE SENSORS
-    # ---------------------------------------------------------
-    if features.get("enable_hardware"):
-        for sensor_id in data["hardware_sensors"]:
-            entities.append(
-                ProxmoxHardwareSensor(
-                    coordinator,
-                    sensor_id,
-                    data["node"],
-                )
-            )
+    # HARDWARE
+    if features.get("enable_hardware", True):
+        for sensor_id in coordinator.data.get("hardware", {}):
+            entities.append(ProxmoxHardwareSensor(coordinator, sensor_id, node))
 
-    # ---------------------------------------------------------
-    # NODE SENSORS
-    # ---------------------------------------------------------
-    if features.get("enable_node"):
-        for sensor_id in data["node_sensors"]:
-            info = data["node_sensors"][sensor_id]
-            entities.append(
-                ProxmoxNodeSensor(
-                    coordinator,
-                    sensor_id,
-                    info["name"],
-                    info["unit"],
-                    data["node"],
-                )
-            )
+    # NODE
+    if features.get("enable_node", True):
+        node_data = coordinator.data.get("node", {})
 
-    # ---------------------------------------------------------
-    # DISKS
-    # ---------------------------------------------------------
-    if features.get("enable_disks"):
-        for disk_id in data["disks"]:
-            entities.append(
-                ProxmoxDiskSensor(
-                    coordinator,
-                    disk_id,
-                    data["node"],
-                )
-            )
+        if "cpuinfo" in node_data:
+            entities.append(ProxmoxCPUInfoSensor(coordinator, node))
+        if "ksm" in node_data:
+            entities.append(ProxmoxKSMSensor(coordinator, node))
+        if "memory" in node_data:
+            entities.append(ProxmoxMemorySensor(coordinator, node))
+        if "swap" in node_data:
+            entities.append(ProxmoxSwapSensor(coordinator, node))
+        if "rootfs" in node_data:
+            entities.append(ProxmoxRootFSSensor(coordinator, node))
 
-    # ---------------------------------------------------------
+        for key in node_data:
+            if key in ("cpuinfo", "ksm", "memory", "swap", "rootfs"):
+                continue
+            entities.append(ProxmoxNodeSensor(coordinator, key, node))
+
+    # DISKS (CORREGIDO + SENSORES POR ATRIBUTO)
+    if features.get("enable_disks", True):
+        for disk_id, disk in coordinator.data.get("disks", {}).items():
+            label = disk.get("model") or disk_id
+
+            # Sensor principal del disco
+            entities.append(ProxmoxDiskSensor(coordinator, disk_id, node, label))
+
+            # Sensores individuales por atributo
+            attribute_map = {
+                "temperature": ("Temperatura", "°C"),
+                "wearout": ("Wearout", "%"),
+                "health": ("Health", None),
+                "rpm": ("RPM", "RPM"),
+                "model": ("Modelo", None),
+                "devpath": ("Path", None),
+            }
+
+            for attr_key, (attr_label, unit) in attribute_map.items():
+                value = disk.get(attr_key)
+                if value not in (None, "N/A", ""):
+                    entities.append(
+                        ProxmoxDiskAttributeSensor(
+                            coordinator,
+                            disk_id,
+                            node,
+                            label,
+                            attr_key,
+                            attr_label,
+                            unit,
+                        )
+                    )
+
     # VMs
-    # ---------------------------------------------------------
-    if features.get("enable_vms"):
-        vm_mode = data["vm_mode"]
-        vms_selected = data["vms"]
+    if features.get("enable_vms", True):
+        for vmid, vm in coordinator.data.get("vms", {}).items():
+            label = vm.get("name", f"VM {vmid}")
+            entities.append(ProxmoxVMSensor(coordinator, vmid, node, label))
 
-        if vm_mode == "auto":
-            # All VMs will be created dynamically in sensor
-            pass
-        else:
-            for vm_id in vms_selected:
-                entities.append(
-                    ProxmoxVMSensor(
-                        coordinator,
-                        vm_id,
-                        data["node"],
-                    )
-                )
+    # CTs
+    if features.get("enable_cts", True):
+        for ctid, ct in coordinator.data.get("cts", {}).items():
+            label = ct.get("name", f"CT {ctid}")
+            entities.append(ProxmoxContainerSensor(coordinator, ctid, node, label))
 
-    # ---------------------------------------------------------
-    # CONTAINERS
-    # ---------------------------------------------------------
-    if features.get("enable_cts"):
-        ct_mode = data["ct_mode"]
-        cts_selected = data["cts"]
-
-        if ct_mode == "auto":
-            pass
-        else:
-            for ct_id in cts_selected:
-                entities.append(
-                    ProxmoxContainerSensor(
-                        coordinator,
-                        ct_id,
-                        data["node"],
-                    )
-                )
-
-    # ---------------------------------------------------------
     # PBS DATASTORES
-    # ---------------------------------------------------------
-    if data["server_type"] == "PBS" and features.get("enable_pbs_datastores"):
-        for store in data["datastores"]:
-            entities.append(
-                ProxmoxPBSDatastoreSensor(
-                    coordinator,
-                    store,
-                )
-            )
+    if server_type == "PBS" and features.get("enable_pbs_datastores", True):
+        for store in coordinator.data.get("pbs_datastores", {}):
+            entities.append(ProxmoxPBSDatastoreSensor(coordinator, store))
 
-    # ---------------------------------------------------------
     # PBS TASKS
-    # ---------------------------------------------------------
-    if data["server_type"] == "PBS" and features.get("enable_pbs_tasks"):
-        entities.append(
-            ProxmoxPBSTaskSensor(
-                coordinator,
-            )
-        )
+    if server_type == "PBS" and features.get("enable_pbs_tasks", True):
+        entities.append(ProxmoxPBSTaskSensor(coordinator))
 
     async_add_entities(entities)
 
 
-# ============================================================
 # BASE CLASS
-# ============================================================
 
 class ProxmoxBaseSensor(CoordinatorEntity, SensorEntity):
-    """Base class for all Proxmox sensors."""
-
     def __init__(self, coordinator, sensor_id, name, unit, unique_id):
         super().__init__(coordinator)
         self._sensor_id = sensor_id
@@ -137,181 +107,230 @@ class ProxmoxBaseSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self):
-        """Return the sensor value."""
         return self._get_value()
 
     def _get_value(self):
         raise NotImplementedError
 
 
-# ============================================================
-# HARDWARE SENSOR
-# ============================================================
+# HARDWARE
 
 class ProxmoxHardwareSensor(ProxmoxBaseSensor):
-    """Hardware sensor (temperatures, fans, voltages)."""
-
     def __init__(self, coordinator, sensor_id, node):
         name = f"{sensor_id} ({node})"
-        unit = None  # unit comes from coordinator data
         unique_id = f"proxmox_hw_{node}_{sensor_id}"
-        super().__init__(coordinator, sensor_id, name, unit, unique_id)
+        super().__init__(coordinator, sensor_id, name, None, unique_id)
 
     def _get_value(self):
         return self.coordinator.data.get("hardware", {}).get(self._sensor_id)
 
-    @property
-    def icon(self):
-        sid = self._sensor_id.lower()
-        if "temp" in sid:
-            return "mdi:thermometer"
-        if "fan" in sid:
-            return "mdi:fan"
-        if "volt" in sid or "v" in sid:
-            return "mdi:flash"
-        return "mdi:chip"
 
-
-# ============================================================
-# NODE SENSOR
-# ============================================================
+# NODE SIMPLE
 
 class ProxmoxNodeSensor(ProxmoxBaseSensor):
-    """Node-level sensor (CPU, RAM, uptime)."""
-
-    def __init__(self, coordinator, sensor_id, name, unit, node):
+    def __init__(self, coordinator, sensor_id, node):
+        name = f"Node {sensor_id} ({node})"
         unique_id = f"proxmox_node_{node}_{sensor_id}"
-        super().__init__(coordinator, sensor_id, name, unit, unique_id)
+        super().__init__(coordinator, sensor_id, name, None, unique_id)
 
     def _get_value(self):
         return self.coordinator.data.get("node", {}).get(self._sensor_id)
 
+
+# NODE EXTENDIDOS
+
+class ProxmoxCPUInfoSensor(ProxmoxBaseSensor):
+    def __init__(self, coordinator, node):
+        name = f"Node cpuinfo ({node})"
+        unique_id = f"proxmox_node_cpuinfo_{node}"
+        super().__init__(coordinator, "cpuinfo", name, None, unique_id)
+
+    def _get_value(self):
+        return None
+
     @property
-    def icon(self):
-        if "cpu" in self._sensor_id:
-            return "mdi:cpu-64-bit"
-        if "ram" in self._sensor_id:
-            return "mdi:memory"
-        if "uptime" in self._sensor_id:
-            return "mdi:timer-outline"
-        return "mdi:server"
+    def extra_state_attributes(self):
+        return self.coordinator.data.get("node", {}).get("cpuinfo", {})
 
 
-# ============================================================
-# DISK SENSOR
-# ============================================================
+class ProxmoxKSMSensor(ProxmoxBaseSensor):
+    def __init__(self, coordinator, node):
+        name = f"Node ksm ({node})"
+        unique_id = f"proxmox_node_ksm_{node}"
+        super().__init__(coordinator, "ksm", name, "bytes", unique_id)
+
+    def _get_value(self):
+        ksm = self.coordinator.data.get("node", {}).get("ksm", {})
+        return ksm.get("shared")
+
+    @property
+    def extra_state_attributes(self):
+        return self.coordinator.data.get("node", {}).get("ksm", {})
+
+
+class ProxmoxMemorySensor(ProxmoxBaseSensor):
+    def __init__(self, coordinator, node):
+        name = f"Node memory ({node})"
+        unique_id = f"proxmox_node_memory_{node}"
+        super().__init__(coordinator, "memory", name, "bytes", unique_id)
+
+    def _get_value(self):
+        mem = self.coordinator.data.get("node", {}).get("memory", {})
+        return mem.get("used")
+
+    @property
+    def extra_state_attributes(self):
+        return self.coordinator.data.get("node", {}).get("memory", {})
+
+
+class ProxmoxSwapSensor(ProxmoxBaseSensor):
+    def __init__(self, coordinator, node):
+        name = f"Node swap ({node})"
+        unique_id = f"proxmox_node_swap_{node}"
+        super().__init__(coordinator, "swap", name, "bytes", unique_id)
+
+    def _get_value(self):
+        swap = self.coordinator.data.get("node", {}).get("swap", {})
+        return swap.get("used")
+
+    @property
+    def extra_state_attributes(self):
+        return self.coordinator.data.get("node", {}).get("swap", {})
+
+
+class ProxmoxRootFSSensor(ProxmoxBaseSensor):
+    def __init__(self, coordinator, node):
+        name = f"Node rootfs ({node})"
+        unique_id = f"proxmox_node_rootfs_{node}"
+        super().__init__(coordinator, "rootfs", name, "bytes", unique_id)
+
+    def _get_value(self):
+        rootfs = self.coordinator.data.get("node", {}).get("rootfs", {})
+        return rootfs.get("used")
+
+    @property
+    def extra_state_attributes(self):
+        return self.coordinator.data.get("node", {}).get("rootfs", {})
+
+
+# DISKS (CORREGIDO + SENSORES POR ATRIBUTO)
 
 class ProxmoxDiskSensor(ProxmoxBaseSensor):
-    """Disk sensor (usage, wear-level)."""
-
-    def __init__(self, coordinator, disk_id, node):
-        name = f"Disk {disk_id}"
-        unit = "%"
+    def __init__(self, coordinator, disk_id, node, label):
+        name = f"{label} (Disk)"
         unique_id = f"proxmox_disk_{node}_{disk_id}"
-        super().__init__(coordinator, disk_id, name, unit, unique_id)
+        super().__init__(coordinator, disk_id, name, "%", unique_id)
 
     def _get_value(self):
         disk = self.coordinator.data.get("disks", {}).get(self._sensor_id)
         if disk:
-            return disk.get("usage_pct")
-        return None
+            total = disk.get("disk_total") or 0
+            used = disk.get("disk_used") or 0
+            if total == 0:
+                return 0
+            return round((used / total) * 100, 2)
+        return 0
+
+    @staticmethod
+    def _format_gb(bytes_value):
+        return round(bytes_value / (1024**3), 2) if bytes_value else 0
 
     @property
-    def icon(self):
-        return "mdi:harddisk"
+    def extra_state_attributes(self):
+        disk = self.coordinator.data.get("disks", {}).get(self._sensor_id) or {}
+        total = disk.get("disk_total") or 0
+        used = disk.get("disk_used") or 0
+        free = total - used if total else 0
+
+        return {
+            "Capacidad total (GB)": self._format_gb(total),
+            "Espacio usado (GB)": self._format_gb(used),
+            "Espacio libre (GB)": self._format_gb(free),
+            "Modelo": disk.get("model"),
+            "Serial": disk.get("serial"),
+            "Tipo": disk.get("type"),
+            "Tamaño (bytes)": disk.get("size"),
+            "Temperatura (°C)": disk.get("temperature"),
+            "Health": disk.get("health"),
+            "Wearout (%)": disk.get("wearout"),
+            "RPM": disk.get("rpm"),
+            "Path": disk.get("devpath"),
+        }
 
 
-# ============================================================
-# VM SENSOR
-# ============================================================
+class ProxmoxDiskAttributeSensor(ProxmoxBaseSensor):
+    def __init__(self, coordinator, disk_id, node, label, attr_key, attr_label, unit):
+        name = f"{label} - {attr_label}"
+        unique_id = f"proxmox_disk_attr_{node}_{disk_id}_{attr_key}"
+        super().__init__(coordinator, disk_id, name, unit, unique_id)
+        self._attr_key = attr_key
+
+    def _get_value(self):
+        disk = self.coordinator.data.get("disks", {}).get(self._sensor_id)
+        if not disk:
+            return None
+        value = disk.get(self._attr_key)
+        if value == "N/A":
+            return None
+        return value
+
+
+# VMs
 
 class ProxmoxVMSensor(ProxmoxBaseSensor):
-    """VM sensor (CPU %, RAM %, status)."""
-
-    def __init__(self, coordinator, vm_id, node):
-        name = f"VM {vm_id}"
-        unit = "%"
+    def __init__(self, coordinator, vm_id, node, label):
+        name = f"{label} (VM {vm_id})"
         unique_id = f"proxmox_vm_{node}_{vm_id}"
-        super().__init__(coordinator, vm_id, name, unit, unique_id)
+        super().__init__(coordinator, vm_id, name, "%", unique_id)
 
     def _get_value(self):
         vm = self.coordinator.data.get("vms", {}).get(self._sensor_id)
         if vm:
-            return vm.get("cpu_pct")
+            return round(vm.get("cpu", 0) * 100, 2)
         return None
 
-    @property
-    def icon(self):
-        return "mdi:monitor"
 
-
-# ============================================================
-# CONTAINER SENSOR
-# ============================================================
+# CTs
 
 class ProxmoxContainerSensor(ProxmoxBaseSensor):
-    """Container sensor (CPU %, RAM %, status)."""
-
-    def __init__(self, coordinator, ct_id, node):
-        name = f"CT {ct_id}"
-        unit = "%"
+    def __init__(self, coordinator, ct_id, node, label):
+        name = f"{label} (CT {ct_id})"
         unique_id = f"proxmox_ct_{node}_{ct_id}"
-        super().__init__(coordinator, ct_id, name, unit, unique_id)
+        super().__init__(coordinator, ct_id, name, "%", unique_id)
 
     def _get_value(self):
         ct = self.coordinator.data.get("cts", {}).get(self._sensor_id)
         if ct:
-            return ct.get("cpu_pct")
+            return round(ct.get("cpu", 0) * 100, 2)
         return None
 
-    @property
-    def icon(self):
-        return "mdi:docker"
 
-
-# ============================================================
-# PBS DATASTORE SENSOR
-# ============================================================
+# PBS DATASTORE
 
 class ProxmoxPBSDatastoreSensor(ProxmoxBaseSensor):
-    """PBS datastore usage sensor."""
-
     def __init__(self, coordinator, store):
         name = f"PBS Datastore {store}"
-        unit = "%"
         unique_id = f"proxmox_pbs_store_{store}"
-        super().__init__(coordinator, store, name, unit, unique_id)
+        super().__init__(coordinator, store, name, "%", unique_id)
 
     def _get_value(self):
         store = self.coordinator.data.get("pbs_datastores", {}).get(self._sensor_id)
         if store:
-            return store.get("usage_pct")
+            used = store.get("used")
+            total = store.get("total")
+            if used and total:
+                return round((used / total) * 100, 2)
         return None
 
-    @property
-    def icon(self):
-        return "mdi:database"
 
-
-# ============================================================
-# PBS TASK SENSOR
-# ============================================================
+# PBS TASK
 
 class ProxmoxPBSTaskSensor(ProxmoxBaseSensor):
-    """PBS last task status."""
-
     def __init__(self, coordinator):
-        name = "PBS Last Backup Task"
-        unit = None
-        unique_id = "proxmox_pbs_last_task"
-        super().__init__(coordinator, "last_task", name, unit, unique_id)
+        super().__init__(coordinator, "last_task", "PBS Last Task", None, "proxmox_pbs_last_task")
 
     def _get_value(self):
         task = self.coordinator.data.get("pbs_tasks")
         if task:
             return task.get("status")
         return None
-
-    @property
-    def icon(self):
-        return "mdi:clipboard-check"
