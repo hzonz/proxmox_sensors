@@ -23,11 +23,12 @@ CONF_VERIFY_SSL = "verify_ssl"
 CONF_PORT = "port"
 
 # Panel Proxmox
-PANEL_REPO_VERSION_URL = "https://raw.githubusercontent.com/tu_repo/panel/version.json"
-PANEL_REPO_FILES_URL = "https://raw.githubusercontent.com/tu_repo/panel/files.json"
-PANEL_REPO_BASE_URL = "https://raw.githubusercontent.com/tu_repo/panel/"
+PANEL_REPO_VERSION_URL = "https://raw.githubusercontent.com/Javisen/proxmox_panel/main/panel/version.json"
+PANEL_REPO_FILES_URL = "https://raw.githubusercontent.com/Javisen/proxmox_panel/main/panel/files.json"
+PANEL_REPO_BASE_URL = "https://raw.githubusercontent.com/Javisen/proxmox_panel/main/panel/"
 
 PANEL_LOCAL_PATH = "www/proxmox_panel"
 PANEL_STORAGE_FILE = ".storage/proxmox_panel_version.json"
 
 DEFAULT_PANEL_VERSION = "0.0.0"
+
