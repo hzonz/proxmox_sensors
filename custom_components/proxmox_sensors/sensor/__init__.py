@@ -1,0 +1,304 @@
+from __future__ import annotations
+import logging
+
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr
+
+from ..const import DOMAIN, CONF_NODE, CONF_PLATFORM_TYPE
+
+# Sensores del nodo
+from .node import (
+    ProxmoxNodeSensor,
+    ProxmoxCPUInfoSensor,
+    ProxmoxKSMSensor,
+    ProxmoxMemorySensor,
+    ProxmoxSwapSensor,
+    ProxmoxRootFSSensor,
+    ProxmoxClusterTasksSensor,
+)
+
+# Sensores hardware (lm-sensors)
+from .hardware import ProxmoxHardwareSensor
+
+# Discos físicos
+from .disks import ProxmoxDiskSensor
+
+# Storage
+from .storage import ProxmoxStorageSensor, ProxmoxStorageAttributeSensor
+
+# Máquinas virtuales
+from .vm import ProxmoxVMSensor, ProxmoxVMAttributeSensor
+
+# Contenedores
+from .ct import ProxmoxContainerSensor, ProxmoxContainerAttributeSensor
+
+# Sensores PBS
+from .pbs import (
+    ProxmoxPBSDatastoreUsageSensor,
+    ProxmoxPBSDatastoreSizeSensor,
+    ProxmoxPBSDedupSensor,
+    ProxmoxPBSBackupCountSensor,
+    ProxmoxPBSLastBackupTimeSensor,
+    ProxmoxPBSLastBackupSizeSensor,
+    ProxmoxPBSLastBackupStatusSensor,
+    ProxmoxPBSBackupErrorsSensor,
+    ProxmoxPBSTaskSensor,
+    ProxmoxPBSTaskTypeSensor,
+    ProxmoxPBSTaskStatusSensor,
+    ProxmoxPBSTaskMessageSensor,
+    ProxmoxPBSTaskDurationSensor,
+    ProxmoxPBSAuthStatusSensor,
+    ProxmoxPBSVersionSensor,
+    ProxmoxPBSReleaseSensor,
+)
+
+
+
+_LOGGER = logging.getLogger(__name__)
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback
+):
+    """Set up all Proxmox sensors with user-selected filtering."""
+
+    data = hass.data[DOMAIN][entry.entry_id]
+    coordinator = data["coordinator"]
+
+    # Selecciones del usuario
+    selected_vms = entry.data.get("selected_vms", [])
+    selected_cts = entry.data.get("selected_cts", [])
+    selected_storage = entry.data.get("selected_storage", [])
+    enable_physical_disks = entry.data.get("enable_physical_disks", True)
+    enable_lm_sensors = entry.data.get("enable_lm_sensors", True)
+
+    node = entry.data.get(CONF_NODE, "Proxmox")
+    server_type = entry.data.get(CONF_PLATFORM_TYPE, "PVE")
+
+    entities = []
+    c_data = coordinator.data
+
+    if not c_data:
+        _LOGGER.warning("No hay datos en el coordinador para %s", node)
+        return
+
+    # =========================================================
+    # LÓGICA PVE
+    # =========================================================
+    if server_type == "PVE":
+
+        # Hardware (lm-sensors)
+        if enable_lm_sensors:
+            hardware_data = c_data.get("hardware", {})
+
+            # Clasificación por tipo para orden lógico
+            cpu_sensors = []
+            pch_sensors = []
+            nvme_sensors = []
+            sata_sensors = []
+            other_sensors = []
+
+            for sensor_id in hardware_data:
+                sid = sensor_id.lower()
+
+                if "coretemp" in sid or "package id" in sid:
+                    cpu_sensors.append(sensor_id)
+                elif "pch" in sid:
+                    pch_sensors.append(sensor_id)
+                elif "nvme" in sid:
+                    nvme_sensors.append(sensor_id)
+                elif "drivetemp" in sid or "scsi" in sid:
+                    sata_sensors.append(sensor_id)
+                else:
+                    other_sensors.append(sensor_id)
+
+            # Orden final: CPU → PCH → NVMe → SATA → Otros
+            ordered_sensors = (
+                cpu_sensors +
+                pch_sensors +
+                nvme_sensors +
+                sata_sensors +
+                other_sensors
+            )
+
+            for sensor_id in ordered_sensors:
+                sensor = ProxmoxHardwareSensor(coordinator, sensor_id, node)
+                if sensor.is_valid():
+                    entities.append(sensor)
+
+        # Nodo y cluster
+        node_data = c_data.get("node", {})
+        if node_data:
+            entities.append(ProxmoxClusterTasksSensor(coordinator, node))
+
+            mapping = {
+                "cpuinfo": ProxmoxCPUInfoSensor,
+                "ksm": ProxmoxKSMSensor,
+                "memory": ProxmoxMemorySensor,
+                "swap": ProxmoxSwapSensor,
+                "rootfs": ProxmoxRootFSSensor,
+            }
+
+            for key, cls in mapping.items():
+                if key in node_data:
+                    entities.append(cls(coordinator, node))
+
+            for key in node_data:
+                if key not in mapping and key not in ("kversion", "boot-info", "last_task"):
+                    entities.append(ProxmoxNodeSensor(coordinator, key, node))
+
+        # Discos físicos
+        if enable_physical_disks:
+            for d_id, d_info in c_data.get("disks", {}).items():
+                d_model = str(d_info.get("model", "")).lower()
+                if d_model and "boot" not in d_model:
+                    entities.append(
+                        ProxmoxDiskSensor(
+                            coordinator,
+                            d_id,
+                            node,
+                            d_info.get("model") or d_id
+                        )
+                    )
+
+        # Storage
+        storage_map = c_data.get("storage", {})
+        for st_name, st in storage_map.items():
+            if st_name in selected_storage:
+                entities.append(ProxmoxStorageSensor(coordinator, st_name, st, node))
+                for label, key in [
+                    ("Used Space", "used"),
+                    ("Free Space", "avail"),
+                    ("Total Capacity", "total"),
+                    ("Type", "type"),
+                    ("Path", "path"),
+                ]:
+                    entities.append(
+                        ProxmoxStorageAttributeSensor(
+                            coordinator, st_name, st, label, key, node
+                        )
+                    )
+
+        # Máquinas virtuales
+        vm_map = c_data.get("vms", {})
+        for vm_id, vm_data in vm_map.items():
+            if str(vm_id) in selected_vms:
+                label = vm_data.get("name", vm_id)
+                entities.append(ProxmoxVMSensor(coordinator, vm_id, node, label))
+
+                for attr, unit, icon in [
+                    ("cpu_usage", "%", "mdi:cpu-64-bit"),
+                    ("memory_used", "GB", "mdi:memory"),
+                    ("memory_total", "GB", "mdi:memory"),
+                    ("disk_total", "GB", "mdi:harddisk-plus"),
+                    ("uptime", "h", "mdi:timer-sand"),
+                ]:
+                    entities.append(
+                        ProxmoxVMAttributeSensor(
+                            coordinator, vm_id, node, label, attr, unit, icon
+                        )
+                    )
+
+        # Contenedores
+        ct_map = c_data.get("cts", {})
+        for ct_id, ct_data in ct_map.items():
+            if str(ct_id) in selected_cts:
+                label = ct_data.get("name", ct_id)
+                entities.append(ProxmoxContainerSensor(coordinator, ct_id, node, label))
+
+                for attr, unit, icon in [
+                    ("cpu_usage", "%", "mdi:cpu-64-bit"),
+                    ("memory_used", "GB", "mdi:memory"),
+                    ("memory_total", "GB", "mdi:memory"),
+                    ("disk_total", "GB", "mdi:harddisk-plus"),
+                    ("disk_used", "GB", "mdi:harddisk"),
+                    ("uptime", "h", "mdi:timer-outline"),
+                ]:
+                    entities.append(
+                        ProxmoxContainerAttributeSensor(
+                            coordinator, ct_id, node, label, attr, unit, icon
+                        )
+                    )
+
+    # =========================================================
+    # PBS LOGIC
+    # =========================================================
+    elif server_type == "PBS":
+
+        server_id = entry.data["server_id"]  # pbs_1, pbs_2, pbs_3…
+
+        for store_id in c_data.get("pbs_datastores", {}):
+            
+            # Uso del datastore
+            entities.append(ProxmoxPBSDatastoreUsageSensor(coordinator, server_id, store_id))
+
+            # Tamaños
+            for key, lbl, icon in [
+                ("total", "Total", "mdi:harddisk"),
+                ("used", "Used", "mdi:harddisk-remove"),
+                ("avail", "Free", "mdi:harddisk-plus"),
+            ]:
+                entities.append(
+                    ProxmoxPBSDatastoreSizeSensor(
+                        coordinator, server_id, store_id, key, lbl, icon
+                    )
+                )
+
+            # Deduplicación
+            entities.append(ProxmoxPBSDedupSensor(coordinator, server_id, store_id))
+
+            # Backups
+            entities.append(ProxmoxPBSBackupCountSensor(coordinator, server_id, store_id))
+            entities.append(ProxmoxPBSLastBackupTimeSensor(coordinator, server_id, store_id))
+            entities.append(ProxmoxPBSLastBackupSizeSensor(coordinator, server_id, store_id))
+            entities.append(ProxmoxPBSLastBackupStatusSensor(coordinator, server_id, store_id))
+            entities.append(ProxmoxPBSBackupErrorsSensor(coordinator, server_id, store_id))
+
+        # Sensores globales PBS
+        entities.append(ProxmoxPBSTaskSensor(coordinator, server_id))
+        entities.append(ProxmoxPBSTaskTypeSensor(coordinator, server_id))
+        entities.append(ProxmoxPBSTaskStatusSensor(coordinator, server_id))
+        entities.append(ProxmoxPBSTaskMessageSensor(coordinator, server_id))
+        entities.append(ProxmoxPBSTaskDurationSensor(coordinator, server_id))
+        entities.append(ProxmoxPBSAuthStatusSensor(coordinator, server_id))
+        entities.append(ProxmoxPBSVersionSensor(coordinator, server_id))
+        entities.append(ProxmoxPBSReleaseSensor(coordinator, server_id))
+
+    # =========================================================
+    # CLEAN ENTITIES NO LONGER SELECTED
+    # =========================================================
+    ent_reg = er.async_get(hass)
+    existing_entries = er.async_entries_for_config_entry(ent_reg, entry.entry_id)
+    new_unique_ids = {entity.unique_id for entity in entities}
+
+    for entity_entry in existing_entries:
+        if entity_entry.unique_id not in new_unique_ids:
+            _LOGGER.info(
+                "Eliminando entidad obsoleta o desmarcada: %s",
+                entity_entry.entity_id,
+            )
+            ent_reg.async_remove(entity_entry.entity_id)
+
+    # =========================================================
+    # CLEAN ORPHAN DEVICES
+    # =========================================================
+    dev_reg = dr.async_get(hass)
+    devices = dr.async_entries_for_config_entry(dev_reg, entry.entry_id)
+
+    for device in devices:
+        linked_entities = er.async_entries_for_device(ent_reg, device.id)
+
+        if not linked_entities:
+            _LOGGER.info("Eliminando dispositivo huérfano: %s", device.name)
+            dev_reg.async_remove_device(device.id)
+
+    # =========================================================
+    # AÑADIR ENTIDADES NUEVAS
+    # =========================================================
+    if entities:
+        async_add_entities(entities)
