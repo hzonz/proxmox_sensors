@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.components.frontend import async_register_built_in_panel, async_remove_panel
 from homeassistant.components.frontend import DATA_PANELS, Panel
 
-from .const import (
+from ..const import (
     PANEL_REPO_VERSION_URL,
     PANEL_REPO_FILES_URL,
     PANEL_REPO_BASE_URL,
@@ -43,3 +43,4 @@ async def async_download_panel_if_needed(hass: HomeAssistant) -> str:
 
         finally:
             hass.data["_proxmox_panel_updating"] = False
+
