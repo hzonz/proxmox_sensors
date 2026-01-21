@@ -51,14 +51,16 @@ This integration has been designed for advanced users who require full control o
 * **Auto-Naming: Automatic prefixes (e.g., pv1-cpu-temp) so your dashboards stay logically ordered by themselves.**
 
 ---
-
+## Featured Sensors
+## PVE
 ### 🖥️ Hardware Sensors (PVE & PBS)
 CPU temperatures • VRM temperatures • NVMe/SSD/HDD temperatures  
 Fan speeds (RPM) • Voltages • Power sensors • `pvesensors` entities
+• Chipset temperature 
 
 ### 🧠 Node Status
 CPU usage (%) • RAM usage (%) • RAM used/total  
-Uptime • Load average
+Uptime • Load average • CPU I/O Wait 
 
 ### 💾 Disks
 Total capacity • Used space (GB and %)  
@@ -75,6 +77,7 @@ Status • Auto/manual selection
 ### 🗄️ Proxmox Backup Server (PBS)
 Datastore usage (GB and %) • Backup count  
 Garbage Collector status • Last backup task status
+• Complete Tasks Information and more 
 
 
   
