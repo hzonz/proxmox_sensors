@@ -80,10 +80,10 @@ Datastore usage (GB and %) • Backup count
 Garbage Collector status • Last backup task status
 • Complete Tasks Information and more 
 
-** Dashboard Example**
+**Dashboard Example**
 
 <p align="center">
-  <img src="/custom_components/proxmox_sensors/images/dashboard.png" alt="Proxmox Extended Sensors Logo" width="600"/>
+  <img src="/custom_components/proxmox_sensors/images/dashboard.png" alt="Proxmox Extended Sensors Dashboard" width="800"/>
 </p>
 
   
