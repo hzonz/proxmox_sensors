@@ -3,6 +3,8 @@
 
 This integration has been designed for advanced users who require full control over their hardware without overloading their server. Unlike other solutions, Proxmox Sensors Extended focuses on energy efficiency, secure Token-based authentication, and impeccable visual organization.
 
+---
+
 ## 🔥 Key Features
 
 ### 🌡️ Deep Hardware Monitoring
@@ -17,6 +19,8 @@ This integration has been designed for advanced users who require full control o
 
 **(Note: Requires installing lm-sensors on the Proxmox host).**
 
+---
+
 ### 🧠 Performance-Focused
 
 **Designed with resource-constrained hardware in mind (such as i5-6500T or Optiplex mini PCs):**
@@ -25,15 +29,21 @@ This integration has been designed for advanced users who require full control o
 
 * **Silent SSL: Automatic verification of SSL certificates (including self-signed) without spamming your error logs.**
 
+---
+
 ### 🗄️ Advanced Proxmox Backup Server (PBS)
 * **External Mode: Seamlessly connect to remote PBS servers using only the domain.**
 
 * **Task Monitoring: Detailed status of the last Backup, Garbage Collector, or Verify task.**
 
+---
+
 ### 🎨 Dynamic & Organized UI
 * **Smart Dashboard: Sensors are automatically grouped into devices: 1. Node, 2. Physical Disks, 3. VMs, 4. Containers.**
 
 * **Auto-Naming: Automatic prefixes (e.g., pv1-cpu-temp) so your dashboards stay logically ordered by themselves.**
+
+---
   
 ### 🖥️ Hardware Sensors (PVE & PBS)
 - CPU temperatures
