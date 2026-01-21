@@ -51,31 +51,67 @@ This integration has been designed for advanced users who require full control o
 * **Auto-Naming: Automatic prefixes (e.g., pv1-cpu-temp) so your dashboards stay logically ordered by themselves.**
 
 ---
+
+<table>
+  <tr>
+    <td valign="top" width="50%">
+      <h3>🖥️ Hardware Sensors (PVE & PBS)</h3>
+      <ul>
+        <li>CPU temperatures</li>
+        <li>VRM temperatures</li>
+        <li>NVMe / SSD / HDD temperatures</li>
+        <li>Fan speeds (RPM)</li>
+        <li>Voltages</li>
+        <li>Power sensors</li>
+        <li>Any sensor exposed by <code>pvesensors</code></li>
+      </ul>
+
+      <h3>💾 Disks</h3>
+      <ul>
+        <li>Total capacity</li>
+        <li>Used space (GB and %)</li>
+        <li>Wear-level (NVMe)</li>
+        <li>SMART health (if available)</li>
+      </ul>
+
+      <h3>📦 Containers (LXC)</h3>
+      <ul>
+        <li>CPU usage (%)</li>
+        <li>RAM usage (%)</li>
+        <li>Status</li>
+        <li>Automatic or manual selection</li>
+      </ul>
+    </td>
+    <td valign="top" width="50%">
+      <h3>🧠 Node Status</h3>
+      <ul>
+        <li>CPU usage (%)</li>
+        <li>RAM usage (%)</li>
+        <li>RAM used / total</li>
+        <li>Uptime</li>
+        <li>Load average</li>
+      </ul>
+
+      <h3>🖥️ Virtual Machines (QEMU)</h3>
+      <ul>
+        <li>CPU usage (%)</li>
+        <li>RAM usage (%)</li>
+        <li>Status (running / stopped)</li>
+        <li>Automatic or manual selection</li>
+      </ul>
+
+      <h3>🗄️ Proxmox Backup Server (PBS)</h3>
+      <ul>
+        <li>Datastore usage (GB and %)</li>
+        <li>Backup count</li>
+        <li>Garbage Collector status</li>
+        <li>Last backup task status</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
   
-| 🖥️ **Hardware Sensors (PVE & PBS)**             | 🧠 **Node Status**                   |
-|--------------------------------------------------|--------------------------------------|
-| - CPU temperatures                               | - CPU usage (%)                      |
-| - VRM temperatures                               | - RAM usage (%)                      |
-| - NVMe / SSD / HDD temperatures                  | - RAM used / total                   |
-| - Fan speeds (RPM)                               | - Uptime                             |
-| - Voltages                                       | - Load average                       |
-| - Power sensors                                  |                                      |
-| - Any sensor exposed by `pvesensors`             |                                      |
-
-| 💾 **Disks**                                     | 🖥️ **Virtual Machines (QEMU)**       |
-|--------------------------------------------------|--------------------------------------|
-| - Total capacity                                 | - CPU usage (%)                      |
-| - Used space (GB and %)                          | - RAM usage (%)                      |
-| - Wear-level (NVMe)                              | - Status (running / stopped)         |
-| - SMART health (if available)                    | - Automatic or manual selection      |
-
-| 📦 **Containers (LXC)**                          | 🗄️ **Proxmox Backup Server (PBS)**   |
-|--------------------------------------------------|--------------------------------------|
-| - CPU usage (%)                                  | - Datastore usage (GB and %)         |
-| - RAM usage (%)                                  | - Backup count                       |
-| - Status                                         | - Garbage Collector status           |
-| - Automatic or manual selection                  | - Last backup task status            |
-
 ---
 
 ## 🧰 Requirements
