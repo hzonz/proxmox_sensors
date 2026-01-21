@@ -83,7 +83,7 @@ Garbage Collector status • Last backup task status
 **Dashboard Example**
 
 <p align="center">
-  <img src="/custom_components/proxmox_sensors/images/dashboard.png" alt="Proxmox Extended Sensors Dashboard" width="800"/>
+  <img src="/custom_components/proxmox_sensors/images/dashboard.png" alt="Proxmox Extended Sensors Dashboard" width="1000"/>
 </p>
 
   
