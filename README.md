@@ -1,3 +1,11 @@
+<p align="center">
+  <img src="custom_components/proxmox_sensors
+/images/logo_int.png" alt="Proxmox Extended Sensors Logo" width="600"/>
+</p>
+
+
+
+
 # 🚀 Proxmox Sensors Extended
 **The most comprehensive, efficient, and organized integration for monitoring Proxmox VE and PBS from Home Assistant.**
 
