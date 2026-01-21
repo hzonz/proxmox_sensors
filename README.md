@@ -84,118 +84,16 @@ Garbage Collector status • Last backup task status
   
 ---
 
-## 🧰 Requirements
+## 📚 Documentation & Guides
+To ensure a smooth setup, please follow these step-by-step guides:
 
-- Home Assistant 2023.6 or newer  
-- Proxmox VE 7/8 or Proxmox Backup Server 2/3  
-- User + password authentication (API tokens optional in future versions)
+### 🚀 Installation Guide: How to add the repository via HACS or manual method.
 
----
+### 🔑 API Token & Permissions: How to create a secure user and token in Proxmox with the correct permissions.
 
-## 📦 Installation
+### 🌡️ Hardware Sensors Setup: How to install and configure lm-sensors on your Proxmox node.
 
-### 🔧 Manual installation
-
-1. Download this repository.
-2. Copy the folder: custom_components/proxmox_sensors into your Home Assistant installation: /config/custom_components/proxmox_sensors
-3. Restart Home Assistant.
-4. Go to **Settings → Devices & Services → Add Integration**.
-5. Search for **Proxmox Sensors Extended**.
-
-
----
-
-## ⚙️ Configuration
-
-This integration includes a full **UI-based config flow** — no YAML required.
-
-### Steps:
-
-1. Enter:
-   - Host (IP or hostname)
-   - Username
-   - Password
-   - Node name
-   - Server type (PVE or PBS)
-
-2. Choose which categories you want to enable:
-   - Hardware sensors
-   - Node status sensors
-   - Disk sensors
-   - Virtual machines
-   - Containers
-   - PBS datastores
-   - PBS tasks
-
-3. For each category:
-   - Hardware, node, and disk sensors → selectable individually  
-   - VMs and containers → automatic or manual selection  
-   - PBS datastores → manual selection  
-   - PBS tasks → always automatic  
-
-4. The integration will automatically create all required entities.
-
----
-
-## 🧩 Entity Structure
-
-Entities are grouped by category:
-
-### Hardware
-
-- sensor.cpu_core_0_temp
-
-- sensor.nvme0_temp
-
-- sensor.vrm_temp
-
-...
-
-### Node
-
-- sensor.node_cpu_usage
-
-- sensor.node_ram_usage
-
-- sensor.node_uptime
-
-...
-
-### Disks
-
-- sensor.disk_nvme0_usage
-
-- sensor.disk_sda_usage
-
-...
-
-### Virtual Machines
-
-- sensor.vm_101_cpu
-
-- sensor.vm_101_ram
-
-- sensor.vm_102_cpu
-
-...
-
-### Containers
-
-- sensor.ct_201_cpu
-
-- sensor.ct_201_ram
-
-...
-
-### PBS
-
-- sensor.pbs_datastore_backup_usage
-
-- sensor.pbs_last_task_status
-
-...
-
-
+### ⚙️ Initial Configuration: Walking through the first-time setup and login process.
 ---
 
 ## 🚀 Roadmap
