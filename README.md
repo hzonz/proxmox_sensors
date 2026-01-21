@@ -52,64 +52,30 @@ This integration has been designed for advanced users who require full control o
 
 ---
 
-<table>
-  <tr>
-    <td valign="top" width="50%">
-      <h3>🖥️ Hardware Sensors (PVE & PBS)</h3>
-      <ul>
-        <li>CPU temperatures</li>
-        <li>VRM temperatures</li>
-        <li>NVMe / SSD / HDD temperatures</li>
-        <li>Fan speeds (RPM)</li>
-        <li>Voltages</li>
-        <li>Power sensors</li>
-        <li>Any sensor exposed by <code>pvesensors</code></li>
-      </ul>
+### 🖥️ Hardware Sensors (PVE & PBS)
+CPU temperatures • VRM temperatures • NVMe/SSD/HDD temperatures  
+Fan speeds (RPM) • Voltages • Power sensors • `pvesensors` entities
 
-      <h3>💾 Disks</h3>
-      <ul>
-        <li>Total capacity</li>
-        <li>Used space (GB and %)</li>
-        <li>Wear-level (NVMe)</li>
-        <li>SMART health (if available)</li>
-      </ul>
+### 🧠 Node Status
+CPU usage (%) • RAM usage (%) • RAM used/total  
+Uptime • Load average
 
-      <h3>📦 Containers (LXC)</h3>
-      <ul>
-        <li>CPU usage (%)</li>
-        <li>RAM usage (%)</li>
-        <li>Status</li>
-        <li>Automatic or manual selection</li>
-      </ul>
-    </td>
-    <td valign="top" width="50%">
-      <h3>🧠 Node Status</h3>
-      <ul>
-        <li>CPU usage (%)</li>
-        <li>RAM usage (%)</li>
-        <li>RAM used / total</li>
-        <li>Uptime</li>
-        <li>Load average</li>
-      </ul>
+### 💾 Disks
+Total capacity • Used space (GB and %)  
+Wear-level (NVMe) • SMART health (if available)
 
-      <h3>🖥️ Virtual Machines (QEMU)</h3>
-      <ul>
-        <li>CPU usage (%)</li>
-        <li>RAM usage (%)</li>
-        <li>Status (running / stopped)</li>
-        <li>Automatic or manual selection</li>
-      </ul>
+### 🖥️ Virtual Machines (QEMU)
+CPU usage (%) • RAM usage (%)  
+Status (running/stopped) • Auto/manual selection
 
-      <h3>🗄️ Proxmox Backup Server (PBS)</h3>
-      <ul>
-        <li>Datastore usage (GB and %)</li>
-        <li>Backup count</li>
-        <li>Garbage Collector status</li>
-        <li>Last backup task status</li>
-      </ul>
-    </td>
-  </tr>
-</table>
+### 📦 Containers (LXC)
+CPU usage (%) • RAM usage (%)  
+Status • Auto/manual selection
+
+### 🗄️ Proxmox Backup Server (PBS)
+Datastore usage (GB and %) • Backup count  
+Garbage Collector status • Last backup task status
+
 
   
 ---
