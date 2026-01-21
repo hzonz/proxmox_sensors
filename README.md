@@ -1,6 +1,5 @@
 <p align="center">
-  <img src="custom_components/proxmox_sensors
-/images/logo_int.png" alt="Proxmox Extended Sensors Logo" width="600"/>
+  <img src="/custom_components/proxmox_sensors/images/logo_int.png" alt="Proxmox Extended Sensors Logo" width="600"/>
 </p>
 
 
