@@ -52,45 +52,29 @@ This integration has been designed for advanced users who require full control o
 
 ---
   
-### 🖥️ Hardware Sensors (PVE & PBS)
-- CPU temperatures
-- VRM temperatures
-- NVMe / SSD / HDD temperatures
-- Fan speeds (RPM)
-- Voltages
-- Power sensors
-- Any sensor exposed by `pvesensors`
+| 🖥️ **Hardware Sensors (PVE & PBS)**             | 🧠 **Node Status**                   |
+|--------------------------------------------------|--------------------------------------|
+| - CPU temperatures                               | - CPU usage (%)                      |
+| - VRM temperatures                               | - RAM usage (%)                      |
+| - NVMe / SSD / HDD temperatures                  | - RAM used / total                   |
+| - Fan speeds (RPM)                               | - Uptime                             |
+| - Voltages                                       | - Load average                       |
+| - Power sensors                                  |                                      |
+| - Any sensor exposed by `pvesensors`             |                                      |
 
-### 🧠 Node Status
-- CPU usage (%)
-- RAM usage (%)
-- RAM used / total
-- Uptime
-- Load average
+| 💾 **Disks**                                     | 🖥️ **Virtual Machines (QEMU)**       |
+|--------------------------------------------------|--------------------------------------|
+| - Total capacity                                 | - CPU usage (%)                      |
+| - Used space (GB and %)                          | - RAM usage (%)                      |
+| - Wear-level (NVMe)                              | - Status (running / stopped)         |
+| - SMART health (if available)                    | - Automatic or manual selection      |
 
-### 💾 Disks
-- Total capacity
-- Used space (GB and %)
-- Wear-level (NVMe)
-- SMART health (if available)
-
-### 🖥️ Virtual Machines (QEMU)
-- CPU usage (%)
-- RAM usage (%)
-- Status (running / stopped)
-- Automatic or manual selection
-
-### 📦 Containers (LXC)
-- CPU usage (%)
-- RAM usage (%)
-- Status
-- Automatic or manual selection
-
-### 🗄️ Proxmox Backup Server (PBS)
-- Datastore usage (GB and %)
-- Backup count
-- Garbage Collector status
-- Last backup task status
+| 📦 **Containers (LXC)**                          | 🗄️ **Proxmox Backup Server (PBS)**   |
+|--------------------------------------------------|--------------------------------------|
+| - CPU usage (%)                                  | - Datastore usage (GB and %)         |
+| - RAM usage (%)                                  | - Backup count                       |
+| - Status                                         | - Garbage Collector status           |
+| - Automatic or manual selection                  | - Last backup task status            |
 
 ---
 
