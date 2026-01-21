@@ -1,10 +1,40 @@
 # 🚀 Proxmox Sensors Extended
-**La integración más completa, eficiente y organizada para monitorizar Proxmox VE y PBS desde Home Assistant.**
+**The most comprehensive, efficient, and organized integration for monitoring Proxmox VE and PBS from Home Assistant.**
 
-Esta integración ha sido diseñada para usuarios avanzados que necesitan un control total sobre su hardware sin sobrecargar su servidor. A diferencia de otras soluciones, Proxmox Sensors Extended se enfoca en la eficiencia energética, la seguridad mediante Tokens y una organización visual impecable.
+This integration has been designed for advanced users who require full control over their hardware without overloading their server. Unlike other solutions, Proxmox Sensors Extended focuses on energy efficiency, secure Token-based authentication, and impeccable visual organization.
 
-## ✨ Features
+## 🔥 Key Features
 
+### 🌡️ Deep Hardware Monitoring
+
+**Don't settle for just CPU usage. See what is actually happening "under the hood":**
+
+* **Real-time Temperatures: CPU Cores, VRM, and NVMe/SSD/HDD drives.**
+
+* **Mechanical Sensors: Fan speeds (RPM) and motherboard voltages.**
+
+* **Smart Sensors: Only entities that report valid data are created, keeping your system clutter-free.**
+
+**(Note: Requires installing lm-sensors on the Proxmox host).**
+
+### 🧠 Performance-Focused
+
+**Designed with resource-constrained hardware in mind (such as i5-6500T or Optiplex mini PCs):**
+
+* **DataUpdateCoordinator: Minimizes calls to the Proxmox API to avoid saturating the server's processor.**
+
+* **Silent SSL: Automatic verification of SSL certificates (including self-signed) without spamming your error logs.**
+
+### 🗄️ Advanced Proxmox Backup Server (PBS)
+* **External Mode: Seamlessly connect to remote PBS servers using only the domain.**
+
+* **Task Monitoring: Detailed status of the last Backup, Garbage Collector, or Verify task.**
+
+### 🎨 Dynamic & Organized UI
+* **Smart Dashboard: Sensors are automatically grouped into devices: 1. Node, 2. Physical Disks, 3. VMs, 4. Containers.**
+
+* **Auto-Naming: Automatic prefixes (e.g., pv1-cpu-temp) so your dashboards stay logically ordered by themselves.**
+  
 ### 🖥️ Hardware Sensors (PVE & PBS)
 - CPU temperatures
 - VRM temperatures
