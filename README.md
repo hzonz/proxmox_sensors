@@ -1,10 +1,7 @@
-# Proxmox Sensors Extended
+# 🚀 Proxmox Sensors Extended
+**La integración más completa, eficiente y organizada para monitorizar Proxmox VE y PBS desde Home Assistant.**
 
-An advanced integration for **Proxmox VE (PVE)** and **Proxmox Backup Server (PBS)** that brings detailed hardware, node, disk, VM, container, and datastore metrics into Home Assistant.
-
-This project aims to be **more complete, more modular, and faster** than the official Proxmox integration, while remaining easy to configure through the Home Assistant UI.
-
----
+Esta integración ha sido diseñada para usuarios avanzados que necesitan un control total sobre su hardware sin sobrecargar su servidor. A diferencia de otras soluciones, Proxmox Sensors Extended se enfoca en la eficiencia energética, la seguridad mediante Tokens y una organización visual impecable.
 
 ## ✨ Features
 
