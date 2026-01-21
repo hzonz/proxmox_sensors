@@ -30,7 +30,7 @@ This integration has been designed for advanced users who require full control o
 
 ### 🧠 Performance-Focused
 
-**Designed with resource-constrained hardware in mind (such as i5-6500T or Optiplex mini PCs):**
+**Designed with resource-constrained hardware in mind:**
 
 * **DataUpdateCoordinator: Minimizes calls to the Proxmox API to avoid saturating the server's processor.**
 
