@@ -28,7 +28,7 @@ Un "Rol" define qué puede hacer la integración.
 
 ---
   
-##3. Creación del Usuario
+## 4. Creación del Usuario
 1. **Ve a Datacenter > Permissions > Users.**
 
 2. **Haz clic en Add.**
@@ -39,7 +39,7 @@ Un "Rol" define qué puede hacer la integración.
 
 ---
 
-## 4. Asignación del Rol
+## 5. Asignación del Rol
 **Debes decirle a Proxmox que ese usuario tiene el rol que creamos:**
 
 1. Ve a **Datacenter > Permissions**.
@@ -51,7 +51,7 @@ Un "Rol" define qué puede hacer la integración.
 
 ---
 
-## 5. Generación del API Token (Obligatorio para PBS)
+## 6. Generación del API Token (Obligatorio para PBS)
 **Si vas a monitorizar un PBS o prefieres no usar contraseñas en PVE, realiza estos pasos:**
 
 1. Ve a **Datacenter > Permissions > API Tokens**.
