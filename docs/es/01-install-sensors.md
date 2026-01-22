@@ -41,6 +41,10 @@ nano /etc/systemd/system/proxmox-sensors.service
 ### B. Configuración del servicio
 **Copia y pega el siguiente bloque. Este diseño asegura que el servicio sea ligero y se reinicie solo si ocurre algún fallo:**
 
+💡 Tip para novatos: > * En la mayoría de terminales de Proxmox, se pega haciendo clic derecho con el ratón o pulsando Shift + Insert.
+
+* El atajo habitual Ctrl + V no suele funcionar aquí.
+
 `Ini, TOML`
 ```
 [Unit]
