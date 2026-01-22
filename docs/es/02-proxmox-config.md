@@ -64,4 +64,15 @@ Un "Rol" define qué puede hacer la integración.
     * **Secret:** (Una cadena larga de letras y números).
 
 > [!WARNING]
-> **Copia el "Secret" ahora y guárdalo en un lugar seguro.** Una vez cierres esta ventana, Proxmox no te lo volverá a mostrar nunca más por motivos de seguridad. Si lo pierdes, tendrás que borrar el token y crear uno nuevo.
+> **Copia el "Secret" ahora y guárdalo en un lugar seguro.** Una vez cierres esta ventana, Proxmox no te lo volverá a mostrar nunca más por motivos de seguridad.
+
+
+> [!TIP]
+> ### 💡 ¿Has olvidado copiar el Secret?
+> No te preocupes. Aunque Proxmox no te lo vuelve a mostrar por seguridad, no es necesario borrar el token y empezar de cero:
+> 
+> 1. En la lista de **API Tokens**, selecciona el token que ya habías creado.
+> 2. Haz clic en el botón **Regenerate**.
+> 3. El sistema invalidará la clave vieja inmediatamente y te entregará un **Secret nuevo**.
+> 
+> *Recuerda que si regeneras el Secret, deberás actualizarlo en la configuración de Home Assistant para que la integración vuelva a conectar.*
