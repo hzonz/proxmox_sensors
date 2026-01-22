@@ -17,7 +17,11 @@ sensors-detect
 **Responde YES (o pulsa Enter) a todas las preguntas. Al finalizar, el sistema identificará los módulos necesarios (ej. coretemp, nct6775).**
 
 ## 3. Persistencia de módulos
-**Para que los sensores se activen solos al reiniciar el servidor, debemos añadir los módulos detectados al archivo de configuración de carga:**
+**Para que los sensores se activen solos al reiniciar el servidor, el asistente sensors-detect te hará una pregunta clave al final del todo:**
+```
+Do you want to add these lines automatically to /etc/modules? (yes/NO)
+```
+[!CAUTION] Debes escribir `yes` manualmente y pulsar Enter. **Si solo pulsas Enter sin escribir nada, el sistema seleccionará NO por defecto y los sensores no cargarán tras un reinicio.**
 
 ```Bash
 # Sustituye 'modulo_detectado' por los nombres que dio el comando anterior
@@ -36,7 +40,7 @@ nano /etc/systemd/system/proxmox-sensors.service
 ### B. Configuración del servicio
 **Copia y pega el siguiente bloque. Este diseño asegura que el servicio sea ligero y se reinicie solo si ocurre algún fallo:**
 
-Ini, TOML
+`Ini, TOML`
 ```
 [Unit]
 Description=API de Sensores para Home Assistant
