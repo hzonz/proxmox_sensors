@@ -8,7 +8,7 @@
 apt update && apt install lm-sensors -y
 ```
 
-##2. Detección de hardware
+## 2. Detección de hardware
 * **Para que el sistema sepa qué controladores (drivers) necesita, ejecutamos el asistente de detección:**
 
 ```Bash
@@ -16,7 +16,7 @@ sensors-detect
 ```
 **Responde YES (o pulsa Enter) a todas las preguntas. Al finalizar, el sistema identificará los módulos necesarios (ej. coretemp, nct6775).**
 
-##3. Persistencia de módulos
+## 3. Persistencia de módulos
 **Para que los sensores se activen solos al reiniciar el servidor, debemos añadir los módulos detectados al archivo de configuración de carga:**
 
 ```Bash
@@ -24,16 +24,16 @@ sensors-detect
 echo "modulo_detectado" >> /etc/modules
 ```
 
-##4. Servicio de Telemetría (Arranque Automático)
+## 4. Servicio de Telemetría (Arranque Automático)
 **Para que Home Assistant pueda leer estos datos de forma continua, configuraremos el script de la API como un servicio del sistema (systemd). Esto garantiza que, aunque el servidor se reinicie, el servicio arrancará automáticamente.**
 
-###A. Crear el archivo del servicio
+### A. Crear el archivo del servicio
 
 ```Bash
 nano /etc/systemd/system/proxmox-sensors.service
 ```
 
-###B. Configuración del servicio
+### B. Configuración del servicio
 **Copia y pega el siguiente bloque. Este diseño asegura que el servicio sea ligero y se reinicie solo si ocurre algún fallo:**
 
 Ini, TOML
@@ -54,7 +54,7 @@ RestartSec=10
 WantedBy=multi-user.target
 ```
 
-###C. Activación del servicio
+### C. Activación del servicio
 **Ejecuta estos comandos para registrar y activar el arranque automático:**
 
 ```Bash
@@ -68,7 +68,7 @@ systemctl enable proxmox-sensors.service
 systemctl start proxmox-sensors.service
 ```
 
-#✅ Verificación
+# ✅ Verificación
 **Para confirmar que el servicio está funcionando y programado para el próximo reinicio, ejecuta:**
 
 ```Bash
