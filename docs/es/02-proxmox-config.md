@@ -17,6 +17,8 @@ Antes de empezar, debes tener en cuenta:
 
 2. Haz clic en Create y ponle de nombre HA-Monitor.
 
+---
+
 ## 3. Creación del Rol (Permisos)
 Un "Rol" define qué puede hacer la integración.
 1. Ve a **Datacenter > Permissions > Roles**.
