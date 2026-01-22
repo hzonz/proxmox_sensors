@@ -48,3 +48,16 @@ Una vez que hagas clic en enviar, la integración (en modo PVE) escaneará tu se
 
 > [!TIP]
 > **Solo selecciona lo que realmente necesites.** Esto mantendrá tu Home Assistant limpio y con mejor rendimiento.
+
+## ⚠️ Nota importante para PBS en entornos compartidos (Ej. Tuxis)
+
+Si utilizas la versión gratuita de **Tuxis** o proveedores similares de PBS gestionado, debes entender que la integración tendrá limitaciones importantes. Esto ocurre porque tu instancia de PBS corre en un **entorno compartido (Multi-tenant)** y no en un servidor dedicado.
+
+### ¿Por qué no verás todos los sensores?
+A diferencia de un Proxmox local, en estos servicios:
+* **No hay acceso al Hardware Real:** No tienes acceso al filesystem real ni al almacenamiento físico directo.
+* **Infraestructura Oculta:** No puedes monitorizar el backend (Ceph/ZFS) que ellos utilizan, ya que es propiedad del proveedor.
+* **Privacidad y Seguridad:** El proveedor bloquea el acceso a métricas globales del sistema para evitar que un cliente pueda inferir información sobre otros usuarios o sobre la carga total de su infraestructura.
+* **Sin permisos de Root:** Al no tener acceso a la raíz (`/`) del sistema, no se pueden extraer datos de sensores de temperatura o revoluciones de ventiladores del nodo.
+
+**Resultado:** En estos casos, la integración no mostrara nada, tan solo sensores sin informacion. Trabajaremos para intentar mostrar los datos del datacenter personal en futuras versiones.
