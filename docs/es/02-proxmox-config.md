@@ -11,17 +11,17 @@ Antes de empezar, debes tener en cuenta:
 ## 2. Creación del Rol (Permisos)
 **Un "Rol" define qué puede hacer la integración.**
 
-1 .Ve a Datacenter > Permissions > Roles.
+1. Ve a Datacenter > Permissions > Roles.
 
 2. Haz clic en Create y ponle de nombre HA-Monitor.
 
 3. Selecciona los siguientes privilegios (Privileges):
 
-* Sys.Audit: Permite ver el estado del nodo (CPU, RAM).
+  * Sys.Audit: Permite ver el estado del nodo (CPU, RAM).
 
-* VM.Audit: Permite ver el estado de las VMs y contenedores.
+  * VM.Audit: Permite ver el estado de las VMs y contenedores.
 
-* Datastore.Audit: Permite ver el espacio en disco.
+  * Datastore.Audit: Permite ver el espacio en disco.
 
 ##3. Creación del Usuario
 1. **Ve a Datacenter > Permissions > Users.**
