@@ -50,7 +50,7 @@ En otras palabras:
 
 ---
 
-##🟧 1. Instalación de paquetes
+## 🟧 1. Instalación de paquetes
 Ejecuta en el nodo Proxmox:
 
 ```bash
@@ -69,8 +69,9 @@ scripts de detección
 🟧 2. Detección automática de sensores
 Ejecuta:
 
-bash
+```bash
 sensors-detect
+```
 Responde YES a todas las preguntas seguras.
 
 Al final verás algo como:
@@ -104,7 +105,7 @@ Core 0:        38.0°C
 Core 1:        39.0°C
 Si ves lecturas, los sensores están funcionando.
 
-🟧 4. Crear un servicio systemd para inicializar los sensores
+## 🟧 4. Crear un servicio systemd para inicializar los sensores
 Aunque lm-sensors no necesita ejecutarse como daemon, Proxmox a veces no ejecuta correctamente el script de inicialización.
 Por eso creamos un servicio systemd moderno que:
 
