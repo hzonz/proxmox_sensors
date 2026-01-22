@@ -1,8 +1,8 @@
-#📘 Instalación y configuración de lm‑sensors en Proxmox
+# 📘 Instalación y configuración de lm‑sensors en Proxmox
 
 (con servicio systemd que no consume recursos)
 
-##🟦 Introducción
+## 🟦 Introducción
 
 **lm-sensors es una herramienta que permite leer temperaturas, voltajes y velocidades de ventiladores directamente desde el hardware del nodo Proxmox.**
 
@@ -22,7 +22,7 @@
 
 ---
 
-###🟩 ¿Consume recursos lm‑sensors?
+### 🟩 ¿Consume recursos lm‑sensors?
 **No.**
 lm-sensors no es un demonio, no se queda ejecutándose en segundo plano y no usa CPU ni RAM de forma continua.
 
