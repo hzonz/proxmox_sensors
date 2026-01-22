@@ -8,6 +8,8 @@ Antes de empezar, debes tener en cuenta:
 
 * **Proxmox Backup Server (PBS): Es imprescindible usar un API Token. Los métodos de login tradicionales a menudo fallan por restricciones de seguridad o permisos en el Datastore.**
 
+---
+
 ## 2. Creación del Rol (Permisos)
 **Un "Rol" define qué puede hacer la integración.**
 
@@ -23,7 +25,8 @@ Un "Rol" define qué puede hacer la integración.
     * `Sys.Audit`: Permite ver el estado del nodo (CPU, RAM).
     * `VM.Audit`: Permite ver el estado de las VMs y contenedores.
     * `Datastore.Audit`: Permite ver el espacio en disco.
-  
+
+---
   
 ##3. Creación del Usuario
 1. **Ve a Datacenter > Permissions > Users.**
@@ -33,6 +36,8 @@ Un "Rol" define qué puede hacer la integración.
 3. **Usuario: homeassistant (puedes dejar el realm como pve).**
 
 4. **Dale una contraseña segura si vas a usar este método para PVE.**
+
+---
 
 ## 4. Asignación del Rol
 **Debes decirle a Proxmox que ese usuario tiene el rol que creamos:**
