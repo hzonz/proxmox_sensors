@@ -1,6 +1,9 @@
 #📘 Instalación y configuración de lm‑sensors en Proxmox
+
 (con servicio systemd que no consume recursos)
+
 ##🟦 Introducción
+
 **lm-sensors es una herramienta que permite leer temperaturas, voltajes y velocidades de ventiladores directamente desde el hardware del nodo Proxmox.**
 
 **Es imprescindible para exponer métricas fiables al sistema y, por extensión, a integraciones externas como Home Assistant.**
