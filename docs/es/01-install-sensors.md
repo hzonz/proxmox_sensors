@@ -3,3 +3,7 @@
 
 ## 1. Instalación de dependencias
 * **Primero, instalamos las herramientas necesarias para leer los sensores integrados en la placa base y la CPU:**
+
+```bash
+apt update && apt install lm-sensors -y
+```
