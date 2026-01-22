@@ -21,7 +21,8 @@ sensors-detect
 ```
 Do you want to add these lines automatically to /etc/modules? (yes/NO)
 ```
-[!CAUTION] Debes escribir `yes` manualmente y pulsar Enter. **Si solo pulsas Enter sin escribir nada, el sistema seleccionará NO por defecto y los sensores no cargarán tras un reinicio.**
+> [!CAUTION]
+> **Debes escribir `yes` manualmente y pulsar Enter.** Si solo pulsas Enter sin escribir nada, el sistema seleccionará `NO` por defecto y los sensores no cargarán tras un reinicio.
 
 ```Bash
 # Sustituye 'modulo_detectado' por los nombres que dio el comando anterior
