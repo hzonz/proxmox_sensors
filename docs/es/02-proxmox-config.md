@@ -34,36 +34,29 @@ Un "Rol" define qué puede hacer la integración.
 
 4. **Dale una contraseña segura si vas a usar este método para PVE.**
 
-##4. Asignación del Rol
+## 4. Asignación del Rol
 **Debes decirle a Proxmox que ese usuario tiene el rol que creamos:**
 
-Ve a Datacenter > Permissions.
+1. Ve a **Datacenter > Permissions**.
+2. Haz clic en **Add > User Permission**.
+3. Configura los siguientes campos:
+    * **Path:** `/` (Esto es muy importante para que la integración pueda ver todo el servidor).
+    * **User:** `homeassistant@pve` (o el usuario que hayas creado).
+    * **Role:** `HA-Monitor`.
 
-Haz clic en Add > User Permission.
+---
 
-Path: / (Esto es muy importante para que vea todo el servidor).
+## 5. Generación del API Token (Obligatorio para PBS)
+**Si vas a monitorizar un PBS o prefieres no usar contraseñas en PVE, realiza estos pasos:**
 
-User: homeassistant@pve.
+1. Ve a **Datacenter > Permissions > API Tokens**.
+2. Haz clic en **Add** y rellena el formulario:
+    * **User:** Selecciona el usuario `homeassistant`.
+    * **Token ID:** `ha-token` (puedes elegir el nombre que quieras).
+    * **Privilege Separation:** ⚠️ **DESMARCA esta casilla**. Si la dejas marcada, el Token no heredará los permisos del usuario y la integración fallará.
+3. Al hacer clic en **Add**, se abrirá una ventana con dos datos clave:
+    * **Token ID:** (Ejemplo: `homeassistant@pve!ha-token`).
+    * **Secret:** (Una cadena larga de letras y números).
 
-Role: HA-Monitor.
-
-5. Generación del API Token (Obligatorio para PBS)
-Si vas a monitorizar un PBS o prefieres no usar contraseñas en PVE, haz lo siguiente:
-
-Ve a Datacenter > Permissions > API Tokens.
-
-Haz clic en Add.
-
-Selecciona el usuario homeassistant.
-
-Token ID: ha-token (por ejemplo).
-
-IMPORTANTE: Desmarca la casilla "Privilege Separation". Si la dejas marcada, tendrías que volver a asignar permisos específicos al Token, lo cual complica el proceso.
-
-Al darle a Add, aparecerán dos códigos:
-
-Token ID: (Algo parecido a homeassistant@pve!ha-token).
-
-Secret: (Una cadena larga de letras y números).
-
-[!WARNING] Copia el "Secret" ahora y guárdalo en un lugar seguro. Una vez cierres la ventana, Proxmox no te lo volverá a mostrar nunca más por seguridad.
+> [!WARNING]
+> **Copia el "Secret" ahora y guárdalo en un lugar seguro.** Una vez cierres esta ventana, Proxmox no te lo volverá a mostrar nunca más por motivos de seguridad. Si lo pierdes, tendrás que borrar el token y crear uno nuevo.
