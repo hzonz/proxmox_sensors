@@ -41,7 +41,7 @@ nano /etc/systemd/system/proxmox-sensors.service
 ### B. Configuración del servicio
 **Copia y pega el siguiente bloque. Este diseño asegura que el servicio sea ligero y se reinicie solo si ocurre algún fallo:**
 
-💡 Tip para novatos: > * En la mayoría de terminales de Proxmox, se pega haciendo clic derecho con el ratón o pulsando Shift + Insert.
+**💡 Tip para novatos: > * En la mayoría de terminales de Proxmox, se pega haciendo clic derecho con el ratón o pulsando Shift + Insert.**
 
 * El atajo habitual Ctrl + V no suele funcionar aquí.
 
@@ -54,7 +54,7 @@ After=network.target
 [Service]
 Type=simple
 User=root
-# Asegúrate de que la ruta al script sea la correcta
+# ⚠️ IMPORTANTE: Cambia la ruta de abajo por la ubicación REAL de tu script
 ExecStart=/usr/bin/python3 /ruta/al/archivo/sensor_script.py
 Restart=always
 RestartSec=10
@@ -62,8 +62,14 @@ RestartSec=10
 [Install]
 WantedBy=multi-user.target
 ```
+### C. Guardar y salir
+**Una vez hayas pegado el código anterior, debes guardar el archivo siguiendo estos pasos en tu teclado:**
 
-### C. Activación del servicio
+1. Pulsa Ctrl + O (eso significa "escribir/guardar").
+2. Pulsa Enter para confirmar el nombre del archivo.
+3. Pulsa Ctrl + X para salir del editor y volver a la terminal.
+
+### D. Activación del servicio
 **Ejecuta estos comandos para registrar y activar el arranque automático:**
 
 ```Bash
