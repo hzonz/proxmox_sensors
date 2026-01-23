@@ -29,7 +29,7 @@ Preguntas comunes, problemas conocidos y cómo resolverlos.
 </p>
 
 ---
-# 🚀 Proxmox Sensors Extended
+# 🚀 Proxmox Extended Sensors
 
 **La integración más completa, eficiente y organizada para monitorizar Proxmox VE y PBS desde Home Assistant.**
 
