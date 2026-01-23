@@ -84,6 +84,15 @@ This integration has been designed for advanced users who require full control o
 * **Auto-Naming: Automatic prefixes (e.g., pv1-cpu-temp) so your dashboards stay logically ordered by themselves.**
 
 ---
+**Dashboard Example**
+
+
+<p align="center">
+
+  <img src="/img/Dashboard.png" alt="Proxmox Extended Sensors Dashboard" width="1000"/>
+
+</p>
+---
 
 ## Featured Sensors
 
@@ -139,16 +148,7 @@ Garbage Collector status • Last backup task status
 
 • Complete Tasks Information and more 
 
----
 
-**Dashboard Example**
-
-
-<p align="center">
-
-  <img src="/img/Dashboard.png" alt="Proxmox Extended Sensors Dashboard" width="1000"/>
-
-</p>
 
 
 
