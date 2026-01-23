@@ -36,13 +36,10 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    # --------------------------------------------------------
-    #  INITIALIZATION
-    # --------------------------------------------------------
     def __init__(self):
+        """Initialize temporary config storage."""
         self._config = {}
         self._use_token = False
-
 
     # ========================================================
     #  STEP 1 — USER INPUT (HOST + SERVER TYPE)
@@ -62,12 +59,11 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             })
         )
 
-
     # ========================================================
     #  STEP 2 — AUTH METHOD (PASSWORD OR TOKEN)
     # ========================================================
     async def async_step_auth_method(self, user_input=None) -> FlowResult:
-        """Step 2: Choose between password or token."""
+        """Step 2: Choose between password or token authentication."""
 
         if user_input is not None:
             self._use_token = user_input.get("use_token", False)
@@ -80,7 +76,6 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             })
         )
 
-
     # ========================================================
     #  STEP 3 — CREDENTIALS (USER + TOKEN/PASSWORD)
     #            + NODE SELECTION (ONLY PVE)
@@ -91,14 +86,12 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._config.update(user_input)
 
-            # Si PVE
             if self._config[CONF_PLATFORM_TYPE] == "PVE":
                 return await self.async_step_select_resources()
 
-            # Si PBS
             return await self._finish()
 
-        # ---------- Build dynamic schema ----------
+        # Build dynamic schema
         schema_dict = {vol.Required(CONF_USER): str}
 
         if self._use_token:
@@ -107,35 +100,30 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         else:
             schema_dict[vol.Required(CONF_PASSWORD)] = str
 
-        # Node PVE
         if self._config[CONF_PLATFORM_TYPE] == "PVE":
             schema_dict[vol.Required(CONF_NODE)] = str
 
-        # Options
         schema_dict[vol.Optional("enable_lm_sensors", default=True)] = bool
-        schema_dict[vol.Optional("install_dashboard", default=False)] = bool
 
         return self.async_show_form(
             step_id="credentials",
             data_schema=vol.Schema(schema_dict)
         )
 
-
     # ========================================================
     #  STEP 4 — SELECT RESOURCES (ONLY FOR PVE)
     # ========================================================
     async def async_step_select_resources(self, user_input=None) -> FlowResult:
-        """Step 4: Select resources (Only for PVE)."""
+        """Step 4: Select resources to monitor (only for PVE)."""
 
         if user_input is not None:
-            # Save User Options
             self._config["selected_vms"] = user_input.get("vms", [])
             self._config["selected_cts"] = user_input.get("cts", [])
             self._config["selected_storage"] = user_input.get("storage", [])
             self._config["enable_physical_disks"] = user_input.get("enable_physical_disks", True)
             return await self._finish()
 
-        # ---------- Fetch resources from PVE ----------
+        # Fetch resources from PVE
         client = ProxmoxClient(
             host=self._config[CONF_HOST],
             user=self._config[CONF_USER],
@@ -153,7 +141,6 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             cts_data = await client.get_containers(self.hass, node) or []
             storage_data = await client.get_storages(self.hass, node) or []
 
-            # ---------- Build selection lists ----------
             vm_options = {
                 str(v["vmid"]): f"{v['vmid']} ({v.get('name', 'VM')})"
                 for v in vms_data if "vmid" in v
@@ -181,28 +168,19 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.error("Error fetching resources: %s", e)
             return await self._finish()
 
-
     # ========================================================
     #  FINAL STEP — CREATE ENTRY
     # ========================================================
     async def _finish(self):
-        """Finalize the configuration entry."""
+        """Finalize and create the configuration entry."""
 
-        # PBS asign node
         if CONF_NODE not in self._config:
             self._config[CONF_NODE] = "Proxmox"
 
-        # ----------------------------------------------------
-        # PBS: generate unique server_id (pbs_1, pbs_2, ...)
-        # ----------------------------------------------------
         if self._config.get(CONF_PLATFORM_TYPE) == "PBS":
             entries = self.hass.config_entries.async_entries(DOMAIN)
             pbs_entries = [e for e in entries if e.data.get(CONF_PLATFORM_TYPE) == "PBS"]
             self._config["server_id"] = f"pbs_{len(pbs_entries) + 1}"
-
-        # ----------------------------------------------------
-        # PVE keeps using the node as server_id
-        # ----------------------------------------------------
         else:
             self._config["server_id"] = self._config[CONF_NODE]
 
@@ -213,10 +191,6 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             title=f"{server_type}: {title_name}",
             data=self._config,
         )
-
-
-
-
 
     # ========================================================
     #  OPTIONS FLOW HANDLER

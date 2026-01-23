@@ -2,92 +2,68 @@
   "config": {
     "step": {
       "user": {
-        "title": "Conectar con Proxmox",
-        "description": "Introduce los datos de acceso a tu servidor Proxmox VE o PBS.",
+        "title": "1. Conexión al Servidor",
+        "description": "Introduce la dirección de tu Proxmox. El puerto se gestiona automáticamente (8006 para PVE / 8007 para PBS).",
         "data": {
-          "host": "Host",
-          "user": "Usuario",
+          "host": "Dirección del Servidor (IP o FQDN)",
+          "platform_type": "Tipo de Servidor"
+        }
+      },
+      "auth_method": {
+        "title": "2. Método de Autenticación",
+        "description": "¿Deseas usar Usuario/Contraseña o un Token de API seguro?",
+        "data": {
+          "use_token": "Usar Token de API (Recomendado)"
+        }
+      },
+      "credentials": {
+        "title": "3. Credenciales de Acceso",
+        "description": "Introduce los datos para conectar con el servidor.",
+        "data": {
+          "username": "Usuario (ej: root@pam o admin@pve)",
           "password": "Contraseña",
-          "node": "Nodo",
-          "server_type": "Tipo de servidor"
+          "token_id": "Token ID (ej: usuario@pve!nombre)",
+          "token_secret": "Token Secret",
+          "node": "Nombre del Nodo Proxmox (Solo PVE)",
+          "enable_lm_sensors": "Monitorizar temperaturas (lm-sensors)"
         }
       },
-      "select_features": {
-        "title": "Seleccionar características",
-        "description": "Elige qué sensores quieres activar.",
+      "select_resources": {
+        "title": "4. Selección de Recursos",
+        "description": "Selecciona qué elementos quieres monitorizar. Solo los marcados crearán entidades.",
         "data": {
-          "enable_hardware": "Sensores hardware",
-          "enable_node": "Sensores del nodo",
-          "enable_disks": "Sensores de discos",
-          "enable_vms": "Máquinas virtuales",
-          "enable_cts": "Contenedores",
-          "enable_pbs_datastores": "Datastores PBS",
-          "enable_pbs_tasks": "Tareas PBS"
-        }
-      },
-      "select_hardware_sensors": {
-        "title": "Seleccionar sensores hardware",
-        "description": "Elige los sensores hardware que quieres monitorizar.",
-        "data": {
-          "hardware_sensors": "Sensores disponibles"
-        }
-      },
-      "select_node_sensors": {
-        "title": "Seleccionar sensores del nodo",
-        "description": "Elige los sensores del nodo que quieres activar.",
-        "data": {
-          "node_sensors": "Sensores del nodo"
-        }
-      },
-      "select_disks": {
-        "title": "Seleccionar discos",
-        "description": "Elige los discos que quieres monitorizar.",
-        "data": {
-          "disks": "Discos detectados"
-        }
-      },
-      "vm_mode": {
-        "title": "Modo de selección de VMs",
-        "description": "Elige si quieres monitorizar todas las VMs o solo algunas.",
-        "data": {
-          "vm_mode": "Modo"
-        }
-      },
-      "select_vms": {
-        "title": "Seleccionar VMs",
-        "description": "Elige las máquinas virtuales que quieres monitorizar.",
-        "data": {
-          "vms": "Máquinas virtuales"
-        }
-      },
-      "ct_mode": {
-        "title": "Modo de selección de contenedores",
-        "description": "Elige si quieres monitorizar todos los contenedores o solo algunos.",
-        "data": {
-          "ct_mode": "Modo"
-        }
-      },
-      "select_containers": {
-        "title": "Seleccionar contenedores",
-        "description": "Elige los contenedores que quieres monitorizar.",
-        "data": {
-          "cts": "Contenedores"
-        }
-      },
-      "select_datastores": {
-        "title": "Seleccionar datastores PBS",
-        "description": "Elige los datastores PBS que quieres monitorizar.",
-        "data": {
-          "datastores": "Datastores"
+          "vms": "Máquinas Virtuales (VM)",
+          "cts": "Contenedores (LXC)",
+          "storage": "Almacenamiento (Storage)",
+          "enable_physical_disks": "Monitorizar Discos Físicos"
         }
       }
     },
     "error": {
-      "invalid_auth": "Autenticación incorrecta",
-      "cannot_connect": "No se pudo conectar con el servidor"
+      "cannot_connect": "Error de conexión. Revisa la dirección host.",
+      "invalid_auth": "Autenticación fallida. Revisa credenciales o permisos del Token.",
+      "unknown": "Error inesperado. Revisa los logs de Home Assistant."
     },
     "abort": {
-      "reauth_successful": "Reautenticación completada correctamente"
+      "already_configured": "Este nodo ya está configurado."
+    }
+  },
+  "options": {
+    "abort": {
+      "pbs_no_options": "Este servidor PBS no tiene opciones asociadas."
+    },
+    "step": {
+      "init": {
+        "title": "Opciones de Proxmox Sensors",
+        "description": "Modifica qué recursos quieres seguir monitorizando en este nodo.",
+        "data": {
+          "vms": "Seleccionar Máquinas Virtuales (VM)",
+          "cts": "Seleccionar Contenedores (LXC)",
+          "storage": "Seleccionar Almacenamiento",
+          "enable_lm_sensors": "Activar sensores de hardware (lm-sensors)",
+          "enable_physical_disks": "Activar sensores de discos físicos"
+        }
+      }
     }
   }
 }

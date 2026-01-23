@@ -1,0 +1,66 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "1. Conexión al Servidor",
+        "description": "Introduce la dirección de tu Proxmox. El puerto se gestiona automáticamente (8006 para PVE / 8007 para PBS).",
+        "data": {
+          "host": "Dirección del Servidor (IP o FQDN)",
+          "platform_type": "Tipo de Servidor"
+        }
+      },
+      "auth_method": {
+        "title": "2. Método de Autenticación",
+        "description": "¿Deseas usar Usuario/Contraseña o un Token de API seguro?",
+        "data": {
+          "use_token": "Usar Token de API (Recomendado)"
+        }
+      },
+      "credentials": {
+        "title": "3. Credenciales de Acceso",
+        "description": "Introduce los datos para conectar con el servidor.",
+        "data": {
+          "username": "Usuario (ej: root@pam o admin@pve)",
+          "password": "Contraseña",
+          "token_id": "Token ID (ej: usuario@pve!nombre)",
+          "token_secret": "Token Secret",
+          "node": "Nombre del Nodo Proxmox (Solo PVE)",
+          "enable_lm_sensors": "Monitorizar temperaturas (lm-sensors)"
+        }
+      },
+      "select_resources": {
+        "title": "4. Selección de Recursos",
+        "description": "Selecciona qué elementos quieres monitorizar. Solo los marcados crearán entidades en Home Assistant.",
+        "data": {
+          "vms": "Máquinas Virtuales (VM)",
+          "cts": "Contenedores (LXC)",
+          "storage": "Almacenamiento (Storage)",
+          "enable_physical_disks": "Monitorizar Discos Físicos"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Error de conexión. Revisa la dirección host.",
+      "invalid_auth": "Autenticación fallida. Revisa credenciales o permisos del Token.",
+      "unknown": "Error inesperado. Revisa los logs de Home Assistant."
+    },
+    "abort": {
+      "already_configured": "Este nodo ya está configurado."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opciones de Proxmox Sensors",
+        "description": "Modifica qué recursos quieres seguir monitorizando en este nodo.",
+        "data": {
+          "vms": "Seleccionar Máquinas Virtuales (VM)",
+          "cts": "Seleccionar Contenedores (LXC)",
+          "storage": "Seleccionar Almacenamiento",
+          "enable_lm_sensors": "Activar sensores de hardware (lm-sensors)",
+          "enable_physical_disks": "Activar sensores de discos físicos"
+        }
+      }
+    }
+  }
+}

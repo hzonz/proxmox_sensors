@@ -1,9 +1,12 @@
+"""Storage sensors for Proxmox storage pools."""
 from .base import ProxmoxBaseSensor
 from ..const import DOMAIN
 
 class ProxmoxStorageSensor(ProxmoxBaseSensor):
-    """Sensor principal para el porcentaje de uso del almacenamiento."""
+    """Main sensor for storage usage percentage."""
+
     def __init__(self, coordinator, storage_name, st, node=None):
+        """Initialize the storage usage sensor."""
         uid = f"proxmox_storage_{node}_{storage_name}_percent_v3"
         super().__init__(coordinator, storage_name, "Usage", "%", uid, node)
         
@@ -13,7 +16,7 @@ class ProxmoxStorageSensor(ProxmoxBaseSensor):
 
     @property
     def device_info(self):
-        """Dispositivo independiente para cada almacenamiento."""
+        """Define an independent device for each storage pool."""
         node_id = self._node.lower()
         return {
             "identifiers": {(DOMAIN, f"proxmox_storage_{node_id}_{self._storage_name}")},
@@ -24,6 +27,7 @@ class ProxmoxStorageSensor(ProxmoxBaseSensor):
         }
 
     def _get_value(self):
+        """Calculate the usage percentage for the storage pool."""
         storage_data = self.coordinator.data.get("storage", {}).get(self._storage_name, {})
         used = storage_data.get("used") or 0
         total = storage_data.get("total") or 0
@@ -32,8 +36,10 @@ class ProxmoxStorageSensor(ProxmoxBaseSensor):
         return round((used / total) * 100, 2)
 
 class ProxmoxStorageAttributeSensor(ProxmoxBaseSensor):
-    """Sensores para capacidades (GB) y metadatos del almacenamiento."""
+    """Sensors for storage capacities (GB) and metadata."""
+
     def __init__(self, coordinator, storage_name, st, label, key, node=None):
+        """Initialize storage attribute sensors (Size, Type, Path, etc.)."""
         uid = f"proxmox_storage_{node}_{storage_name}_{key}_v3"
         unit = "GB" if key in ("used", "avail", "total") else None
         
@@ -57,7 +63,7 @@ class ProxmoxStorageAttributeSensor(ProxmoxBaseSensor):
 
     @property
     def device_info(self):
-        """Agrupa los atributos en el mismo dispositivo de almacenamiento."""
+        """Group attributes under the same storage device."""
         node_id = self._node.lower()
         return {
             "identifiers": {(DOMAIN, f"proxmox_storage_{node_id}_{self._storage_name}")},
@@ -65,8 +71,10 @@ class ProxmoxStorageAttributeSensor(ProxmoxBaseSensor):
         }
 
     def _get_value(self):
+        """Return the specific attribute value after formatting."""
         storage_data = self.coordinator.data.get("storage", {}).get(self._storage_name, {})
         
+        # Handle the content path or identifier
         if self._key == "path":
             return storage_data.get("content") or storage_data.get("storage") or "N/A"
             
@@ -75,10 +83,12 @@ class ProxmoxStorageAttributeSensor(ProxmoxBaseSensor):
         if value is None or value == "":
             return "Unknown" if not self.unit_of_measurement else 0
 
+        # Convert bytes to Gigabytes for capacity attributes
         if self._key in ("used", "avail", "total"):
             try:
                 return round(float(value) / (1024**3), 2)
             except (ValueError, TypeError):
                 return 0
 
+        # Capitalize the storage type (e.g., lvmthin -> Lvmthin)
         return str(value).capitalize() if self._key == "type" else value

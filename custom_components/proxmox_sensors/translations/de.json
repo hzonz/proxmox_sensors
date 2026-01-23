@@ -1,0 +1,69 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "1. Server-Verbindung",
+        "description": "Geben Sie die Adresse Ihres Proxmox-Servers ein. Die Ports werden automatisch verwaltet (8006 für PVE / 8007 für PBS).",
+        "data": {
+          "host": "Server-Adresse (IP oder FQDN)",
+          "platform_type": "Server-Typ"
+        }
+      },
+      "auth_method": {
+        "title": "2. Authentifizierungsmethode",
+        "description": "Möchten Sie Benutzername/Passwort oder ein sicheres API-Token verwenden?",
+        "data": {
+          "use_token": "API-Token verwenden (Empfohlen)"
+        }
+      },
+      "credentials": {
+        "title": "3. Zugangsdaten",
+        "description": "Geben Sie die Zugangsdaten für die Verbindung zum Server ein.",
+        "data": {
+          "username": "Benutzername (z.B. root@pam)",
+          "password": "Passwort",
+          "token_id": "Token-ID (z.B. nutzer@pve!tokenname)",
+          "token_secret": "Token-Geheimnis",
+          "node": "Proxmox Node-Name (Nur für PVE erforderlich)",
+          "enable_lm_sensors": "Hardware-Temperaturen überwachen (lm-sensors)"
+        }
+      },
+      "select_resources": {
+        "title": "4. Ressourcenauswahl",
+        "description": "Wählen Sie aus, welche Elemente überwacht werden sollen. Nur markierte Elemente erstellen Entitäten.",
+        "data": {
+          "vms": "Virtuelle Maschinen (VM)",
+          "cts": "Container (LXC)",
+          "storage": "Speicher (Storage)",
+          "enable_physical_disks": "Physische Festplatten überwachen"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung fehlgeschlagen. Überprüfen Sie die Host-Adresse.",
+      "invalid_auth": "Authentifizierung fehlgeschlagen. Überprüfen Sie die Zugangsdaten oder Token-Berechtigungen.",
+      "unknown": "Unerwarteter Fehler. Bitte prüfen Sie die Home Assistant Logs."
+    },
+    "abort": {
+      "already_configured": "Dieser Knoten ist bereits konfiguriert."
+    }
+  },
+  "options": {
+    "abort": {
+      "pbs_no_options": "Für diesen PBS‑Server sind keine Optionen verfügbar."
+    },
+    "step": {
+      "init": {
+        "title": "Proxmox Sensors Optionen",
+        "description": "Ändern Sie, welche Ressourcen für diesen Knoten überwacht werden sollen.",
+        "data": {
+          "vms": "Virtuelle Maschinen auswählen (VM)",
+          "cts": "Container auswählen (LXC)",
+          "storage": "Speicher auswählen",
+          "enable_lm_sensors": "Hardware-Sensoren aktivieren (lm-sensors)",
+          "enable_physical_disks": "Physische Festplattensensoren aktivieren"
+        }
+      }
+    }
+  }
+}

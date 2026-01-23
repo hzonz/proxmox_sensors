@@ -1,29 +1,30 @@
+"""Physical disk sensors for Proxmox."""
 from .base import ProxmoxBaseSensor
 from ..const import DOMAIN
 
 def _format_gb(value):
+    """Helper to convert bytes to GB."""
     try:
-        if value is None: return 0
+        if value is None:
+            return 0
         return round(float(value) / (1024 ** 3), 2)
     except (ValueError, TypeError):
         return 0
 
 class ProxmoxDiskSensor(ProxmoxBaseSensor):
     """
-    Sensor de capacidad de disco físico.
-    Agrupados en un sub-dispositivo vinculado al Nodo.
+    Physical disk capacity sensor.
+    Grouped into a sub-device linked to the main Node.
     """
 
     def __init__(self, coordinator, disk_id, node, label):
-        # Obtenemos la info del disco para el nombre
+        """Initialize the disk sensor."""
         disks = coordinator.data.get("disks", {})
         disk_info = disks.get(disk_id, {})
         self._model = disk_info.get("model", label or "Unknown")
         
-        # Nombre limpio: "CT1000P3SSD8 Size"
+        # Clean name example: "CT1000P3SSD8 Size"
         name = f"{self._model} Size"
-        
-        # ID Único v3
         unique_id = f"proxmox_disk_{node}_{disk_id}_v3"
 
         super().__init__(coordinator, disk_id, name, "GB", unique_id, node)
@@ -35,8 +36,7 @@ class ProxmoxDiskSensor(ProxmoxBaseSensor):
 
     @property
     def device_info(self):
-        """Agrupa todos los discos en un dispositivo vinculado al nodo principal."""
-        # Forzamos minúsculas en el nodo para que el vínculo 'via_device' no falle
+        """Group all disks into a device linked to the main node."""
         node_id = self._node.lower()
         
         return {
@@ -44,12 +44,11 @@ class ProxmoxDiskSensor(ProxmoxBaseSensor):
             "name": f"2. Disks: {self._node.capitalize()}",
             "manufacturer": "Proxmox",
             "model": "Physical Disks Storage",
-            # Esto vincula este dispositivo "hijo" al dispositivo "padre" (el Nodo)
             "via_device": (DOMAIN, f"proxmox_node_{node_id}"),
         }
 
     def _get_value(self):
-        """Extrae el tamaño del disco desde el coordinador."""
+        """Extract disk size from the coordinator."""
         disks = self.coordinator.data.get("disks", {})
         disk = disks.get(self._disk_id)
         
@@ -61,7 +60,7 @@ class ProxmoxDiskSensor(ProxmoxBaseSensor):
 
     @property
     def extra_state_attributes(self):
-        """Atributos adicionales en inglés."""
+        """Return additional disk attributes."""
         disks = self.coordinator.data.get("disks", {})
         disk = disks.get(self._disk_id)
 

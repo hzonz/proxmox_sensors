@@ -1,0 +1,54 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "1. Serververbinding",
+        "description": "Voer het adres van uw Proxmox-server in. De poort wordt automatisch afgehandeld (8006 voor PVE / 8007 voor PBS).",
+        "data": {
+          "host": "Serveradres (IP of FQDN)",
+          "platform_type": "Servertype"
+        }
+      },
+      "auth_method": {
+        "title": "2. Authenticatiemethode",
+        "description": "Kies tussen Gebruikersnaam/Wachtwoord of een beveiligde API-token.",
+        "data": {
+          "use_token": "Gebruik API-token (Aanbevolen)"
+        }
+      },
+      "credentials": {
+        "title": "3. Inloggegevens",
+        "description": "Voer de gegevens in om verbinding te maken met de server.",
+        "data": {
+          "username": "Gebruikersnaam (bijv. root@pam)",
+          "password": "Wachtwoord",
+          "token_id": "Token-ID (bijv. user@pve!tokenname)",
+          "token_secret": "Token-geheim",
+          "node": "Proxmox Node-naam (Vereist voor PVE)",
+          "enable_lm_sensors": "Hardwaretemperaturen controleren (lm-sensors)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Deze node is al geconfigureerd."
+    }
+  },
+  "options": {
+    "abort": {
+      "pbs_no_options": "Deze PBS-server heeft geen configureerbare opties."
+    },
+    "step": {
+      "init": {
+        "title": "Proxmox Sensors Opties",
+        "description": "Wijzig welke bronnen u voor deze node wilt controleren.",
+        "data": {
+          "vms": "Selecteer Virtuele Machines (VM)",
+          "cts": "Selecteer Containers (LXC)",
+          "storage": "Selecteer Opslag",
+          "enable_lm_sensors": "Hardware-sensoren inschakelen (lm-sensors)",
+          "enable_physical_disks": "Fysieke schijfsensoren inschakelen"
+        }
+      }
+    }
+  }
+}

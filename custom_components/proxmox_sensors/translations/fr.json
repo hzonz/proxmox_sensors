@@ -1,0 +1,69 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "1. Connexion au Serveur",
+        "description": "Entrez l'adresse de votre serveur Proxmox. Le port est géré automatiquement (8006 pour PVE / 8007 pour PBS).",
+        "data": {
+          "host": "Adresse du serveur (IP ou FQDN)",
+          "platform_type": "Type de serveur"
+        }
+      },
+      "auth_method": {
+        "title": "2. Méthode d'authentification",
+        "description": "Choisissez entre Nom d'utilisateur/Mot de passe ou un Jeton d'API (Token) sécurisé.",
+        "data": {
+          "use_token": "Utiliser un Jeton d'API (Recommandé)"
+        }
+      },
+      "credentials": {
+        "title": "3. Identifiants d'accès",
+        "description": "Entrez les identifiants pour vous connecter au serveur.",
+        "data": {
+          "username": "Nom d'utilisateur (ex: root@pam)",
+          "password": "Mot de passe",
+          "token_id": "ID du Jeton (ex: user@pve!token)",
+          "token_secret": "Secret du Jeton",
+          "node": "Nom du nœud Proxmox (Requis pour PVE)",
+          "enable_lm_sensors": "Surveiller les températures (lm-sensors)"
+        }
+      },
+      "select_resources": {
+        "title": "4. Sélection des ressources",
+        "description": "Seuls les éléments sélectionnés créeront des entités dans Home Assistant.",
+        "data": {
+          "vms": "Machines Virtuelles (VM)",
+          "cts": "Conteneurs (LXC)",
+          "storage": "Stockage (Storage)",
+          "enable_physical_disks": "Surveiller les disques physiques"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Échec de la connexion. Vérifiez l'adresse de l'hôte.",
+      "invalid_auth": "Échec de l'authentification. Vérifiez les identifiants ou les permissions du Jeton.",
+      "unknown": "Erreur inattendue. Veuillez vérifier les journaux de Home Assistant."
+    },
+    "abort": {
+      "already_configured": "Ce nœud est déjà configuré."
+    }
+  },
+  "options": {
+    "abort": {
+      "pbs_no_options": "Ce serveur PBS ne possède aucune option configurable."
+    },
+    "step": {
+      "init": {
+        "title": "Options de Proxmox Sensors",
+        "description": "Modifiez les ressources à surveiller pour ce nœud.",
+        "data": {
+          "vms": "Sélectionner les Machines Virtuelles (VM)",
+          "cts": "Sélectionner les Conteneurs (LXC)",
+          "storage": "Sélectionner le Stockage",
+          "enable_lm_sensors": "Activer les capteurs matériels (lm-sensors)",
+          "enable_physical_disks": "Activer les capteurs de disques physiques"
+        }
+      }
+    }
+  }
+}
