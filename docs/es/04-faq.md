@@ -89,7 +89,7 @@ Sin ese endpoint, no es posible obtener:
 ## 🌡️ No aparecen sensores de temperatura en PVE
 
 ### ✔ 1. Debes instalar `lm-sensors` en el nodo
-Guía completa: `01-install-sensors.md`
+Guía completa: [01. Configuración de Sensores de Hardware](01-install-sensors.md)
 
 ### ✔ 2. Debes ejecutar `sensors-detect`
 Y aceptar todas las opciones seguras.
