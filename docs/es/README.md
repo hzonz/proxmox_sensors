@@ -1,3 +1,26 @@
+## 📚 Documentation & Guides
+
+To ensure a smooth setup, please follow these step-by-step guides:
+
+
+
+### 🚀 Installation Guide: How to add the repository via HACS or manual method.
+
+
+
+### 🔑 API Token & Permissions: How to create a secure user and token in Proxmox with the correct permissions.
+
+
+
+### 🌡️ Hardware Sensors Setup: How to install and configure lm-sensors on your Proxmox node.
+
+
+
+### ⚙️ Initial Configuration: Walking through the first-time setup and login process.
+
+---
+
+
 # 🚀 Proxmox Sensors Extended
 
 **The most comprehensive, efficient, and organized integration for monitoring Proxmox VE and PBS from Home Assistant.**
