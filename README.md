@@ -6,6 +6,12 @@
 
 # UNDER CONSTRUCTION
 
+## 🌐 Choose your language / Elige tu idioma
+
+| [![English](https://img.shields.io/badge/Language-English-blue?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/en/README.md) | [![Español](https://img.shields.io/badge/Idioma-Español-orange?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/es/README.md) |
+|:---:|:---:|
+| **English Version** | **Versión en Español** |
+
 # 🚀 Proxmox Sensors Extended
 **The most comprehensive, efficient, and organized integration for monitoring Proxmox VE and PBS from Home Assistant.**
 
