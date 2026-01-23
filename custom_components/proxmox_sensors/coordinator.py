@@ -44,7 +44,6 @@ async def create_proxmox_coordinator(hass, entry, client):
                     result["pbs_snapshots"] = {}
                     result["pbs_gc"] = {}
 
-                    # Obtener lista de datastores seleccionados
                     selected = data.get("selected_storage")
                     if not selected:
                         actual_stores = await client.get_pbs_datastores(hass)
@@ -53,13 +52,8 @@ async def create_proxmox_coordinator(hass, entry, client):
 
                     for store in actual_stores or []:
 
-                        # --- STATUS ---
                         status = await client.get_pbs_datastore_status(hass, store) or {}
-
-                        # --- USAGE ---
                         usage = await client.get_pbs_datastore_usage(hass, store) or {}
-
-                        # --- BACKUPS ---
                         backups = await client.get_pbs_backup_list(hass, store) or []
 
                         backups_sorted = sorted(
@@ -75,7 +69,6 @@ async def create_proxmox_coordinator(hass, entry, client):
                             if b.get("verification", {}).get("state") == "failed"
                         ]
 
-                        # --- GC REAL POR DATASTORE ---
                         try:
                             gc_info = await client.get_pbs_gc(hass, store) or {}
                             result["pbs_gc"][store] = gc_info
@@ -83,7 +76,6 @@ async def create_proxmox_coordinator(hass, entry, client):
                             _LOGGER.error("Error fetching PBS GC info for %s: %s", store, e)
                             result["pbs_gc"][store] = {}
 
-                        # --- SNAPSHOTS POR DATASTORE ---
                         try:
                             snapshots = await client.get_pbs_snapshots(hass, store) or []
                             result["pbs_snapshots"][store] = snapshots
@@ -91,7 +83,6 @@ async def create_proxmox_coordinator(hass, entry, client):
                             _LOGGER.error("Error fetching PBS snapshots for %s: %s", store, e)
                             result["pbs_snapshots"][store] = []
 
-                        # --- ENSAMBLAR DATASTORE ---
                         result["pbs_datastores"][store] = {
                             **status,
                             **usage,
@@ -101,23 +92,20 @@ async def create_proxmox_coordinator(hass, entry, client):
                             "backup_errors": backup_errors,
                         }
 
-                    # --- NODE STATUS ---
                     node_status = await client.get_pbs_node_status(hass)
                     result["pbs_node_status"] = node_status if isinstance(node_status, dict) else {}
 
-                    # --- VERSION ---
                     version_info = await client.get_pbs_version(hass) or {}
                     result["pbs_version"] = version_info.get("version")
                     result["pbs_release"] = version_info.get("release")
                     result["pbs_auth_status"] = "OK" if version_info else "ERROR"
 
-                    # --- TASKS ---
                     if enable_pbs_tasks:
                         tasks = await client.get_pbs_tasks(hass) or []
                         result["pbs_tasks"] = tasks if isinstance(tasks, list) else []
                     else:
                         result["pbs_tasks"] = []
-                    _LOGGER.warning("📦 PBS RESULT: %s", result)
+
                     return result
 
                 # ============================================================
@@ -125,11 +113,24 @@ async def create_proxmox_coordinator(hass, entry, client):
                 # ============================================================
                 elif server_type == "PVE":
 
+                    # --- NODE STATUS ---
                     node_status = await client.get_node_status(hass, node)
                     result["node"] = node_status if isinstance(node_status, dict) else {}
+
+                    # --- NODE NETWORK TRAFFIC ---
+                    try:
+                        interfaces = await client.get_node_network(hass, node)
+                        if isinstance(interfaces, list):
+                            rx = sum(i.get("rx_bytes", 0) for i in interfaces)
+                            tx = sum(i.get("tx_bytes", 0) for i in interfaces)
+                            result["node"]["network_rx"] = rx
+                            result["node"]["network_tx"] = tx
+                    except Exception as e:
+                        _LOGGER.error("Error fetching node network traffic: %s", e)
+
+                    # --- HARDWARE SENSORS ---
                     result["hardware"] = {}
 
-                    # Hardware sensors (lm-sensors)
                     if enable_lm_sensors:
                         lm = await client.get_lm_sensors_http(hass, node)
                         if isinstance(lm, dict):
@@ -167,6 +168,9 @@ async def create_proxmox_coordinator(hass, entry, client):
                             result[key] = {} if key != "cluster_tasks" else []
                             continue
 
+                        # -------------------------
+                        # CLUSTER TASKS
+                        # -------------------------
                         if key == "cluster_tasks":
                             result["tasks"] = res if isinstance(res, list) else []
                             if isinstance(res, list) and len(res) > 0:
@@ -181,12 +185,45 @@ async def create_proxmox_coordinator(hass, entry, client):
                             else:
                                 result["node"]["last_task"] = None
 
+                        # -------------------------
+                        # VMs
+                        # -------------------------
                         elif key == "vms":
-                            result["vms"] = {
-                                vm["vmid"]: vm for vm in res
-                                if isinstance(vm, dict) and "vmid" in vm and str(vm["vmid"]) in selected_vms
-                            }
+                            vms_dict = {}
+                            for vm in res or []:
+                                vmid = vm.get("vmid")
+                                if vmid is None or str(vmid) not in selected_vms:
+                                    continue
 
+                                base = dict(vm)
+
+                                # --- GET DETAILED VM STATUS ---
+                                try:
+                                    status_raw = await client.get_vm_status(hass, node, vmid)
+                                    detailed = None
+
+                                    if isinstance(status_raw, list) and status_raw:
+                                        detailed = status_raw[0]
+                                    elif isinstance(status_raw, dict):
+                                        detailed = status_raw.get("data") if isinstance(status_raw.get("data"), dict) else status_raw
+
+                                    if isinstance(detailed, dict):
+                                        base.update({k: v for k, v in detailed.items() if v is not None})
+
+                                except Exception as e:
+                                    _LOGGER.error("Error fetching VM status %s: %s", vmid, e)
+
+                                for field in ["cpu", "mem", "maxmem", "disk", "maxdisk", "uptime", "netin", "netout"]:
+                                    base.setdefault(field, 0)
+
+                                base.setdefault("status", "unknown")
+                                vms_dict[vmid] = base
+
+                            result["vms"] = vms_dict
+
+                        # -------------------------
+                        # CTs
+                        # -------------------------
                         elif key == "cts":
                             cts_dict = {}
                             for ct in res or []:
@@ -195,32 +232,42 @@ async def create_proxmox_coordinator(hass, entry, client):
                                     continue
 
                                 base = dict(ct)
+
                                 try:
                                     status_raw = await client.get_container_status(hass, node, vmid)
+
                                     detailed = None
                                     if isinstance(status_raw, list) and status_raw:
                                         detailed = status_raw[0]
                                     elif isinstance(status_raw, dict):
-                                        detailed = status_raw.get("data", status_raw)
+                                        detailed = status_raw.get("data") if isinstance(status_raw.get("data"), dict) else status_raw
 
                                     if isinstance(detailed, dict):
                                         base.update({k: v for k, v in detailed.items() if v is not None})
+
                                 except Exception as e:
                                     _LOGGER.error("Error fetching CT status %s: %s", vmid, e)
 
-                                for field in ["cpu", "mem", "maxmem", "disk", "maxdisk", "uptime"]:
+                                for field in ["cpu", "mem", "maxmem", "disk", "maxdisk", "uptime", "netin", "netout"]:
                                     base.setdefault(field, 0)
+
                                 base.setdefault("status", "unknown")
                                 cts_dict[vmid] = base
 
                             result["cts"] = cts_dict
 
+                        # -------------------------
+                        # STORAGE
+                        # -------------------------
                         elif key == "storage":
                             result["storage"] = {
                                 st["storage"]: st for st in res
                                 if isinstance(st, dict) and "storage" in st and st["storage"] in selected_storage
                             }
 
+                        # -------------------------
+                        # DISKS
+                        # -------------------------
                         elif key == "disks":
                             result["disks"] = {
                                 d.get("devpath", f"disk_{i}"): d for i, d in enumerate(res or [])

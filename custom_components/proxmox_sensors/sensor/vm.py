@@ -65,6 +65,16 @@ class ProxmoxVMAttributeSensor(ProxmoxBaseSensor):
                 val = vm_data.get("cpu")
                 return round(float(val) * 100, 2) if val is not None else None
 
+            # Network RX/TX (convert bytes → MB)
+            if self._attr_key == "network_rx":
+                val = vm_data.get("netin")
+                return round(float(val) / (1024**2), 2) if val is not None else None
+
+            if self._attr_key == "network_tx":
+                val = vm_data.get("netout")
+                return round(float(val) / (1024**2), 2) if val is not None else None
+
+
             # Mapping for Proxmox API keys
             keys = {
                 "memory_used": "mem",

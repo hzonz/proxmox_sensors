@@ -132,6 +132,10 @@ class ProxmoxClient:
     async def get_node_status(self, hass, node: str):
         """Return general node status."""
         return await self.get(hass, f"nodes/{node}/status")
+    
+    async def get_node_network(self, hass, node: str):
+        """Return network interfaces and traffic counters for the node."""
+        return await self.get(hass, f"nodes/{node}/network")
 
     async def get_vms(self, hass, node: str):
         """Return all VMs in a node."""

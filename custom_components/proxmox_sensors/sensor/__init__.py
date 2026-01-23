@@ -183,6 +183,9 @@ async def async_setup_entry(
                     ("memory_total", "GB", "mdi:memory"),
                     ("disk_total", "GB", "mdi:harddisk-plus"),
                     ("uptime", "h", "mdi:timer-sand"),
+                    ("network_rx", "MB", "mdi:download-network"),
+                    ("network_tx", "MB", "mdi:upload-network"),
+
                 ]:
                     entities.append(ProxmoxVMAttributeSensor(coordinator, vm_id, node, label, attr, unit, icon))
 
@@ -199,6 +202,9 @@ async def async_setup_entry(
                     ("disk_total", "GB", "mdi:harddisk-plus"),
                     ("disk_used", "GB", "mdi:harddisk"),
                     ("uptime", "h", "mdi:timer-outline"),
+                    ("network_rx", "MB", "mdi:download-network"),
+                    ("network_tx", "MB", "mdi:upload-network"),
+
                 ]:
                     entities.append(ProxmoxContainerAttributeSensor(coordinator, ct_id, node, label, attr, unit, icon))
 

@@ -36,6 +36,17 @@ class ProxmoxNodeSensor(ProxmoxBaseSensor):
         elif sensor_id == "loadavg":
             friendly_name = "Load Average"
             icon = "mdi:chart-line"
+        elif sensor_id == "network_rx":
+            friendly_name = "Network RX"
+            unit = "bytes"
+            icon = "mdi:download-network"
+            state_class = "measurement"
+        elif sensor_id == "network_tx":
+            friendly_name = "Network TX"
+            unit = "bytes"
+            icon = "mdi:upload-network"
+            state_class = "measurement"
+
         else:
             friendly_name = sensor_id.replace("_", " ").title()
 
