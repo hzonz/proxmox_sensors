@@ -1,14 +1,27 @@
-## 📚 Documentation & Guides
+# 📚 Documentation & Guides
 
 To ensure a smooth setup, please follow these step-by-step guides:
 
-### 🚀 Installation Guide: How to add the repository via HACS or manual method.
+---
 
-### 🔑 API Token & Permissions: How to create a secure user and token in Proxmox with the correct permissions.
+## 🌡️ [01. Hardware Sensors Setup](01-install-sensors.md)
+How to install and configure **lm-sensors** on your Proxmox node to enable temperature and fan monitoring.
 
-### 🌡️ Hardware Sensors Setup: How to install and configure lm-sensors on your Proxmox node.
+---
 
-### ⚙️ Initial Configuration: Walking through the first-time setup and login process.
+## 🔑 **02. Proxmox Configuration**
+How to create a secure **user** and **API Token** in Proxmox (PVE & PBS) with the minimum required permissions.
+
+---
+
+## ⚙️ **03. Integration Login (PVE & PBS)**
+Walking through the first-time setup in Home Assistant and connecting to your servers.
+
+---
+
+## ❓ **04. FAQ & Troubleshooting**
+Common questions, known issues, and how to fix them.
+
 
 ---
 
