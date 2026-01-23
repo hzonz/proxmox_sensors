@@ -1,5 +1,5 @@
-# 🚀 Paso 1: Instalación y automatización de sensores
-**Esta guía explica cómo preparar el nodo Proxmox para que exponga los datos de hardware y asegure que el servicio de telemetría arranque automáticamente con el sistema.**
+# 🚀 Paso 1: Instalación y configuración de sensores
+**Esta guía explica cómo preparar el nodo Proxmox para que exponga los datos de hardware y asegure que las lecturas de temperatura estén disponibles para Home Assistant.**
 
 ## 1. Instalación de dependencias
 * **Primero, instalamos las herramientas necesarias para leer los sensores integrados en la placa base y la CPU:**
@@ -9,86 +9,32 @@ apt update && apt install lm-sensors -y
 ```
 
 ## 2. Detección de hardware
-* **Para que el sistema sepa qué controladores (drivers) necesita, ejecutamos el asistente de detección:**
+* **Para que el sistema identifique qué controladores (drivers) necesita, ejecutamos el asistente de detección:**
 
-```Bash
+```bash
 sensors-detect
 ```
-**Responde YES (o pulsa Enter) a todas las preguntas. Al finalizar, el sistema identificará los módulos necesarios (ej. coretemp, nct6775).**
+**Responde YES (o pulsa Enter) a todas las preguntas. Al finalizar, el sistema identificará los módulos necesarios (por ejemplo: `coretemp` para CPUs Intel).**
 
 ## 3. Persistencia de módulos
-**Para que los sensores se activen solos al reiniciar el servidor, el asistente sensors-detect te hará una pregunta clave al final del todo:**
-```
+**Para que los sensores se activen solos al reiniciar el servidor, el asistente `sensors-detect` te hará una pregunta clave al final del proceso:**
+
+```text
 Do you want to add these lines automatically to /etc/modules? (yes/NO)
 ```
+
 > [!CAUTION]
-> **Debes escribir `yes` manualmente y pulsar Enter.** Si solo pulsas Enter sin escribir nada, el sistema seleccionará `NO` por defecto y los sensores no cargarán tras un reinicio.
+> **Debes escribir `yes` manualmente y pulsar Enter.** Si solo pulsas Enter sin escribir nada, el sistema seleccionará `NO` por defecto. Si esto ocurre, los sensores no se cargarán tras un reinicio y Home Assistant dejará de recibir datos de temperatura.
 
-```Bash
-# Sustituye 'modulo_detectado' por los nombres que dio el comando anterior
-echo "modulo_detectado" >> /etc/modules
+## 4. Verificación inmediata
+**Para activar los sensores ahora mismo sin tener que reiniciar, ejecuta:**
+
+```bash
+# Carga los módulos detectados (ejemplo para Intel)
+modprobe coretemp
+
+# Verifica que se muestran las temperaturas
+sensors
 ```
 
-## 4. Servicio de Telemetría (Arranque Automático)
-**Para que Home Assistant pueda leer estos datos de forma continua, configuraremos el script de la API como un servicio del sistema (systemd). Esto garantiza que, aunque el servidor se reinicie, el servicio arrancará automáticamente.**
-
-### A. Crear el archivo del servicio
-
-```Bash
-nano /etc/systemd/system/proxmox-sensors.service
-```
-
-### B. Configuración del servicio
-**Copia y pega el siguiente bloque. Este diseño asegura que el servicio sea ligero y se reinicie solo si ocurre algún fallo:**
-
-**💡 Tip para novatos: > * En la mayoría de terminales de Proxmox, se pega haciendo clic derecho con el ratón o pulsando Shift + Insert.**
-
-* El atajo habitual Ctrl + V no suele funcionar aquí.
-
-`Ini, TOML`
-```
-[Unit]
-Description=API de Sensores para Home Assistant
-After=network.target
-
-[Service]
-Type=simple
-User=root
-# ⚠️ IMPORTANTE: Cambia la ruta de abajo por la ubicación REAL de tu script
-ExecStart=/usr/bin/python3 /ruta/al/archivo/sensor_script.py
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-### C. Guardar y salir
-**Una vez hayas pegado el código anterior, debes guardar el archivo siguiendo estos pasos en tu teclado:**
-
-1. Pulsa Ctrl + O (eso significa "escribir/guardar").
-2. Pulsa Enter para confirmar el nombre del archivo.
-3. Pulsa Ctrl + X para salir del editor y volver a la terminal.
-
-### D. Activación del servicio
-**Ejecuta estos comandos para registrar y activar el arranque automático:**
-
-```Bash
-# Recargar la configuración de servicios
-systemctl daemon-reload
-
-# Activar el inicio automático con el sistema
-systemctl enable proxmox-sensors.service
-
-# Iniciar el servicio inmediatamente
-systemctl start proxmox-sensors.service
-```
-
-# ✅ Verificación
-**Para confirmar que el servicio está funcionando y programado para el próximo reinicio, ejecuta:**
-
-```Bash
-systemctl status proxmox-sensors.service
-```
-
-**Deberías ver el estado active (running) y la indicación enabled.**
-
+**¡Listo! Una vez que el comando `sensors` devuelva datos en la terminal, tu integración de Home Assistant podrá leerlos automáticamente a través de la API de Proxmox.**
