@@ -1,152 +1,129 @@
-# 📚 Documentation & Guides
+# 📚 Documentación y Guías
 
-To ensure a smooth setup, please follow these step-by-step guides:
-
----
-
-## 🌡️ [01. Hardware Sensors Setup](01-install-sensors.md)
-How to install and configure **lm-sensors** on your Proxmox node to enable temperature and fan monitoring.
+Para garantizar una configuración sin problemas, sigue estas guías paso a paso:
 
 ---
 
-## 🔑 [02. Proxmox Configuration](02-proxmox-config.md)
-How to create a secure **user** and **API Token** in Proxmox (PVE & PBS) with the minimum required permissions.
+## 🌡️ [01. Configuración de Sensores de Hardware](01-install-sensors.md)
+Cómo instalar y configurar **lm-sensors** en tu nodo Proxmox para habilitar la monitorización de temperaturas y ventiladores.
 
 ---
 
-## ⚙️ [03. Integration Login (PVE & PBS)](03-login-pve-pbs.md)
-Walking through the first-time setup in Home Assistant and connecting to your servers.
+## 🔑 [02. Configuración de Proxmox](02-proxmox-config.md)
+Cómo crear un **usuario** y **Token API** seguro en Proxmox (PVE & PBS) con los permisos mínimos necesarios.
 
 ---
 
-## ❓ [04. FAQ & Troubleshooting](04-faq.md)
-Common questions, known issues, and how to fix them.
-
+## ⚙️ [03. Inicio de Sesión en la Integración (PVE & PBS)](03-login-pve-pbs.md)
+Guía del proceso de configuración inicial en Home Assistant y conexión con tus servidores.
 
 ---
 
+## ❓ [04. Preguntas Frecuentes y Solución de Problemas](04-faq.md)
+Preguntas comunes, problemas conocidos y cómo resolverlos.
+
+---
 
 # 🚀 Proxmox Sensors Extended
 
-**The most comprehensive, efficient, and organized integration for monitoring Proxmox VE and PBS from Home Assistant.**
+**La integración más completa, eficiente y organizada para monitorizar Proxmox VE y PBS desde Home Assistant.**
 
-This integration has been designed for advanced users who require full control over their hardware without overloading their server. Unlike other solutions, Proxmox Sensors Extended focuses on energy efficiency, secure Token-based authentication, and impeccable visual organization.
-
-
-
----
-
-
-
-## 🔥 Key Features
-
-### 🌡️ Deep Hardware Monitoring
-
-**Don't settle for just CPU usage. See what is actually happening "under the hood":**
-
-* **Real-time Temperatures: CPU Cores, VRM, and NVMe/SSD/HDD drives.**
-
-* **Mechanical Sensors: Fan speeds (RPM) and motherboard voltages.**
-
-* **Smart Sensors: Only entities that report valid data are created, keeping your system clutter-free.**
-
-**(Note: Requires installing lm-sensors on the Proxmox host).**
+Esta integración está diseñada para usuarios avanzados que necesitan un control total sobre su hardware sin sobrecargar el servidor.  
+A diferencia de otras soluciones, Proxmox Sensors Extended se centra en la eficiencia energética, autenticación segura mediante Tokens y una organización visual impecable.
 
 ---
 
-### 🧠 Performance-Focused
+## 🔥 Características Principales
 
-**Designed with resource-constrained hardware in mind:**
+### 🌡️ Monitorización Avanzada de Hardware
 
-* **DataUpdateCoordinator: Minimizes calls to the Proxmox API to avoid saturating the server's processor.**
+**No te conformes solo con el uso de CPU. Ve lo que realmente ocurre “bajo el capó”:**
 
-* **Silent SSL: Automatic verification of SSL certificates (including self-signed) without spamming your error logs.**
+* **Temperaturas en tiempo real:** Núcleos de CPU, VRM y unidades NVMe/SSD/HDD.
+* **Sensores mecánicos:** Velocidad de ventiladores (RPM) y voltajes de la placa base.
+* **Sensores inteligentes:** Solo se crean entidades que reportan datos válidos, manteniendo tu sistema limpio.
 
----
-
-### 🗄️ Advanced Proxmox Backup Server (PBS)
-
-* **External Mode: Seamlessly connect to remote PBS servers using only the domain.**
-
-* **Task Monitoring: Detailed status of the last Backup, Garbage Collector, or Verify task.**
+**(Nota: Requiere instalar lm-sensors en el host Proxmox).**
 
 ---
 
-### 🎨 Dynamic & Organized UI
+### 🧠 Optimizado para el Rendimiento
 
-* **Smart Dashboard: Sensors are automatically grouped into devices: 1. Node, 2. Physical Disks, 3. VMs, 4. Containers.**
+**Diseñado pensando en hardware con recursos limitados:**
 
-* **Auto-Naming: Automatic prefixes (e.g., pv1-cpu-temp) so your dashboards stay logically ordered by themselves.**
+* **DataUpdateCoordinator:** Minimiza las llamadas a la API de Proxmox para evitar saturar el procesador del servidor.
+* **Silent SSL:** Verificación automática de certificados SSL (incluidos los autofirmados) sin llenar tus logs de errores.
 
 ---
 
-## Featured Sensors
+### 🗄️ Proxmox Backup Server (PBS) Avanzado
+
+* **Modo Externo:** Conéctate fácilmente a servidores PBS remotos usando solo el dominio.
+* **Monitorización de Tareas:** Estado detallado del último Backup, Garbage Collector o tarea de Verify.
+
+---
+
+### 🎨 Interfaz Dinámica y Organizada
+
+* **Smart Dashboard:** Los sensores se agrupan automáticamente en dispositivos:  
+  1. Nodo  
+  2. Discos físicos  
+  3. Máquinas virtuales  
+  4. Contenedores  
+* **Auto-Naming:** Prefijos automáticos (ej. `pv1-cpu-temp`) para mantener tus dashboards ordenados de forma lógica.
+
+---
+
+## Sensores Destacados
 
 ## PVE
 
-### 🖥️ Hardware Sensors (PVE & PBS)
+### 🖥️ Sensores de Hardware (PVE & PBS)
 
-CPU temperatures • VRM temperatures • NVMe/SSD/HDD temperatures  
-
-Fan speeds (RPM) • Voltages • Power sensors • `pvesensors` entities
-
-• Chipset temperature 
+Temperaturas de CPU • Temperaturas VRM • Temperaturas NVMe/SSD/HDD  
+Velocidad de ventiladores (RPM) • Voltajes • Sensores de energía • Entidades `pvesensors`  
+• Temperatura del chipset
 
 ---
 
-### 🧠 Node Status
+### 🧠 Estado del Nodo
 
-CPU usage (%) • RAM usage (%) • RAM used/total  
-
-Uptime • Load average • CPU I/O Wait 
-
----
-
-### 💾 Disks
-
-Total capacity • Used space (GB and %)  
-
-Wear-level (NVMe) • SMART health (if available)
+Uso de CPU (%) • Uso de RAM (%) • RAM usada/total  
+Tiempo activo (uptime) • Load average • CPU I/O Wait
 
 ---
 
-### 🖥️ Virtual Machines (QEMU)
+### 💾 Discos
 
-CPU usage (%) • RAM usage (%)  
-
-Status (running/stopped) • Auto/manual selection
+Capacidad total • Espacio usado (GB y %)  
+Nivel de desgaste (NVMe) • Estado SMART (si está disponible)
 
 ---
 
-### 📦 Containers (LXC)
+### 🖥️ Máquinas Virtuales (QEMU)
 
-CPU usage (%) • RAM usage (%)  
+Uso de CPU (%) • Uso de RAM (%)  
+Estado (encendida/apagada) • Selección automática/manual
 
-Status • Auto/manual selection
+---
+
+### 📦 Contenedores (LXC)
+
+Uso de CPU (%) • Uso de RAM (%)  
+Estado • Selección automática/manual
 
 ---
 
 ### 🗄️ Proxmox Backup Server (PBS)
 
-Datastore usage (GB and %) • Backup count  
-
-Garbage Collector status • Last backup task status
-
-• Complete Tasks Information and more 
+Uso del datastore (GB y %) • Número de backups  
+Estado del Garbage Collector • Estado de la última tarea de backup  
+• Información completa de tareas y más
 
 ---
 
-**Dashboard Example**
-
+**Ejemplo de Dashboard**
 
 <p align="center">
-
   <img src="/img/Dashboard.png" alt="Proxmox Extended Sensors Dashboard" width="1000"/>
-
 </p>
-
-
-
-
-
-
