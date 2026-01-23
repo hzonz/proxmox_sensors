@@ -79,6 +79,14 @@ A diferencia de otras soluciones, Proxmox Sensors Extended se centra en la efici
 
 ---
 
+**Ejemplo de Dashboard**
+
+<p align="center">
+  <img src="/img/Dashboard.png" alt="Proxmox Extended Sensors Dashboard" width="1000"/>
+</p>
+
+---
+
 ## Sensores Destacados
 
 ## PVE
@@ -125,10 +133,4 @@ Uso del datastore (GB y %) • Número de backups
 Estado del Garbage Collector • Estado de la última tarea de backup  
 • Información completa de tareas y más
 
----
 
-**Ejemplo de Dashboard**
-
-<p align="center">
-  <img src="/img/Dashboard.png" alt="Proxmox Extended Sensors Dashboard" width="1000"/>
-</p>
