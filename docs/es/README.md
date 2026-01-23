@@ -9,17 +9,17 @@ How to install and configure **lm-sensors** on your Proxmox node to enable tempe
 
 ---
 
-## 🔑 **02. Proxmox Configuration**
+## 🔑 [02. Proxmox Configuration](02-proxmox-config.md)
 How to create a secure **user** and **API Token** in Proxmox (PVE & PBS) with the minimum required permissions.
 
 ---
 
-## ⚙️ **03. Integration Login (PVE & PBS)**
+## ⚙️ [03. Integration Login (PVE & PBS)](03-login-pve-pbs.md)
 Walking through the first-time setup in Home Assistant and connecting to your servers.
 
 ---
 
-## ❓ **04. FAQ & Troubleshooting**
+## ❓ [04. FAQ & Troubleshooting](04-faq.md)
 Common questions, known issues, and how to fix them.
 
 
