@@ -6,19 +6,17 @@
 
 # UNDER CONSTRUCTION
 
-## 🌐 Choose your language / Elige tu idioma
+### 🌐 Choose your language / Elige tu idioma
 
-| [![English](https://img.shields.io/badge/LANGUAGE-ENGLISH-blue?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/en/README.md) | [![Español](https://img.shields.io/badge/IDIOMA-ESPA%C3%91OL-orange?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/es/README.md) | [![Italiano](https://img.shields.io/badge/LINGUA-ITALIANO-green?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/it/README.md) |
+| [![English](https://img.shields.io/badge/ENGLISH-blue?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/en/README.md) | [![Español](https://img.shields.io/badge/ESPA%C3%91OL-orange?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/es/README.md) | [![Italiano](https://img.shields.io/badge/ITALIANO-green?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/it/README.md) | [![Français](https://img.shields.io/badge/FRAN%C3%87AIS-blue?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/fr/README.md) |
+|:---:|:---:|:---:|:---:|
+
+<br>
+
+<p align="center">
+| [![Deutsch](https://img.shields.io/badge/DEUTSCH-red?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/de/README.md) | [![Nederlands](https://img.shields.io/badge/NEDERLANDS-orange?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/nl/README.md) | [![Русский](https://img.shields.io/badge/%D0%A0%D0%A3%D0%A1%D0%A1%D0%9A%D0%98%D0%99-lightgrey?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/ru/README.md) |
 |:---:|:---:|:---:|
-| **English** | **Español** | **Italiano** |
-
-| [![Français](https://img.shields.io/badge/LANGUE-FRAN%C3%87AIS-blue?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/fr/README.md) | [![Deutsch](https://img.shields.io/badge/SPRACHE-DEUTSCH-red?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/de/README.md) | [![Nederlands](https://img.shields.io/badge/TAAL-NEDERLANDS-orange?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/nl/README.md) |
-|:---:|:---:|:---:|
-| **Français** | **Deutsch** | **Nederlands** |
-
-| [![Русский](https://img.shields.io/badge/%D0%AF%D0%B7%D1%8B%D0%BA-%D0%A0%D0%A3%D0%A1%D0%A1%D0%9A%D0%98%D0%99-lightgrey?style=for-the-badge&logo=googletranslate&logoColor=white)](docs/ru/README.md) |
-|:---:|
-| **Русский** |
+</p>
 
 # 🚀 Proxmox Sensors Extended
 **The most comprehensive, efficient, and organized integration for monitoring Proxmox VE and PBS from Home Assistant.**
