@@ -74,7 +74,8 @@ A diferencia de otras soluciones, Proxmox Sensors Extended se centra en la efici
   1. Nodo  
   2. Discos físicos  
   3. Máquinas virtuales  
-  4. Contenedores  
+  4. Contenedores
+  5. Storages
 * **Auto-Naming:** Prefijos automáticos (ej. `pv1-cpu-temp`) para mantener tus dashboards ordenados de forma lógica.
 
 ---
@@ -115,15 +116,15 @@ Nivel de desgaste (NVMe) • Estado SMART (si está disponible)
 
 ### 🖥️ Máquinas Virtuales (QEMU)
 
-Uso de CPU (%) • Uso de RAM (%)  
+Uso de CPU (%) • Uso de RAM (%)  • Network Tx/Rx
 Estado (encendida/apagada) • Selección automática/manual
 
 ---
 
 ### 📦 Contenedores (LXC)
 
-Uso de CPU (%) • Uso de RAM (%)  
-Estado • Selección automática/manual
+Uso de CPU (%) • Uso de RAM (%)  • Network Tx/Rx
+Estado • Selección automática/manual • y muchos mas
 
 ---
 
