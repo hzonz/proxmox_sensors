@@ -1,6 +1,6 @@
 {
   "domain": "proxmox_sensors",
-  "name": "Proxmox Sensors Extended",
+  "name": "Proxmox Extended Sensors",
   "version": "1.1.1",
   "description": "Proxmox sensors integration using API Token authentication",
   "documentation": "https://github.com/Javisen/proxmox_sensors",
@@ -17,3 +17,4 @@
   "config_flow": true,
   "translations": "translations"
 }
+
