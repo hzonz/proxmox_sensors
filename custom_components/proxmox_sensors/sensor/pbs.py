@@ -2,12 +2,10 @@ from homeassistant.const import PERCENTAGE, UnitOfInformation
 from ..const import DOMAIN
 from .base import ProxmoxPbsBaseSensor
 
-# ============================================================
-#  PBS SERVER SENSORS (NODE-LEVEL)
-# ============================================================
+# ===========PBS NODE-LEVEL===================
 
 class ProxmoxPBSVersionSensor(ProxmoxPbsBaseSensor):
-    """PBS Version."""
+    
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -31,7 +29,7 @@ class ProxmoxPBSVersionSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSReleaseSensor(ProxmoxPbsBaseSensor):
-    """PBS Release."""
+ 
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -55,7 +53,7 @@ class ProxmoxPBSReleaseSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSAuthStatusSensor(ProxmoxPbsBaseSensor):
-    """PBS authentication status."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -79,7 +77,7 @@ class ProxmoxPBSAuthStatusSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSCpuSensor(ProxmoxPbsBaseSensor):
-    """CPU usage of the PBS node."""
+ 
     def __init__(self, coordinator, server_id):
         super().__init__(coordinator, server_id, "node_cpu", "CPU Usage", "%")
         self._attr_icon = "mdi:cpu-64-bit"
@@ -100,7 +98,7 @@ class ProxmoxPBSCpuSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSRamSensor(ProxmoxPbsBaseSensor):
-    """PBS node RAM usage."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(coordinator, server_id, "node_ram", "RAM Usage", "%")
         self._attr_icon = "mdi:memory"
@@ -133,12 +131,10 @@ class ProxmoxPBSRamSensor(ProxmoxPbsBaseSensor):
             "model": "Backup Server",
         }
 
-# ============================================================
-#  PBS TASK SENSORS (GLOBAL TASKS)
-# ============================================================
+# ==========PBS GLOBAL TASKS==================
 
 class ProxmoxPBSTaskSensor(ProxmoxPbsBaseSensor):
-    """Last PBS task summary."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -170,7 +166,6 @@ class ProxmoxPBSTaskSensor(ProxmoxPbsBaseSensor):
         }
 
 class ProxmoxPBSTaskTypeSensor(ProxmoxPbsBaseSensor):
-    """Type of the last PBS task."""
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -198,7 +193,7 @@ class ProxmoxPBSTaskTypeSensor(ProxmoxPbsBaseSensor):
         }
 
 class ProxmoxPBSTaskStatusSensor(ProxmoxPbsBaseSensor):
-    """Status of the last PBS task."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -236,7 +231,7 @@ class ProxmoxPBSTaskStatusSensor(ProxmoxPbsBaseSensor):
         }
 
 class ProxmoxPBSTaskMessageSensor(ProxmoxPbsBaseSensor):
-    """Message of the last PBS task."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -266,7 +261,7 @@ class ProxmoxPBSTaskMessageSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSTaskDurationSensor(ProxmoxPbsBaseSensor):
-    """Duration of the last PBS task."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -303,12 +298,10 @@ class ProxmoxPBSTaskDurationSensor(ProxmoxPbsBaseSensor):
             "manufacturer": "Proxmox",
             "model": "Backup Server Tasks",
         }
-# ============================================================
-#  PBS DATASTORE SENSORS
-# ============================================================
+# =========PBS DATASTORE SENSORS===================
 
 class ProxmoxPBSDatastoreUsageSensor(ProxmoxPbsBaseSensor):
-    """Percentage of datastore used."""
+
     def __init__(self, coordinator, server_id, store):
         name = "Usage"
         super().__init__(
@@ -338,7 +331,7 @@ class ProxmoxPBSDatastoreUsageSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSDatastoreSizeSensor(ProxmoxPbsBaseSensor):
-    """Total / Used / Free size in GB."""
+
     def __init__(self, coordinator, server_id, store, key, label, icon=None):
         name = label
         super().__init__(
@@ -351,11 +344,9 @@ class ProxmoxPBSDatastoreSizeSensor(ProxmoxPbsBaseSensor):
         self._store = store
         self._key = key
 
-        # Icono manual tiene prioridad
         if icon:
             self._attr_icon = icon
         else:
-            # Iconos automáticos según el tipo de dato
             if key == "total":
                 self._attr_icon = "mdi:database"
             elif key == "used":
@@ -363,7 +354,6 @@ class ProxmoxPBSDatastoreSizeSensor(ProxmoxPbsBaseSensor):
             elif key == "free":
                 self._attr_icon = "mdi:database-arrow-down"
             else:
-                # Fallback elegante
                 self._attr_icon = "mdi:database-outline"
 
     def _get_value(self):
@@ -381,7 +371,7 @@ class ProxmoxPBSDatastoreSizeSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSDedupSensor(ProxmoxPbsBaseSensor):
-    """Deduplication factor."""
+
     def __init__(self, coordinator, server_id, store):
         name = "Deduplication"
         super().__init__(
@@ -411,7 +401,7 @@ class ProxmoxPBSDedupSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSBackupCountSensor(ProxmoxPbsBaseSensor):
-    """Number of backups in datastore."""
+
     def __init__(self, coordinator, server_id, store):
         name = "Backup Count"
         super().__init__(
@@ -438,7 +428,7 @@ class ProxmoxPBSBackupCountSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSLastBackupTimeSensor(ProxmoxPbsBaseSensor):
-    """Timestamp of the last backup."""
+
     def __init__(self, coordinator, server_id, store):
         name = "Last Backup Time"
         super().__init__(
@@ -472,7 +462,7 @@ class ProxmoxPBSLastBackupTimeSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSLastBackupSizeSensor(ProxmoxPbsBaseSensor):
-    """Size of the last backup."""
+
     def __init__(self, coordinator, server_id, store):
         name = "Last Backup Size"
         super().__init__(
@@ -502,7 +492,7 @@ class ProxmoxPBSLastBackupSizeSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSLastBackupStatusSensor(ProxmoxPbsBaseSensor):
-    """Status of the last backup with dynamic icons and state mapping."""
+
     def __init__(self, coordinator, server_id, store):
         name = "Last Backup Status"
         super().__init__(
@@ -521,7 +511,6 @@ class ProxmoxPBSLastBackupStatusSensor(ProxmoxPbsBaseSensor):
         if not last:
             return "No backups"
 
-        # 1. Try to read verification info from snapshot
         ver = last.get("verification")
         if ver:
             state = ver.get("state")
@@ -531,7 +520,6 @@ class ProxmoxPBSLastBackupStatusSensor(ProxmoxPbsBaseSensor):
                 return "Verification Failed"
             return str(state).capitalize()
 
-        # 2. Check PBS tasks for verification
         tasks = self.coordinator.data.get("pbs_tasks", [])
         task = tasks[0] if isinstance(tasks, list) and tasks else {}
 
@@ -545,7 +533,6 @@ class ProxmoxPBSLastBackupStatusSensor(ProxmoxPbsBaseSensor):
                 if "error" in msg or status == "error":
                     return "Verification Failed"
 
-        # 3. No verification found
         return "Finished (Not Verified)"
 
     @property
@@ -570,7 +557,7 @@ class ProxmoxPBSLastBackupStatusSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSBackupErrorsSensor(ProxmoxPbsBaseSensor):
-    """Number of failed backups."""
+
     def __init__(self, coordinator, server_id, store):
         name = "Backup Errors"
         super().__init__(
@@ -597,7 +584,7 @@ class ProxmoxPBSBackupErrorsSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSBackupsListSensor(ProxmoxPbsBaseSensor):
-    """Displays the total count and a summary of the latest backups per resource."""
+
     def __init__(self, coordinator, server_id, store):
         name = "Backups Summary"
         super().__init__(
@@ -652,12 +639,10 @@ class ProxmoxPBSBackupsListSensor(ProxmoxPbsBaseSensor):
             "model": "Backup Server Datastore",
         }
 
-# ============================================================
-#  PBS MAINTENANCE SENSORS (GC PER DATASTORE)
-# ============================================================
+# ==========PBS GC PER DATASTORE====================
 
 class ProxmoxPBSMaintenanceSensor(ProxmoxPbsBaseSensor):
-    """Garbage Collection status and Datastore maintenance."""
+
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
@@ -669,7 +654,6 @@ class ProxmoxPBSMaintenanceSensor(ProxmoxPbsBaseSensor):
         self._attr_icon = "mdi:recycle-variant"
 
     def _get_value(self):
-        """Determine the Garbage Collection status for the datastore."""
         data = self.coordinator.data.get("pbs_gc", {}).get(self._store, {})
 
         last_run = data.get("last-run")
@@ -677,26 +661,21 @@ class ProxmoxPBSMaintenanceSensor(ProxmoxPbsBaseSensor):
         removed = data.get("removed-bytes", 0)
         processed = data.get("processed-bytes", 0)
 
-        # No GC data at all
         if not any([last_run, pending, removed, processed]):
             return "No Data"
 
-        # GC running (task-level)
         tasks = self.coordinator.data.get("pbs_tasks", [])
         task = tasks[0] if isinstance(tasks, list) and tasks else {}
 
         if task.get("worker_type") == "garbage_collection" and not task.get("endtime"):
             return "Running"
 
-        # Pending removals
         if pending > 0:
             return "Pending"
 
-        # Removed something
         if removed > 0:
             return "Cleaned"
 
-        # Completed GC
         if last_run:
             return "OK"
 
@@ -704,7 +683,6 @@ class ProxmoxPBSMaintenanceSensor(ProxmoxPbsBaseSensor):
 
     @property
     def extra_state_attributes(self):
-        """GC details in GB + last run timestamp."""
         from datetime import datetime
         data = self.coordinator.data.get("pbs_gc", {}).get(self._store, {})
 
@@ -729,7 +707,6 @@ class ProxmoxPBSMaintenanceSensor(ProxmoxPbsBaseSensor):
 
     @property
     def device_info(self):
-        """Maintenance group for this datastore."""
         return {
             "identifiers": {(DOMAIN, f"pbs_maintenance_{self._server_id}_{self._store}")},
             "name": f"PBS Maintenance: {self._store}",
@@ -737,26 +714,3 @@ class ProxmoxPBSMaintenanceSensor(ProxmoxPbsBaseSensor):
             "model": "Backup Server Maintenance",
         }
 
-# ============================================================
-#  END OF PBS SENSOR DEFINITIONS
-# ============================================================
-
-# Nota:
-# Este archivo ha sido reorganizado siguiendo la arquitectura premium:
-#
-#   • PBS Server (estado del nodo)
-#   • PBS Tasks (tareas globales)
-#   • PBS Datastore (almacenamiento)
-#   • PBS Maintenance (mantenimiento por datastore)
-#
-# Cada sensor tiene su propio device_info para que Home Assistant
-# agrupe las entidades correctamente en dispositivos separados.
-#
-# Si añades nuevos sensores en el futuro, sigue esta estructura:
-#
-#   - Sensores del nodo → pbs_server_<id>
-#   - Sensores de tareas → pbs_tasks_<id>
-#   - Sensores del datastore → pbs_datastore_<id>_<store>
-#   - Sensores de mantenimiento → pbs_maintenance_<id>_<store>
-#
-# Esto garantiza claridad, escalabilidad y una experiencia premium.

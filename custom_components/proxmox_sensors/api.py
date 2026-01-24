@@ -1,6 +1,4 @@
-# ============================================================
-#  API — PROXMOX SENSORS EXTENDED
-# ============================================================
+# ========API — PROXMOX SENSORS EXTENDED=============
 
 from typing import Any, Optional
 import logging
@@ -8,7 +6,6 @@ import requests
 import urllib3
 from proxmoxer import ProxmoxAPI
 
-# Disable SSL warnings when certificate verification is disabled
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 LOGGER = logging.getLogger(__name__)
@@ -17,12 +14,10 @@ LOGGER = logging.getLogger(__name__)
 class ProxmoxClient:
     """
     Unified API client for both Proxmox VE (PVE) and Proxmox Backup Server (PBS).
-
     - PVE uses the official proxmoxer library.
     - PBS uses a lightweight HTTP client to support restricted tokens
-      on hosted PBS providers (e.g., Tuxis).
+      on hosted PBS providers.
     """
-
     def __init__(
         self,
         host: str,
@@ -44,12 +39,10 @@ class ProxmoxClient:
         self._verify_ssl = verify_ssl
         self._proxmox: Optional[ProxmoxAPI] = None
 
-    # ============================================================
-    #  PVE CLIENT INITIALIZATION
-    # ============================================================
+    # =========PVE CLIENT=====================
 
     def _build_client_sync(self):
-        """Initialize the proxmoxer client for PVE."""
+        
         if self._server_type == "PBS":
             return
 
@@ -81,21 +74,15 @@ class ProxmoxClient:
             self._proxmox = None
 
     async def get_api_client(self, hass):
-        """Return the PVE API client, initializing it if needed."""
         if self._server_type == "PBS":
             return None
-
         if self._proxmox is None:
             await hass.async_add_executor_job(self._build_client_sync)
-
         return self._proxmox
 
-    # ============================================================
-    #  GENERIC GET/POST WRAPPERS
-    # ============================================================
+    # =======GET/POST WRAPPERS===========
 
     async def get(self, hass, path: str) -> Any:
-        """Unified GET request for both PVE and PBS."""
         if self._server_type == "PBS":
             return await hass.async_add_executor_job(self._pbs_request, "GET", path)
 
@@ -110,7 +97,6 @@ class ProxmoxClient:
             return None
 
     async def post(self, hass, path: str, data=None) -> Any:
-        """Unified POST request for PVE."""
         proxmox = await self.get_api_client(hass)
         if proxmox is None:
             return None
@@ -121,48 +107,36 @@ class ProxmoxClient:
             LOGGER.error("PVE POST error on %s: %s", path, err)
             return None
 
-    # ============================================================
-    #  PVE METHODS
-    # ============================================================
+    # =========PVE METHODS================
 
     async def get_cluster_tasks(self, hass):
-        """Return recent cluster tasks."""
         return await self.get(hass, "cluster/tasks") or []
 
     async def get_node_status(self, hass, node: str):
-        """Return general node status."""
         return await self.get(hass, f"nodes/{node}/status")
     
     async def get_node_network(self, hass, node: str):
-        """Return network interfaces and traffic counters for the node."""
         return await self.get(hass, f"nodes/{node}/network")
 
     async def get_vms(self, hass, node: str):
-        """Return all VMs in a node."""
         return await self.get(hass, f"nodes/{node}/qemu") or []
 
     async def get_containers(self, hass, node: str):
-        """Return all LXC containers in a node."""
         return await self.get(hass, f"nodes/{node}/lxc") or []
 
     async def get_container_status(self, hass, node: str, vmid: str):
-        """Return detailed container status."""
         return await self.get(hass, f"nodes/{node}/lxc/{vmid}/status/current")
 
     async def get_storages(self, hass, node: str):
-        """Return storage resources."""
         return await self.get(hass, f"nodes/{node}/storage") or []
 
     async def get_disks(self, hass, node: str):
-        """Return physical disks."""
         return await self.get(hass, f"nodes/{node}/disks/list") or []
 
     async def control_container(self, hass, node: str, vmid: str, command: str):
-        """Send start/stop/reboot/shutdown to a container."""
         return await self.post(hass, f"nodes/{node}/lxc/{vmid}/status/{command}")
 
     async def get_lm_sensors_http(self, hass, node: str):
-        """Fetch temperature and fan data from an external sensor script."""
         url = f"http://{self._host}:9000/sensors"
 
         def _fetch():
@@ -175,20 +149,12 @@ class ProxmoxClient:
 
         return await hass.async_add_executor_job(_fetch)
 
-    # ============================================================
-    #  PBS METHODS
-    # ============================================================
+    # =============PBS METHODS===============
 
     def _pbs_request(self, method: str, path: str, data=None):
-        """
-        Lightweight PBS API request handler.
 
-        Designed to work even with restricted token permissions
-        (e.g., hosted PBS providers such as Tuxis).
-        """
         port = self._port or 8007
 
-        # Normalize host (remove protocol and any existing port)
         clean_host = (
             self._host.replace("https://", "")
             .replace("http://", "")
@@ -197,7 +163,6 @@ class ProxmoxClient:
         )
         url = f"https://{clean_host}:{port}/api2/json/{path}"
 
-        # Build token identifier: user@realm!tokenid
         if not self._user or not self._token_secret:
             LOGGER.error("PBS token authentication requires user and token_secret")
             return None
@@ -235,38 +200,29 @@ class ProxmoxClient:
             return None
 
     async def get_pbs_datastores(self, hass):
-        """Return all PBS datastores."""
         data = await self.get(hass, "admin/datastore")
         return [d["store"] for d in data if isinstance(d, dict) and "store" in d] if data else []
 
     async def get_pbs_datastore_status(self, hass, store: str):
-        """Return datastore status."""
         return await self.get(hass, f"admin/datastore/{store}/status") or {}
 
     async def get_pbs_datastore_usage(self, hass, store: str):
-        """Return GC usage information."""
         return await self.get(hass, f"admin/datastore/{store}/gc") or {}
 
     async def get_pbs_tasks(self, hass):
-        """Return recent PBS tasks."""
         return await self.get(hass, "nodes/localhost/tasks") or []
 
     async def get_pbs_version(self, hass):
-        """Return PBS version information."""
         return await self.get(hass, "version") or {}
 
     async def get_pbs_backup_list(self, hass, store: str):
-        """Return all backups inside a datastore."""
         return await self.get(hass, f"admin/datastore/{store}/snapshots") or []
 
     async def get_pbs_node_status(self, hass):
-        """Obtiene el estado del hardware (CPU, RAM, etc.) del nodo PBS."""
         return await self.get(hass, "nodes/localhost/status") or {}
  
     async def get_pbs_gc(self, hass, store: str):
-        """Return GC info for a specific datastore."""
         return await self.get(hass, f"admin/datastore/{store}/gc") or {}
 
     async def get_pbs_snapshots(self, hass, store: str):
-        """Return snapshots for a specific datastore."""
         return await self.get(hass, f"admin/datastore/{store}/snapshots") or []

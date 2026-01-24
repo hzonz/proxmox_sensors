@@ -19,18 +19,16 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-# ------------------------------------------------------------
-#  SERVER TYPES AVAILABLE IN THE INTEGRATION
-# ------------------------------------------------------------
+# --------SERVER TYPES AVAILABLE IN THE INTEGRATION---------
+
 SERVER_TYPES = {
     "PVE": "Proxmox VE",
     "PBS": "Proxmox Backup Server"
 }
 
 
-# ============================================================
-#  MAIN CONFIG FLOW CLASS
-# ============================================================
+# ======MAIN CONFIG FLOW CLASS====================
+
 class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle the configuration flow for Proxmox Sensors."""
 
@@ -41,11 +39,9 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._config = {}
         self._use_token = False
 
-    # ========================================================
-    #  STEP 1 — USER INPUT (HOST + SERVER TYPE)
-    # ========================================================
+    # =======STEP 1 — USER INPUT (HOST + SERVER TYPE)======
+
     async def async_step_user(self, user_input=None) -> FlowResult:
-        """Step 1: Select host and server type."""
 
         if user_input is not None:
             self._config.update(user_input)
@@ -59,11 +55,9 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             })
         )
 
-    # ========================================================
-    #  STEP 2 — AUTH METHOD (PASSWORD OR TOKEN)
-    # ========================================================
+    # ===STEP 2 — AUTH METHOD (PASSWORD OR TOKEN)==========
+
     async def async_step_auth_method(self, user_input=None) -> FlowResult:
-        """Step 2: Choose between password or token authentication."""
 
         if user_input is not None:
             self._use_token = user_input.get("use_token", False)
@@ -76,12 +70,9 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             })
         )
 
-    # ========================================================
-    #  STEP 3 — CREDENTIALS (USER + TOKEN/PASSWORD)
-    #            + NODE SELECTION (ONLY PVE)
-    # ========================================================
+    #  STEP 3 — CREDENTIALS (USER + TOKEN/PASSWORD)+ NODE SELECTION (ONLY PVE)
+         
     async def async_step_credentials(self, user_input=None) -> FlowResult:
-        """Step 3: Enter credentials and node (if PVE)."""
 
         if user_input is not None:
             self._config.update(user_input)
@@ -91,7 +82,6 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             return await self._finish()
 
-        # Build dynamic schema
         schema_dict = {vol.Required(CONF_USER): str}
 
         if self._use_token:
@@ -110,11 +100,9 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(schema_dict)
         )
 
-    # ========================================================
-    #  STEP 4 — SELECT RESOURCES (ONLY FOR PVE)
-    # ========================================================
+    # =======STEP 4 — SELECT RESOURCES (ONLY FOR PVE)========
+
     async def async_step_select_resources(self, user_input=None) -> FlowResult:
-        """Step 4: Select resources to monitor (only for PVE)."""
 
         if user_input is not None:
             self._config["selected_vms"] = user_input.get("vms", [])
@@ -123,7 +111,6 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._config["enable_physical_disks"] = user_input.get("enable_physical_disks", True)
             return await self._finish()
 
-        # Fetch resources from PVE
         client = ProxmoxClient(
             host=self._config[CONF_HOST],
             user=self._config[CONF_USER],
@@ -168,11 +155,9 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.error("Error fetching resources: %s", e)
             return await self._finish()
 
-    # ========================================================
-    #  FINAL STEP — CREATE ENTRY
-    # ========================================================
+    # ======FINAL STEP — CREATE ENTRY==========
+
     async def _finish(self):
-        """Finalize and create the configuration entry."""
 
         if CONF_NODE not in self._config:
             self._config[CONF_NODE] = "Proxmox"
@@ -192,9 +177,8 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data=self._config,
         )
 
-    # ========================================================
-    #  OPTIONS FLOW HANDLER
-    # ========================================================
+    # ======OPTIONS FLOW HANDLER==========
+
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):

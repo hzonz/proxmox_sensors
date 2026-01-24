@@ -15,9 +15,8 @@ class ProxmoxHardwareSensor(ProxmoxBaseSensor):
 
         self._sensor_id = sensor_id
 
-        # ------------------------------------------------------------
-        # ICON ASSIGNMENT BASED ON SENSOR TYPE
-        # ------------------------------------------------------------
+        # ------------ICON ASSIGNMENT--------------------
+
         sid = sensor_id.lower()
 
         if "coretemp" in sid or "package id" in sid:
@@ -39,9 +38,7 @@ class ProxmoxHardwareSensor(ProxmoxBaseSensor):
         self._attr_device_class = "temperature"
         self._attr_state_class = "measurement"
 
-    # ============================================================
-    # FRIENDLY NAME MAPPING
-    # ============================================================
+    # =============FRIENDLY NAME======================
 
     def _friendly_name(self, sensor_id: str) -> str:
         sid = sensor_id.lower()
@@ -62,15 +59,11 @@ class ProxmoxHardwareSensor(ProxmoxBaseSensor):
         if "drivetemp" in sid or "scsi" in sid:
             return "SATA Drive – Temperature"
 
-        # Fallback: clean original name
         return sensor_id.replace("_", " ").title()
 
-    # ============================================================
-    # VALIDATION AND VALUE EXTRACTION
-    # ============================================================
+
 
     def is_valid(self) -> bool:
-        """Return True if the sensor has a meaningful value."""
         val = self._get_value()
         return val is not None
 
@@ -86,7 +79,7 @@ class ProxmoxHardwareSensor(ProxmoxBaseSensor):
     def _get_value(self):
         value = self.coordinator.data.get("hardware", {}).get(self._sensor_id)
 
-        # Case 1: dict (lm-sensors grouped)
+        # dict (lm-sensors grouped)
         if isinstance(value, dict):
             temp = value.get("temp1_input")
             try:
@@ -95,11 +88,11 @@ class ProxmoxHardwareSensor(ProxmoxBaseSensor):
             except (ValueError, TypeError):
                 return None
 
-        # Case 2: direct invalid values
+        # direct invalid values
         if value in ("N/A", "Desconocido", "unknown", "Unknown", "", None):
             return None
 
-        # Case 3: numeric conversion
+        # numeric conversion
         try:
             f_val = float(value)
             if f_val <= -50 or f_val >= 150:

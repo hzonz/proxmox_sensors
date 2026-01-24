@@ -1,6 +1,5 @@
-# ============================================================
-#  COORDINATOR — PROXMOX SENSORS EXTENDED
-# ============================================================
+# ======COORDINATOR — PROXMOX SENSORS EXTENDED===========
+
 
 import logging
 import asyncio
@@ -13,13 +12,11 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def create_proxmox_coordinator(hass, entry, client):
-    """Create and configure the Proxmox data update coordinator."""
 
     data = entry.data
     node = data.get(CONF_NODE, "Proxmox")
     server_type = data.get(CONF_PLATFORM_TYPE, "PVE")
 
-    # User-selected filtering options
     selected_vms = data.get("selected_vms", [])
     selected_cts = data.get("selected_cts", [])
     selected_storage = data.get("selected_storage", [])
@@ -28,16 +25,14 @@ async def create_proxmox_coordinator(hass, entry, client):
     enable_pbs_tasks = data.get("enable_pbs_tasks", True)
 
     async def async_update_data():
-        """Fetch and assemble all data for sensors."""
 
         result = {"server_type": server_type}
 
         try:
             async with asyncio.timeout(30):
 
-                # ============================================================
-                #  PBS (Proxmox Backup Server)
-                # ============================================================
+                # =======PBS===========
+
                 if server_type == "PBS":
 
                     result["pbs_datastores"] = {}
@@ -108,16 +103,13 @@ async def create_proxmox_coordinator(hass, entry, client):
 
                     return result
 
-                # ============================================================
-                #  PVE (Proxmox Virtual Environment)
-                # ============================================================
+                # =======PVE===========
+                
                 elif server_type == "PVE":
 
-                    # --- NODE STATUS ---
                     node_status = await client.get_node_status(hass, node)
                     result["node"] = node_status if isinstance(node_status, dict) else {}
 
-                    # --- NODE NETWORK TRAFFIC ---
                     try:
                         interfaces = await client.get_node_network(hass, node)
                         if isinstance(interfaces, list):
@@ -128,7 +120,6 @@ async def create_proxmox_coordinator(hass, entry, client):
                     except Exception as e:
                         _LOGGER.error("Error fetching node network traffic: %s", e)
 
-                    # --- HARDWARE SENSORS ---
                     result["hardware"] = {}
 
                     if enable_lm_sensors:
@@ -139,7 +130,6 @@ async def create_proxmox_coordinator(hass, entry, client):
                                     for k, v in values.items():
                                         result["hardware"][f"{chip}_{k}".lower()] = v
 
-                    # Prepare parallel resource fetch
                     resource_tasks = []
                     resource_keys = []
 
@@ -161,16 +151,14 @@ async def create_proxmox_coordinator(hass, entry, client):
 
                     results = await asyncio.gather(*resource_tasks, return_exceptions=True)
 
-                    # Process results
                     for key, res in zip(resource_keys, results):
                         if isinstance(res, Exception):
                             _LOGGER.error("Error fetching %s: %s", key, res)
                             result[key] = {} if key != "cluster_tasks" else []
                             continue
 
-                        # -------------------------
-                        # CLUSTER TASKS
-                        # -------------------------
+                        # ----CLUSTER TASKS--------
+
                         if key == "cluster_tasks":
                             result["tasks"] = res if isinstance(res, list) else []
                             if isinstance(res, list) and len(res) > 0:
@@ -185,9 +173,8 @@ async def create_proxmox_coordinator(hass, entry, client):
                             else:
                                 result["node"]["last_task"] = None
 
-                        # -------------------------
-                        # VMs
-                        # -------------------------
+                        # -----VMs--------
+                        
                         elif key == "vms":
                             vms_dict = {}
                             for vm in res or []:
@@ -221,9 +208,8 @@ async def create_proxmox_coordinator(hass, entry, client):
 
                             result["vms"] = vms_dict
 
-                        # -------------------------
-                        # CTs
-                        # -------------------------
+                        # -----CTs---------
+
                         elif key == "cts":
                             cts_dict = {}
                             for ct in res or []:
@@ -256,18 +242,16 @@ async def create_proxmox_coordinator(hass, entry, client):
 
                             result["cts"] = cts_dict
 
-                        # -------------------------
-                        # STORAGE
-                        # -------------------------
+                        # -----STORAGE----------
+
                         elif key == "storage":
                             result["storage"] = {
                                 st["storage"]: st for st in res
                                 if isinstance(st, dict) and "storage" in st and st["storage"] in selected_storage
                             }
 
-                        # -------------------------
-                        # DISKS
-                        # -------------------------
+                        # ----DISKS-----------
+                        
                         elif key == "disks":
                             result["disks"] = {
                                 d.get("devpath", f"disk_{i}"): d for i, d in enumerate(res or [])

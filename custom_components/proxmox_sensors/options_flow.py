@@ -1,6 +1,4 @@
-# ============================================================
-#  OPTIONS FLOW — PROXMOX SENSORS EXTENDED
-# ============================================================
+# =========OPTIONS FLOW — PROXMOX SENSORS EXTENDED===========
 
 from __future__ import annotations
 import voluptuous as vol
@@ -16,17 +14,14 @@ from .api import ProxmoxClient
 
 
 class ProxmoxOptionsFlow(config_entries.OptionsFlow):
-    """Handle the options flow for Proxmox Sensors."""
 
     async def async_step_init(self, user_input=None) -> FlowResult:
-        """Main entry point for the options flow."""
 
         conf = self.config_entry.data
         server_type = conf.get(CONF_PLATFORM_TYPE, "PVE")
 
-        # ============================================================
-        #  SAVE OPTIONS
-        # ============================================================
+        # ========SAVE OPTIONS====================
+
         if user_input is not None:
 
             new_data = dict(self.config_entry.data)
@@ -40,20 +35,17 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
                     "selected_storage": user_input.get("storage", []),
                 })
 
-            # PBS has no configurable options (kept for future expansion)
             self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
             await self.hass.config_entries.async_reload(self.config_entry.entry_id)
             return self.async_create_entry(title="", data={})
 
-        # ============================================================
-        #  PBS — NO OPTIONS AVAILABLE
-        # ============================================================
+        # =======PBS — NO OPTIONS AVAILABLE==============
+
         if server_type == "PBS":
             return self.async_abort(reason="pbs_no_options")
 
-        # ============================================================
-        #  PVE — LOAD RESOURCES AND SHOW FORM
-        # ============================================================
+        # ======PVE — LOAD RESOURCES AND SHOW FORM=============
+
         client = ProxmoxClient(
             host=conf[CONF_HOST],
             user=conf[CONF_USER],
@@ -113,7 +105,6 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
             )
 
         except Exception:
-            # If resource loading fails, still allow toggling sensor options
             return self.async_show_form(
                 step_id="init",
                 data_schema=vol.Schema({

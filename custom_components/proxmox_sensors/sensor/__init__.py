@@ -89,9 +89,8 @@ async def async_setup_entry(
         _LOGGER.warning("No data found in coordinator for %s", node)
         return
 
-    # =========================================================
-    # PVE SECTION
-    # =========================================================
+    # =================PVE SECTION===================
+
     if server_type == "PVE":
 
         # Hardware monitoring (lm-sensors)
@@ -208,9 +207,8 @@ async def async_setup_entry(
                 ]:
                     entities.append(ProxmoxContainerAttributeSensor(coordinator, ct_id, node, label, attr, unit, icon))
 
-    # =========================================================
-    # PBS SECTION
-    # =========================================================
+    # ===================PBS SECTION====================
+
     elif server_type == "PBS":
 
         server_id = entry.data["server_id"]  # Unique ID: pbs_1, pbs_2...
@@ -251,9 +249,8 @@ async def async_setup_entry(
         entities.append(ProxmoxPBSVersionSensor(coordinator, server_id))
         entities.append(ProxmoxPBSReleaseSensor(coordinator, server_id))
 
-    # =========================================================
-    # ENTITY AND DEVICE CLEANUP (Orphaned resources)
-    # =========================================================
+    # =========ENTITY AND DEVICE CLEANUP (Orphaned resources)============
+
     ent_reg = er.async_get(hass)
     existing_entries = er.async_entries_for_config_entry(ent_reg, entry.entry_id)
     new_unique_ids = {entity.unique_id for entity in entities}

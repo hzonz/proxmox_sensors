@@ -3,7 +3,7 @@ from .base import ProxmoxBaseSensor
 from ..const import DOMAIN
 
 def _format_gb(value):
-    """Helper to convert bytes to GB."""
+    
     try:
         if value is None:
             return 0
@@ -12,18 +12,12 @@ def _format_gb(value):
         return 0
 
 class ProxmoxDiskSensor(ProxmoxBaseSensor):
-    """
-    Physical disk capacity sensor.
-    Grouped into a sub-device linked to the main Node.
-    """
 
     def __init__(self, coordinator, disk_id, node, label):
-        """Initialize the disk sensor."""
+  
         disks = coordinator.data.get("disks", {})
         disk_info = disks.get(disk_id, {})
         self._model = disk_info.get("model", label or "Unknown")
-        
-        # Clean name example: "CT1000P3SSD8 Size"
         name = f"{self._model} Size"
         unique_id = f"proxmox_disk_{node}_{disk_id}_v3"
 
@@ -36,9 +30,7 @@ class ProxmoxDiskSensor(ProxmoxBaseSensor):
 
     @property
     def device_info(self):
-        """Group all disks into a device linked to the main node."""
-        node_id = self._node.lower()
-        
+        node_id = self._node.lower()   
         return {
             "identifiers": {(DOMAIN, f"proxmox_disks_group_{node_id}")},
             "name": f"2. Disks: {self._node.capitalize()}",
@@ -48,25 +40,19 @@ class ProxmoxDiskSensor(ProxmoxBaseSensor):
         }
 
     def _get_value(self):
-        """Extract disk size from the coordinator."""
         disks = self.coordinator.data.get("disks", {})
-        disk = disks.get(self._disk_id)
-        
+        disk = disks.get(self._disk_id)  
         if not disk:
             return None
-
         size = disk.get("size")
         return _format_gb(size) if size is not None else None
 
     @property
     def extra_state_attributes(self):
-        """Return additional disk attributes."""
         disks = self.coordinator.data.get("disks", {})
         disk = disks.get(self._disk_id)
-
         if not disk:
             return {}
-
         return {
             "Model": disk.get("model", "Unknown"),
             "Serial": disk.get("serial", "N/A"),
