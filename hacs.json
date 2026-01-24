@@ -1,5 +1,5 @@
 {
-  "name": "Proxmox Sensors Extended",
+  "name": "Proxmox Extended Sensors",
   "render_readme": true,
   "country": "ES",
   "homeassistant": "2023.6.0",
