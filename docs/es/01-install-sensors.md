@@ -66,8 +66,6 @@ Do you want to add these lines automatically to /etc/modules? (yes/NO)
 
 modprobe coretemp
 
-
-
 # Verifica que se muestran las temperaturas
 
 sensors
