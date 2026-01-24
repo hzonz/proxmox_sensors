@@ -1,40 +1,79 @@
-# 🚀 Шаг 1: Установка и настройка датчиков
-**В данном руководстве объясняется, как подготовить узел Proxmox для передачи данных об оборудовании и обеспечить доступность показаний температуры для Home Assistant.**
+# 🚀 Paso 1: Instalación y configuración de sensores
 
-## 1. Установка зависимостей
-* **Сначала установим инструменты, необходимые для считывания данных с датчиков, встроенных в материнскую плату и процессор:**
+**Esta guía explica cómo preparar el nodo Proxmox para que exponga los datos de hardware y asegure que las lecturas de temperatura estén disponibles para Home Assistant.**
+
+
+
+## 1. Instalación de dependencias
+
+* **Primero, instalamos las herramientas necesarias para leer los sensores integrados en la placa base y la CPU:**
+
+
 
 ```bash
+
 apt update && apt install lm-sensors -y
+
 ```
 
-## 2. Обнаружение оборудования
-* **Чтобы система определила, какие драйверы ей необходимы, запустите мастер обнаружения:**
+
+
+## 2. Detección de hardware
+
+* **Para que el sistema identifique qué controladores (drivers) necesita, ejecutamos el asistente de detección:**
+
+
 
 ```bash
-sensors-detect
-```
-**Отвечайте YES (или нажимайте Enter) на все вопросы. По завершении система определит необходимые модули (например: `coretemp` для процессоров Intel).**
 
-## 3. Сохранение модулей
-**Чтобы датчики активировались автоматически при перезагрузке сервера, мастер `sensors-detect` задаст важный вопрос в конце процесса:**
+sensors-detect
+
+```
+
+**Responde YES (o pulsa Enter) a todas las preguntas. Al finalizar, el sistema identificará los módulos necesarios (por ejemplo: `coretemp` para CPUs Intel).**
+
+
+
+## 3. Persistencia de módulos
+
+**Para que los sensores se activen solos al reiniciar el servidor, el asistente `sensors-detect` te hará una pregunta clave al final del proceso:**
+
+
 
 ```text
+
 Do you want to add these lines automatically to /etc/modules? (yes/NO)
+
 ```
+
+
 
 > [!CAUTION]
-> **Вы должны вручную ввести `yes` и нажать Enter.** Если вы просто нажмете Enter, ничего не введя, система выберет `NO` по умолчанию. В этом случае датчики не будут загружаться после перезагрузки, и Home Assistant перестанет получать данные о температуре.
 
-## 4. Немедленная проверка
-**Чтобы активировать датчики прямо сейчас, не дожидаясь перезагрузки, выполните:**
+> **Debes escribir `yes` manualmente y pulsar Enter.** Si solo pulsas Enter sin escribir nada, el sistema seleccionará `NO` por defecto. Si esto ocurre, los sensores no se cargarán tras un reinicio y Home Assistant dejará de recibir datos de temperatura.
+
+
+
+## 4. Verificación inmediata
+
+**Para activar los sensores ahora mismo sin tener que reiniciar, ejecuta:**
+
+
 
 ```bash
-# Загрузите обнаруженные модули (пример для Intel)
+
+# Carga los módulos detectados (ejemplo para Intel)
+
 modprobe coretemp
 
-# Проверьте, отображаются ли температуры
+
+
+# Verifica que se muestran las temperaturas
+
 sensors
+
 ```
 
-**Готово! Как только команда `sensors` начнет выводить данные в терминале, ваша интеграция в Home Assistant сможет автоматически считывать их через API Proxmox.**
+
+
+**¡Listo! Una vez que el comando `sensors` devuelva datos en la terminal, tu integración de Home Assistant podrá leerlos automáticamente a través de la API de Proxmox.**
