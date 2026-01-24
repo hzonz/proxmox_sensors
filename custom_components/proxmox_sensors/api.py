@@ -106,6 +106,18 @@ class ProxmoxClient:
         except Exception as err:
             LOGGER.error("PVE POST error on %s: %s", path, err)
             return None
+        
+    async def get_vm_status(self, hass, node, vmid):
+        # Detect VM type
+        vmtype = await self.get_vm_type(hass, node, vmid)
+
+        if vmtype == "qemu":
+            return await self.get_qemu_status(hass, node, vmid)
+        elif vmtype == "lxc":
+            return await self.get_lxc_status(hass, node, vmid)
+        else:
+            return None
+
 
     # =========PVE METHODS================
 
@@ -127,6 +139,24 @@ class ProxmoxClient:
     async def get_container_status(self, hass, node: str, vmid: str):
         return await self.get(hass, f"nodes/{node}/lxc/{vmid}/status/current")
 
+    async def get_vm_type(self, hass, node: str, vmid: str) -> str:
+        """Return 'qemu' or 'lxc' depending on VM type."""
+        # Check QEMU VMs
+        vms = await self.get_vms(hass, node)
+        if isinstance(vms, list):
+            for vm in vms:
+                if str(vm.get("vmid")) == str(vmid):
+                    return "qemu"
+
+        # Check LXC containers
+        containers = await self.get_containers(hass, node)
+        if isinstance(containers, list):
+            for ct in containers:
+                if str(ct.get("vmid")) == str(vmid):
+                    return "lxc"
+
+        return "unknown"
+
     async def get_storages(self, hass, node: str):
         return await self.get(hass, f"nodes/{node}/storage") or []
 
@@ -135,6 +165,12 @@ class ProxmoxClient:
 
     async def control_container(self, hass, node: str, vmid: str, command: str):
         return await self.post(hass, f"nodes/{node}/lxc/{vmid}/status/{command}")
+    
+    async def get_qemu_status(self, hass, node: str, vmid: str):
+        return await self.get(hass, f"nodes/{node}/qemu/{vmid}/status/current")
+
+    async def get_lxc_status(self, hass, node: str, vmid: str):
+        return await self.get(hass, f"nodes/{node}/lxc/{vmid}/status/current")
 
     async def get_lm_sensors_http(self, hass, node: str):
         url = f"http://{self._host}:9000/sensors"
@@ -183,7 +219,7 @@ class ProxmoxClient:
             if method == "GET":
                 r = requests.get(url, headers=headers, verify=self._verify_ssl, timeout=15)
             else:
-                r = requests.post(url, headers=headers, json=data or {}, verify=self._verify_ssl, timeout=15)
+                r = requests.post(url, headers=headers, json=(data or {}), verify=self._verify_ssl, timeout=15)
 
             if r.status_code == 403:
                 LOGGER.debug("PBS request forbidden on path %s (403)", path)
