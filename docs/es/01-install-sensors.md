@@ -39,13 +39,7 @@ sensors-detect
 **Para que los sensores se activen solos al reiniciar el servidor, el asistente `sensors-detect` te hará una pregunta clave al final del proceso:**
 
 
-
-```text
-
-Do you want to add these lines automatically to /etc/modules? (yes/NO)
-
-```
-
+`Do you want to add these lines automatically to /etc/modules? (yes/NO)`
 
 
 > [!CAUTION]
