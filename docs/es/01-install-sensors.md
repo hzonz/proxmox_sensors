@@ -39,12 +39,13 @@ sensors-detect
 **Para que los sensores se activen solos al reiniciar el servidor, el asistente `sensors-detect` te hará una pregunta clave al final del proceso:**
 
 
+
 `Do you want to add these lines automatically to /etc/modules? (yes/NO)`
 
 
-> [!CAUTION]
 
->  **Debes escribir `yes` manualmente y pulsar Enter.** Si solo pulsas Enter sin escribir nada, el sistema seleccionará `NO` por defecto. Si esto ocurre, los sensores no se cargarán tras un reinicio y Home Assistant dejará de recibir datos de temperatura.
+> [!CAUTION]
+> **Debes escribir `yes` manualmente y pulsar Enter.** Si solo pulsas Enter sin escribir nada, el sistema seleccionará `NO` por defecto. Si esto ocurre, los sensores no se cargarán tras un reinicio y Home Assistant dejará de recibir datos de temperatura.
 
 
 
