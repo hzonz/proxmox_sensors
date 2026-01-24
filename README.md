@@ -53,8 +53,8 @@ This integration is designed for users who require full control over their hardw
 ---
 
 ## 🚀 Roadmap
-- [ ] Network RX/TX sensors for VMs and Containers.
-- [ ] Detailed host CPU/RAM advanced metrics.
+- [x] Network RX/TX sensors for VMs and Containers.
+- [x] Detailed host CPU/RAM advanced metrics.
 - [ ] Custom Lovelace Cards templates.
 - [ ] Official HACS Repository submission.
 
