@@ -12,11 +12,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
 
-    # Selección correcta del cliente según tipo de servidor
     if data.get("server_type") == "PVE":
         client = getattr(coordinator, "client", data.get("client"))
     else:
-        # PBS usa SIEMPRE el cliente almacenado en data["client"]
         client = data.get("client")
 
     node = data.get("node", "Proxmox_Node")
@@ -242,3 +240,4 @@ class PBSSyncButton(PBSBaseButton):
         await run_sync(self._client, self.hass, self._datastore)
         self._update_last_action("Sync OK")
         await self.coordinator.async_request_refresh()
+
