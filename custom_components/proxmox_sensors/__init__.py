@@ -54,7 +54,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "client": client,
         "coordinator": coordinator,
         "node": data[CONF_NODE],
-        "server_type": client._server_type,  # ← FIX DEFINITIVO
+        "server_type": client._server_type,  
         "features": data.get("features", {}),
     }
 
@@ -73,3 +73,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass.data.pop(DOMAIN)
 
     return unload_ok
+
