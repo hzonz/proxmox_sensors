@@ -16,6 +16,7 @@ from .const import (
     CONF_TOKEN_SECRET,
     CONF_NODE,
     CONF_PLATFORM_TYPE,
+    CONF_VERIFY_SSL,
 )
 
 from .api import ProxmoxClient
@@ -36,7 +37,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         token_id=data.get(CONF_TOKEN_ID),
         token_secret=data.get(CONF_TOKEN_SECRET),
         server_type=data[CONF_PLATFORM_TYPE],
-        verify_ssl=False,
+        verify_ssl=data.get(CONF_VERIFY_SSL, False),
     )
 
     coordinator = await create_proxmox_coordinator(hass, entry, client)
