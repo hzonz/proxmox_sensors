@@ -15,6 +15,7 @@ from .api import ProxmoxClient
 from .const import (
     DOMAIN, CONF_HOST, CONF_USER, CONF_PASSWORD,
     CONF_TOKEN_ID, CONF_TOKEN_SECRET, CONF_NODE, CONF_PLATFORM_TYPE,
+    CONF_VERIFY_SSL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -71,7 +72,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     #  STEP 3 — CREDENTIALS (USER + TOKEN/PASSWORD)+ NODE SELECTION (ONLY PVE)
-         
+
     async def async_step_credentials(self, user_input=None) -> FlowResult:
 
         if user_input is not None:
@@ -94,6 +95,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             schema_dict[vol.Required(CONF_NODE)] = str
 
         schema_dict[vol.Optional("enable_lm_sensors", default=True)] = bool
+        schema_dict[vol.Optional(CONF_VERIFY_SSL, default=True)] = bool
 
         return self.async_show_form(
             step_id="credentials",
@@ -118,7 +120,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             token_id=self._config.get(CONF_TOKEN_ID),
             token_secret=self._config.get(CONF_TOKEN_SECRET),
             server_type=self._config[CONF_PLATFORM_TYPE],
-            verify_ssl=False
+            verify_ssl=self._config.get(CONF_VERIFY_SSL, True),
         )
 
         node = self._config[CONF_NODE]
