@@ -53,10 +53,19 @@ This integration is designed for users who require full control over their hardw
 ---
 
 ## 🚀 Roadmap
-- [x] Network RX/TX sensors for VMs and Containers.
-- [x] Detailed host CPU/RAM advanced metrics.
-- [ ] Custom Lovelace Cards templates.
-- [ ] Official HACS Repository submission.
+
+- [x] Network RX/TX sensors for VMs and Containers  
+- [x] Detailed host CPU/RAM advanced metrics  
+- [x] PBS maintenance buttons (GC, Prune, Verify, Sync)  
+- [x] New PBS “Last Action” sensor with persistent local state  
+- [x] Improved PBS sensor naming (cleaner UI without datastore prefix)  
+- [x] Internal refactor and code cleanup for better stability and maintainability  
+
+- [ ] Custom Lovelace Card templates  
+- [ ] Official HACS Repository submission  
+- [ ] Additional PBS maintenance sensors (progress, duration, logs)  
+- [ ] Optional advanced PBS dashboard  
+- [ ] **Create backups directly from PVE (VMs & Containers) via Home Assistant**  
 
 ---
 
