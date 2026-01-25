@@ -25,7 +25,8 @@
           "token_id": "Token ID (ej: usuario@pve!nombre)",
           "token_secret": "Token Secret",
           "node": "Nombre del Nodo Proxmox (Solo PVE)",
-          "enable_lm_sensors": "Monitorizar temperaturas (lm-sensors)"
+          "enable_lm_sensors": "Monitorizar temperaturas (lm-sensors)",
+          "verify_ssl": "Verificar Certificado SSL"
         }
       },
       "select_resources": {
@@ -58,7 +59,8 @@
           "cts": "Seleccionar Contenedores (LXC)",
           "storage": "Seleccionar Almacenamiento",
           "enable_lm_sensors": "Activar sensores de hardware (lm-sensors)",
-          "enable_physical_disks": "Activar sensores de discos físicos"
+          "enable_physical_disks": "Activar sensores de discos físicos",
+          "verify_ssl": "Verificar Certificado SSL"
         }
       }
     }
