@@ -97,7 +97,7 @@ class ProxmoxClient:
     async def get(self, hass, path: str) -> Any:
         """Unified GET request for both PVE and PBS."""
         if self._server_type == "PBS":
-            return await hass.async_add_executor_job(self._pbs_request, "GET", path)
+            return await hass.async_add_executor_job(self._pbs_request, "GET", path, None)
 
         proxmox = await self.get_api_client(hass)
         if proxmox is None:
@@ -133,6 +133,10 @@ class ProxmoxClient:
         """Return general node status."""
         return await self.get(hass, f"nodes/{node}/status")
 
+    async def get_node_network(self, hass, node: str):
+        """Return node network interfaces (para TX/RX)."""
+        return await self.get(hass, f"nodes/{node}/network") or []
+
     async def get_vms(self, hass, node: str):
         """Return all VMs in a node."""
         return await self.get(hass, f"nodes/{node}/qemu") or []
@@ -144,6 +148,39 @@ class ProxmoxClient:
     async def get_container_status(self, hass, node: str, vmid: str):
         """Return detailed container status."""
         return await self.get(hass, f"nodes/{node}/lxc/{vmid}/status/current")
+
+    async def get_qemu_status(self, hass, node: str, vmid: str):
+        """Return detailed QEMU VM status."""
+        return await self.get(hass, f"nodes/{node}/qemu/{vmid}/status/current")
+
+    async def get_lxc_status(self, hass, node: str, vmid: str):
+        """Return detailed LXC container status."""
+        return await self.get(hass, f"nodes/{node}/lxc/{vmid}/status/current")
+
+    async def get_vm_type(self, hass, node: str, vmid: str) -> str:
+        """Return 'qemu' or 'lxc' depending on VM type."""
+        vms = await self.get_vms(hass, node)
+        if isinstance(vms, list):
+            for vm in vms:
+                if str(vm.get("vmid")) == str(vmid):
+                    return "qemu"
+
+        containers = await self.get_containers(hass, node)
+        if isinstance(containers, list):
+            for ct in containers:
+                if str(ct.get("vmid")) == str(vmid):
+                    return "lxc"
+
+        return "unknown"
+
+    async def get_vm_status(self, hass, node: str, vmid: str):
+        """Return VM or CT status, auto-detecting type."""
+        vmtype = await self.get_vm_type(hass, node, vmid)
+        if vmtype == "qemu":
+            return await self.get_qemu_status(hass, node, vmid)
+        if vmtype == "lxc":
+            return await self.get_lxc_status(hass, node, vmid)
+        return None
 
     async def get_storages(self, hass, node: str):
         """Return storage resources."""
@@ -172,7 +209,7 @@ class ProxmoxClient:
         return await hass.async_add_executor_job(_fetch)
 
     # ============================================================
-    #  PBS METHODS
+    #  PBS LOW-LEVEL REQUEST + WRAPPERS
     # ============================================================
 
     def _pbs_request(self, method: str, path: str, data=None):
@@ -214,7 +251,7 @@ class ProxmoxClient:
             if method == "GET":
                 r = requests.get(url, headers=headers, verify=self._verify_ssl, timeout=15)
             else:
-                r = requests.post(url, headers=headers, json=data or {}, verify=self._verify_ssl, timeout=15)
+                r = requests.post(url, headers=headers, json=(data or {}), verify=self._verify_ssl, timeout=15)
 
             if r.status_code == 403:
                 LOGGER.debug("PBS request forbidden on path %s (403)", path)
@@ -230,39 +267,51 @@ class ProxmoxClient:
             LOGGER.debug("PBS path %s unreachable: %s", path, err)
             return None
 
+    async def pbs_get(self, hass, path: str) -> Any:
+        """Explicit GET wrapper for PBS endpoints."""
+        return await hass.async_add_executor_job(self._pbs_request, "GET", path, None)
+
+    async def pbs_post(self, hass, path: str, data=None) -> Any:
+        """Explicit POST wrapper for PBS endpoints."""
+        return await hass.async_add_executor_job(self._pbs_request, "POST", path, data or {})
+
+    # ============================================================
+    #  PBS HIGH-LEVEL METHODS
+    # ============================================================
+
     async def get_pbs_datastores(self, hass):
         """Return all PBS datastores."""
-        data = await self.get(hass, "admin/datastore")
+        data = await self.pbs_get(hass, "admin/datastore")
         return [d["store"] for d in data if isinstance(d, dict) and "store" in d] if data else []
 
     async def get_pbs_datastore_status(self, hass, store: str):
         """Return datastore status."""
-        return await self.get(hass, f"admin/datastore/{store}/status") or {}
+        return await self.pbs_get(hass, f"admin/datastore/{store}/status") or {}
 
     async def get_pbs_datastore_usage(self, hass, store: str):
         """Return GC usage information."""
-        return await self.get(hass, f"admin/datastore/{store}/gc") or {}
+        return await self.pbs_get(hass, f"admin/datastore/{store}/gc") or {}
 
     async def get_pbs_tasks(self, hass):
         """Return recent PBS tasks."""
-        return await self.get(hass, "nodes/localhost/tasks") or []
+        return await self.pbs_get(hass, "nodes/localhost/tasks") or []
 
     async def get_pbs_version(self, hass):
         """Return PBS version information."""
-        return await self.get(hass, "version") or {}
+        return await self.pbs_get(hass, "version") or {}
 
     async def get_pbs_backup_list(self, hass, store: str):
         """Return all backups inside a datastore."""
-        return await self.get(hass, f"admin/datastore/{store}/snapshots") or []
+        return await self.pbs_get(hass, f"admin/datastore/{store}/snapshots") or []
 
     async def get_pbs_node_status(self, hass):
-        """Obtiene el estado del hardware (CPU, RAM, etc.) del nodo PBS."""
-        return await self.get(hass, "nodes/localhost/status") or {}
- 
+        """Return PBS node hardware status (CPU, RAM, etc.)."""
+        return await self.pbs_get(hass, "nodes/localhost/status") or {}
+
     async def get_pbs_gc(self, hass, store: str):
         """Return GC info for a specific datastore."""
-        return await self.get(hass, f"admin/datastore/{store}/gc") or {}
+        return await self.pbs_get(hass, f"admin/datastore/{store}/gc") or {}
 
     async def get_pbs_snapshots(self, hass, store: str):
         """Return snapshots for a specific datastore."""
-        return await self.get(hass, f"admin/datastore/{store}/snapshots") or []
+        return await self.pbs_get(hass, f"admin/datastore/{store}/snapshots") or []
