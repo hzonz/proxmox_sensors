@@ -54,11 +54,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "client": client,
         "coordinator": coordinator,
         "node": data[CONF_NODE],
-        "server_type": data[CONF_PLATFORM_TYPE],
+        "server_type": client._server_type,  # ← FIX DEFINITIVO
         "features": data.get("features", {}),
     }
 
-    # Load only official platforms (sensor + button)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
