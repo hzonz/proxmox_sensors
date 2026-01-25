@@ -1,6 +1,5 @@
 # ======COORDINATOR — PROXMOX SENSORS EXTENDED===========
 
-
 import logging
 import asyncio
 from datetime import timedelta
@@ -104,7 +103,7 @@ async def create_proxmox_coordinator(hass, entry, client):
                     return result
 
                 # =======PVE===========
-                
+
                 elif server_type == "PVE":
 
                     node_status = await client.get_node_status(hass, node)
@@ -174,7 +173,7 @@ async def create_proxmox_coordinator(hass, entry, client):
                                 result["node"]["last_task"] = None
 
                         # -----VMs--------
-                        
+
                         elif key == "vms":
                             vms_dict = {}
                             for vm in res or []:
@@ -184,7 +183,6 @@ async def create_proxmox_coordinator(hass, entry, client):
 
                                 base = dict(vm)
 
-                                # --- GET DETAILED VM STATUS ---
                                 try:
                                     status_raw = await client.get_vm_status(hass, node, vmid)
                                     detailed = None
@@ -251,7 +249,7 @@ async def create_proxmox_coordinator(hass, entry, client):
                             }
 
                         # ----DISKS-----------
-                        
+
                         elif key == "disks":
                             result["disks"] = {
                                 d.get("devpath", f"disk_{i}"): d for i, d in enumerate(res or [])
@@ -272,4 +270,5 @@ async def create_proxmox_coordinator(hass, entry, client):
     )
 
     coordinator.client = client
+    coordinator.api = client
     return coordinator

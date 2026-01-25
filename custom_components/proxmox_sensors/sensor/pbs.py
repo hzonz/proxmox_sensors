@@ -21,8 +21,8 @@ class ProxmoxPBSVersionSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_server_{self._server_id}")},
-            "name": f"PBS Server {self._server_id}",
+            "identifiers": {(DOMAIN, "server")},
+            "name": "Server",
             "manufacturer": "Proxmox",
             "model": "Backup Server",
         }
@@ -45,8 +45,8 @@ class ProxmoxPBSReleaseSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_server_{self._server_id}")},
-            "name": f"PBS Server {self._server_id}",
+            "identifiers": {(DOMAIN, "server")},
+            "name": "Server",
             "manufacturer": "Proxmox",
             "model": "Backup Server",
         }
@@ -69,8 +69,8 @@ class ProxmoxPBSAuthStatusSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_server_{self._server_id}")},
-            "name": f"PBS Server {self._server_id}",
+            "identifiers": {(DOMAIN, "server")},
+            "name": "Server",
             "manufacturer": "Proxmox",
             "model": "Backup Server",
         }
@@ -90,8 +90,8 @@ class ProxmoxPBSCpuSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_server_{self._server_id}")},
-            "name": f"PBS Server {self._server_id}",
+            "identifiers": {(DOMAIN, "server")},
+            "name": "Server",
             "manufacturer": "Proxmox",
             "model": "Backup Server",
         }
@@ -125,8 +125,8 @@ class ProxmoxPBSRamSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_server_{self._server_id}")},
-            "name": f"PBS Server {self._server_id}",
+            "identifiers": {(DOMAIN, "server")},
+            "name": "Server",
             "manufacturer": "Proxmox",
             "model": "Backup Server",
         }
@@ -159,8 +159,8 @@ class ProxmoxPBSTaskSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
-            "name": f"PBS Tasks ({self._server_id})",
+            "identifiers": {(DOMAIN, f"tasks")},
+            "name": "Tasks",
             "manufacturer": "Proxmox",
             "model": "Backup Server Tasks",
         }
@@ -186,8 +186,8 @@ class ProxmoxPBSTaskTypeSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
-            "name": f"PBS Tasks ({self._server_id})",
+            "identifiers": {(DOMAIN, f"tasks")},
+            "name": "Tasks",
             "manufacturer": "Proxmox",
             "model": "Backup Server Tasks",
         }
@@ -206,7 +206,7 @@ class ProxmoxPBSTaskStatusSensor(ProxmoxPbsBaseSensor):
     def _get_value(self):
         tasks = self.coordinator.data.get("pbs_tasks", [])
         if not isinstance(tasks, list) or not tasks:
-            return None
+            return "OK"
 
         task = tasks[0]
         status = task.get("status")
@@ -219,16 +219,18 @@ class ProxmoxPBSTaskStatusSensor(ProxmoxPbsBaseSensor):
         if "error" in msg:
             return "Error"
 
-        return None
+        # Default fallback for tasks like "termproxy"
+        return "OK"
 
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
-            "name": f"PBS Tasks ({self._server_id})",
+            "identifiers": {(DOMAIN, "tasks")},
+            "name": "Tasks",
             "manufacturer": "Proxmox",
             "model": "Backup Server Tasks",
         }
+
 
 class ProxmoxPBSTaskMessageSensor(ProxmoxPbsBaseSensor):
 
@@ -253,8 +255,8 @@ class ProxmoxPBSTaskMessageSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
-            "name": f"PBS Tasks ({self._server_id})",
+            "identifiers": {(DOMAIN, f"tasks")},
+            "name": "Tasks",
             "manufacturer": "Proxmox",
             "model": "Backup Server Tasks",
         }
@@ -293,8 +295,8 @@ class ProxmoxPBSTaskDurationSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
-            "name": f"PBS Tasks ({self._server_id})",
+            "identifiers": {(DOMAIN, f"tasks")},
+            "name": "Tasks",
             "manufacturer": "Proxmox",
             "model": "Backup Server Tasks",
         }
@@ -323,8 +325,8 @@ class ProxmoxPBSDatastoreUsageSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_datastore_{self._server_id}_{self._store}")},
-            "name": f"PBS Datastore: {self._store}",
+            "identifiers": {(DOMAIN, f"datastore_{self._store}")},
+            "name": f"Datastore: {self._store}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Datastore",
         }
@@ -363,8 +365,8 @@ class ProxmoxPBSDatastoreSizeSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_datastore_{self._server_id}_{self._store}")},
-            "name": f"PBS Datastore: {self._store}",
+            "identifiers": {(DOMAIN, f"datastore_{self._store}")},
+            "name": f"Datastore: {self._store}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Datastore",
         }
@@ -393,8 +395,8 @@ class ProxmoxPBSDedupSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_datastore_{self._server_id}_{self._store}")},
-            "name": f"PBS Datastore: {self._store}",
+            "identifiers": {(DOMAIN, f"datastore_{self._store}")},
+            "name": f"Datastore: {self._store}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Datastore",
         }
@@ -420,8 +422,8 @@ class ProxmoxPBSBackupCountSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_datastore_{self._server_id}_{self._store}")},
-            "name": f"PBS Datastore: {self._store}",
+            "identifiers": {(DOMAIN, f"datastore_{self._store}")},
+            "name": f"Datastore: {self._store}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Datastore",
         }
@@ -454,8 +456,8 @@ class ProxmoxPBSLastBackupTimeSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_datastore_{self._server_id}_{self._store}")},
-            "name": f"PBS Datastore: {self._store}",
+            "identifiers": {(DOMAIN, f"datastore_{self._store}")},
+            "name": f"Datastore: {self._store}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Datastore",
         }
@@ -484,8 +486,8 @@ class ProxmoxPBSLastBackupSizeSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_datastore_{self._server_id}_{self._store}")},
-            "name": f"PBS Datastore: {self._store}",
+            "identifiers": {(DOMAIN, f"datastore_{self._store}")},
+            "name": f"Datastore: {self._store}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Datastore",
         }
@@ -549,8 +551,8 @@ class ProxmoxPBSLastBackupStatusSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_datastore_{self._server_id}_{self._store}")},
-            "name": f"PBS Datastore: {self._store}",
+            "identifiers": {(DOMAIN, f"datastore_{self._store}")},
+            "name": f"Datastore: {self._store}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Datastore",
         }
@@ -576,8 +578,8 @@ class ProxmoxPBSBackupErrorsSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_datastore_{self._server_id}_{self._store}")},
-            "name": f"PBS Datastore: {self._store}",
+            "identifiers": {(DOMAIN, f"datastore_{self._store}")},
+            "name": f"Datastore: {self._store}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Datastore",
         }
@@ -633,8 +635,8 @@ class ProxmoxPBSBackupsListSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_datastore_{self._server_id}_{self._store}")},
-            "name": f"PBS Datastore: {self._store}",
+            "identifiers": {(DOMAIN, f"datastore_{self._store}")},
+            "name": f"Datastore: {self._store}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Datastore",
         }
@@ -708,8 +710,8 @@ class ProxmoxPBSMaintenanceSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, f"pbs_maintenance_{self._server_id}_{self._store}")},
-            "name": f"PBS Maintenance: {self._store}",
+            "identifiers": {(DOMAIN, f"maintenance_{self._store}")},
+            "name": f"Maintenance: {self._store}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Maintenance",
         }
