@@ -8,7 +8,8 @@ import homeassistant.helpers.config_validation as cv
 
 from .const import (
     DOMAIN, CONF_HOST, CONF_USER, CONF_PASSWORD,
-    CONF_TOKEN_ID, CONF_TOKEN_SECRET, CONF_NODE, CONF_PLATFORM_TYPE
+    CONF_TOKEN_ID, CONF_TOKEN_SECRET, CONF_NODE, CONF_PLATFORM_TYPE,
+    CONF_VERIFY_SSL
 )
 from .api import ProxmoxClient
 
@@ -25,6 +26,7 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
 
             new_data = dict(self.config_entry.data)
+            new_data[CONF_VERIFY_SSL] = user_input.get(CONF_VERIFY_SSL, True)
 
             if server_type == "PVE":
                 new_data.update({
@@ -39,10 +41,18 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
             await self.hass.config_entries.async_reload(self.config_entry.entry_id)
             return self.async_create_entry(title="", data={})
 
-        # =======PBS — NO OPTIONS AVAILABLE==============
+        # =======PBS — OPTIONS AVAILABLE==============
 
         if server_type == "PBS":
-            return self.async_abort(reason="pbs_no_options")
+            return self.async_show_form(
+                step_id="init",
+                data_schema=vol.Schema({
+                    vol.Optional(
+                        CONF_VERIFY_SSL,
+                        default=conf.get(CONF_VERIFY_SSL, False)
+                    ): bool,
+                })
+            )
 
         # ======PVE — LOAD RESOURCES AND SHOW FORM=============
 
@@ -53,7 +63,7 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
             token_id=conf.get(CONF_TOKEN_ID),
             token_secret=conf.get(CONF_TOKEN_SECRET),
             server_type=conf[CONF_PLATFORM_TYPE],
-            verify_ssl=False,
+            verify_ssl=conf.get(CONF_VERIFY_SSL, False),
         )
 
         try:
@@ -101,6 +111,11 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
                         "enable_physical_disks",
                         default=conf.get("enable_physical_disks", True)
                     ): bool,
+
+                    vol.Optional(
+                        CONF_VERIFY_SSL,
+                        default=conf.get(CONF_VERIFY_SSL, False)
+                    ): bool,
                 })
             )
 
@@ -115,6 +130,10 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
                     vol.Optional(
                         "enable_physical_disks",
                         default=conf.get("enable_physical_disks", True)
+                    ): bool,
+                    vol.Optional(
+                        CONF_VERIFY_SSL,
+                        default=conf.get(CONF_VERIFY_SSL, False)
                     ): bool,
                 })
             )
