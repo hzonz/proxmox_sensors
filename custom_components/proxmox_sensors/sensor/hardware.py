@@ -61,8 +61,6 @@ class ProxmoxHardwareSensor(ProxmoxBaseSensor):
 
         return sensor_id.replace("_", " ").title()
 
-
-
     def is_valid(self) -> bool:
         val = self._get_value()
         return val is not None
@@ -81,7 +79,21 @@ class ProxmoxHardwareSensor(ProxmoxBaseSensor):
 
         # dict (lm-sensors grouped)
         if isinstance(value, dict):
+            # 1. Intentamos con temp1_input (prioridad original)
             temp = value.get("temp1_input")
+            
+            # 2. Búsqueda dinámica (Fallback para Coretemp con nombres amigables)
+            if temp is None:
+                for k, v in value.items():
+                    if v is not None and v != "" and v != "N/A":
+                        # Verificamos si es convertible a float
+                        try:
+                            float(v)
+                            temp = v
+                            break
+                        except (ValueError, TypeError):
+                            continue
+
             try:
                 f_val = float(temp)
                 return f_val if f_val != 0 else None
