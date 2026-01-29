@@ -215,7 +215,7 @@ class ProxmoxClient:
     async def start_vzdump(self, hass, node: str, vmid: str, storage: str, notes: str = None):
         """Send backup from Home Assistant."""
         if not node or not vmid or not storage:
-            raise ValueError("node, vmid y storage son obligatorios para iniciar un backup")
+            raise ValueError("node, vmid, and storage are required to start a backup")
 
         path = f"nodes/{node}/vzdump"
         
@@ -232,14 +232,14 @@ class ProxmoxClient:
         if notes:
             data["notes-template"] = notes
         
-        LOGGER.debug("Enviando orden de vzdump a PVE con notas: %s", data)
+        LOGGER.debug("Sending vzdump order to PVE with notes: %s", data)
 
         result = await self.post(hass, path, data)
 
         if result:
-            LOGGER.info("vzdump lanzado correctamente con notas: %s", result)
+            LOGGER.info("vzdump successfully launched with notes: %s", result)
         else:
-            LOGGER.warning("vzdump no devolvió respuesta (posible error o permisos)")
+            LOGGER.warning("vzdump did not return a response (possible error or permissions)")
 
         return result
 
