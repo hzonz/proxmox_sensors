@@ -1,0 +1,25 @@
+create_vzdump_backup:
+  name: "Proxmox: Iniciar Backup"
+  description: "Launch a backup process of a VM or Container to storage (ideally PBS)."
+  fields:
+    node:
+      name: Nodo
+      description: "Proxmox node name (on: server)"
+      required: true
+      selector:
+        text:
+    vmid:
+      name: ID de la VM/CT
+      description: "Numeric machine ID (ex: 100)"
+      required: true
+      selector:
+        number:
+          min: 100
+          max: 999999
+          mode: box
+    storage:
+      name: Storage de Destino
+      description: "ID of the storage where the backup will be saved (e.g., pbs-local)"
+      required: true
+      selector:
+        text:

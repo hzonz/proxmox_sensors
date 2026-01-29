@@ -115,11 +115,15 @@ class ProxmoxClient:
         if proxmox is None:
             return None
 
+        def _do_post():
+            return proxmox.post(path, **(data or {}))
+
         try:
-            return await hass.async_add_executor_job(proxmox.post, path, **(data or {}))
+            return await hass.async_add_executor_job(_do_post)
         except Exception as err:
             LOGGER.error("PVE POST error on %s: %s", path, err)
             return None
+
 
     # ============================================================
     #  PVE METHODS
@@ -207,6 +211,37 @@ class ProxmoxClient:
                 return {}
 
         return await hass.async_add_executor_job(_fetch)
+        
+    async def start_vzdump(self, hass, node: str, vmid: str, storage: str, notes: str = None):
+        """Send backup from Home Assistant."""
+        if not node or not vmid or not storage:
+            raise ValueError("node, vmid y storage son obligatorios para iniciar un backup")
+
+        path = f"nodes/{node}/vzdump"
+        
+        # Optimized parameters for PBS:
+        # - snapshot: allows backups without shutting down the VM.
+        # - zstd: fast and efficient compression.
+        data = {
+            "vmid": vmid,
+            "storage": storage,
+            "mode": "snapshot",
+            "compress": "zstd"
+        }
+
+        if notes:
+            data["notes-template"] = notes
+        
+        LOGGER.debug("Enviando orden de vzdump a PVE con notas: %s", data)
+
+        result = await self.post(hass, path, data)
+
+        if result:
+            LOGGER.info("vzdump lanzado correctamente con notas: %s", result)
+        else:
+            LOGGER.warning("vzdump no devolvió respuesta (posible error o permisos)")
+
+        return result
 
     # ============================================================
     #  PBS LOW-LEVEL REQUEST + WRAPPERS

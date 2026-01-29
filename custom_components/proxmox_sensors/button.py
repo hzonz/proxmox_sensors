@@ -7,7 +7,6 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-
 async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
@@ -69,12 +68,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     # ========PBS BUTTONS====================
     elif data.get("server_type") == "PBS":
-
         datastores = coordinator.data.get("pbs_datastores", {})
-        _LOGGER.warning("PBS datastores: %s", datastores)
 
         for datastore_name in datastores.keys():
-
             entities.append(PBSGCButton(coordinator, client, datastore_name))
             entities.append(PBSPruneButton(coordinator, client, datastore_name))
             entities.append(PBSVerifyButton(coordinator, client, datastore_name))
@@ -162,8 +158,6 @@ class PBSBaseButton(CoordinatorEntity, ButtonEntity):
         super().__init__(coordinator)
         self._client = client
         self._datastore = datastore
-
-        # Entity ID del sensor Last Action
         self._sensor_entity_id = f"sensor.{datastore.lower()}_last_action"
 
         self._attr_device_info = {
@@ -240,4 +234,3 @@ class PBSSyncButton(PBSBaseButton):
         await run_sync(self._client, self.hass, self._datastore)
         self._update_last_action("Sync OK")
         await self.coordinator.async_request_refresh()
-

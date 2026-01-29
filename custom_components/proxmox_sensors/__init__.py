@@ -3,7 +3,7 @@ import logging
 import asyncio
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.const import Platform
 
@@ -22,10 +22,10 @@ from .const import (
 from .api import ProxmoxClient
 from .coordinator import create_proxmox_coordinator
 
+# Logger global
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
-
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     data = entry.data
@@ -47,7 +47,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             await coordinator.async_config_entry_first_refresh()
     except Exception as err:
         raise ConfigEntryNotReady(
-            f"No se pudo conectar con Proxmox en {data[CONF_HOST]}"
+            f"Unable to connect to Proxmox {data[CONF_HOST]}"
         ) from err
 
     hass.data.setdefault(DOMAIN, {})
@@ -59,13 +59,41 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "features": data.get("features", {}),
     }
 
+    # ==========================================================
+    # RECORD OF BACKUP ACTION (vzdump)
+    # ==========================================================
+    async def handle_vzdump_backup(call: ServiceCall):
+        """Handler for the backup action (vzdump) with fixed label."""
+        node = call.data.get("node")
+        vmid = call.data.get("vmid")
+        storage = call.data.get("storage")
+        
+        logger = logging.getLogger("custom_components.proxmox_sensors")
+
+        notes = f"{vmid} | HA Backup"
+        
+        try:
+            logger.info("Sending manual backup command from HA for VM/CT %s", vmid)
+            result = await client.start_vzdump(hass, node, vmid, storage, notes=notes)
+            if result:
+                logger.info("Backup started successfully: %s", result)
+            else:
+                logger.warning("Proxmox did not return a response for the backup of %s", vmid)
+                
+        except Exception as e:
+            logger.error("Error running backup from HA: %s", str(e))
+
+    
+    hass.services.async_register(
+        DOMAIN, "create_vzdump_backup", handle_vzdump_backup
+    )
+    # ==========================================================
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 
-
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:
@@ -74,4 +102,3 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass.data.pop(DOMAIN)
 
     return unload_ok
-

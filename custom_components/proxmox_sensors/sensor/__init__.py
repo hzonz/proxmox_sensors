@@ -105,14 +105,23 @@ async def async_setup_entry(
 
             for sensor_id in hardware_data:
                 sid = sensor_id.lower()
-                if "coretemp" in sid or "package id" in sid:
+                
+                # CPU: (Intel + AMD + Generics)
+                if any(x in sid for x in ["coretemp", "package", "cpu", "k10temp", "zenpower", "tctl", "tdie", "tccd"]):
                     cpu_sensors.append(sensor_id)
-                elif "pch" in sid:
+                
+                # Chipset / Motherboard
+                elif any(x in sid for x in ["pch", "acpitz", "it87", "nct67"]):
                     pch_sensors.append(sensor_id)
-                elif "nvme" in sid:
+                
+                # NVMe:
+                elif any(x in sid for x in ["nvme", "composite"]):
                     nvme_sensors.append(sensor_id)
-                elif "drivetemp" in sid or "scsi" in sid:
+                
+                # Disks SATA / SSD
+                elif any(x in sid for x in ["drivetemp", "scsi", "sda", "sdb", "sdc", "sdd", "sde"]):
                     sata_sensors.append(sensor_id)
+                
                 else:
                     other_sensors.append(sensor_id)
 

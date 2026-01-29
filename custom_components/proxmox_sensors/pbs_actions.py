@@ -6,17 +6,17 @@ BASE = "admin/datastore"
 
 
 async def run_gc(client, hass, datastore: str):
-    _LOGGER.info("PBS: Ejecutando GC en %s", datastore)
+    _LOGGER.info("PBS: Running GC in %s", datastore)
     endpoint = f"{BASE}/{datastore}/gc"
     return await client.pbs_post(hass, endpoint)
 
 
 async def run_prune(client, hass, datastore: str):
-    _LOGGER.info("PBS: Ejecutando PRUNE automático en %s", datastore)
+    _LOGGER.info("PBS: Running automatic PRUNE in %s", datastore)
 
     snapshots = await client.pbs_get(hass, f"{BASE}/{datastore}/snapshots")
     if not snapshots:
-        _LOGGER.warning("PBS: No hay snapshots en %s", datastore)
+        _LOGGER.warning("PBS: There are no snapshots in %s", datastore)
         return None
 
     grupos = set()
@@ -41,11 +41,11 @@ async def run_prune(client, hass, datastore: str):
 
 
 async def run_verify(client, hass, datastore: str):
-    _LOGGER.info("PBS: Ejecutando VERIFY automático en %s", datastore)
+    _LOGGER.info("PBS: Running automatic VERIFY on %s", datastore)
 
     snapshots = await client.pbs_get(hass, f"{BASE}/{datastore}/snapshots")
     if not snapshots:
-        _LOGGER.warning("PBS: No hay snapshots en %s", datastore)
+        _LOGGER.warning("PBS: There are no snapshots in %s", datastore)
         return None
 
     grupos = set()
@@ -70,11 +70,11 @@ async def run_verify(client, hass, datastore: str):
 
 
 async def run_sync(client, hass, datastore: str):
-    _LOGGER.info("PBS: Ejecutando SYNC automático en %s", datastore)
+    _LOGGER.info("PBS: Running automatic SYNC in %s", datastore)
 
     remotes = await client.pbs_get(hass, "remote")
     if not remotes:
-        _LOGGER.warning("PBS: No hay remotes configurados en PBS")
+        _LOGGER.warning("PBS: No remotes are configured in PBS")
         return None
 
     resultados = []

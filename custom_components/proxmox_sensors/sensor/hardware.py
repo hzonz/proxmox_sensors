@@ -4,11 +4,11 @@ from ..const import DOMAIN
 class ProxmoxHardwareSensor(ProxmoxBaseSensor):
     def __init__(self, coordinator, sensor_id, node, sensor_name=None):
 
-        # Friendly name detection
+        # Friendly name detection 
         friendly = self._friendly_name(sensor_id)
 
         name = f"{friendly} ({node})"
-        clean_id = sensor_id.lower().replace(" ", "_")
+        clean_id = sensor_id.lower().replace(" ", "_").replace("-", "_")
         unique_id = f"proxmox_hw_{node}_{clean_id}"
 
         super().__init__(coordinator, sensor_id, name, "°C", unique_id, node)
@@ -16,19 +16,18 @@ class ProxmoxHardwareSensor(ProxmoxBaseSensor):
         self._sensor_id = sensor_id
 
         # ------------ICON ASSIGNMENT--------------------
-
         sid = sensor_id.lower()
 
-        if "coretemp" in sid or "package id" in sid:
+        if any(x in sid for x in ["coretemp", "package id", "k10temp", "tctl", "tdie", "cpu"]):
             self._attr_icon = "mdi:thermometer-lines"
 
         elif "pch" in sid:
             self._attr_icon = "mdi:thermometer-lines"
 
-        elif "nvme" in sid:
-            self._attr_icon = "mdi:harddisk"
+        elif any(x in sid for x in ["nvme", "composite"]):
+            self._attr_icon = "mdi:harddisk-plus"  # Icono algo distinto para NVMe
 
-        elif "drivetemp" in sid or "scsi" in sid:
+        elif any(x in sid for x in ["drivetemp", "scsi", "sda", "sdb", "sdc"]):
             self._attr_icon = "mdi:harddisk"
 
         else:
@@ -38,28 +37,39 @@ class ProxmoxHardwareSensor(ProxmoxBaseSensor):
         self._attr_device_class = "temperature"
         self._attr_state_class = "measurement"
 
-    # =============FRIENDLY NAME======================
-
+    # =============FRIENDLY NAME IMPROVED======================
     def _friendly_name(self, sensor_id: str) -> str:
         sid = sensor_id.lower()
 
-        # CPU sensors (Intel coretemp)
-        if "coretemp" in sid or "package id" in sid:
+        # 1. CPU: Intel coretemp & AMD k10temp
+        if any(x in sid for x in ["coretemp", "package id", "k10temp", "tctl", "tdie"]):
+            if "core" in sid:
+                core_part = sid.split("core")[-1].replace("_", " ").strip()
+                return f"CPU – Core {core_part} Temp"
+            if "package" in sid:
+                return "CPU – Package Temperature"
             return "CPU – Processor Temperature"
 
-        # Intel PCH chipset
+        # 2. Intel PCH chipset
         if "pch" in sid:
             return "Intel PCH – Chipset Temperature"
 
-        # NVMe SSD
-        if "nvme" in sid:
+        # 3. NVMe SSD
+        if any(x in sid for x in ["nvme", "composite"]):
+            # Intentamos sacar el identificador del bus si existe (ej: 0100)
+            if "nvme" in sid and "_" in sid:
+                bus_id = sid.split("_")[-1]
+                return f"NVMe SSD ({bus_id}) – Temperature"
             return "NVMe SSD – Temperature"
 
-        # SATA / SAS / USB drives
-        if "drivetemp" in sid or "scsi" in sid:
+        # 4. SATA / DriveTemp
+        if any(x in sid for x in ["drivetemp", "scsi", "sda", "sdb", "sdc"]):
+            for letter in ["sda", "sdb", "sdc", "sdd", "sde"]:
+                if letter in sid:
+                    return f"SATA Drive ({letter.upper()}) – Temp"
             return "SATA Drive – Temperature"
 
-        return sensor_id.replace("_", " ").title()
+        return sensor_id.replace("_", " ").replace("-", " ").title()
 
     def is_valid(self) -> bool:
         val = self._get_value()
@@ -77,39 +87,36 @@ class ProxmoxHardwareSensor(ProxmoxBaseSensor):
     def _get_value(self):
         value = self.coordinator.data.get("hardware", {}).get(self._sensor_id)
 
-        # dict (lm-sensors grouped)
+        # Case 1: Dictionary
         if isinstance(value, dict):
-            # 1. Intentamos con temp1_input (prioridad original)
+            # Prioridad 1: Tu estándar temp1_input
             temp = value.get("temp1_input")
             
-            # 2. Búsqueda dinámica (Fallback para Coretemp con nombres amigables)
+            # Prioridad 2: Buscador dinámico (para AMD Ryzen o NVMe)
             if temp is None:
                 for k, v in value.items():
-                    if v is not None and v != "" and v != "N/A":
-                        # Verificamos si es convertible a float
+                    if any(x in k.lower() for x in ["input", "val", "temp", "tdie"]):
                         try:
                             float(v)
                             temp = v
                             break
                         except (ValueError, TypeError):
                             continue
+            
+            return self._parse_numeric(temp)
 
-            try:
-                f_val = float(temp)
-                return f_val if f_val != 0 else None
-            except (ValueError, TypeError):
-                return None
+        # Case 2: Direct Value
+        return self._parse_numeric(value)
 
-        # direct invalid values
-        if value in ("N/A", "Desconocido", "unknown", "Unknown", "", None):
+    def _parse_numeric(self, val):
+        """Valida y convierte a float de forma segura."""
+        if val in ("N/A", "Desconocido", "unknown", "Unknown", "", None):
             return None
-
-        # numeric conversion
         try:
-            f_val = float(value)
-            if f_val <= -50 or f_val >= 150:
-                return None
-            return f_val
+            f_val = float(val)
+            if 1.0 < f_val < 145.0:
+                return f_val
+            return None
         except (ValueError, TypeError):
             return None
 
@@ -119,6 +126,6 @@ class ProxmoxHardwareSensor(ProxmoxBaseSensor):
         if isinstance(value, dict):
             return {
                 k: v for k, v in value.items()
-                if k != "temp1_input" and v not in (None, "N/A", "")
+                if v not in (None, "N/A", "")
             }
         return {}
