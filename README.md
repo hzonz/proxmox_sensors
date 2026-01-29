@@ -35,6 +35,16 @@ This integration is designed for users who require full control over their hardw
 
 ## 🔥 Key Features
 
+### 🛡️ Advanced Backup Management (v1.3.0)
+* **Trigger Backups from HA:** Start manual backups (`vzdump`) for VMs and Containers directly via Home Assistant actions.
+* **Smart Identification:** Backups triggered from HA are automatically tagged with `ID | HA Backup` in Proxmox.
+* **Remote Storage Support:** Full compatibility with local storage and **Proxmox Backup Server (PBS)**, including remote providers like **Tuxis**.
+* **Incremental Efficiency:** Leverages PBS deduplication to minimize bandwidth and storage usage on every backup.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/img/backup-iu.png" alt="Proxmox Extended Sensors Dashboard" width="1000"/>
+</p>
+
 ### 🌡️ Deep Hardware Monitoring
 * **Real-time Temperatures:** CPU Cores, VRM, and NVMe/SSD/HDD drives.
 * **Mechanical Sensors:** Fan speeds (RPM) and motherboard voltages.
@@ -50,6 +60,7 @@ This integration is designed for users who require full control over their hardw
 * **Smart Grouping:** Sensors automatically organized by: **1. Node**, **2. Physical Disks**, **3. VMs**, **4. Containers**.
 * **Auto-Prefixes:** Keep your entity list and dashboards sorted by default.
 
+
 ---
 
 ## 🚀 Roadmap
@@ -60,12 +71,12 @@ This integration is designed for users who require full control over their hardw
 - [x] New PBS “Last Action” sensor with persistent local state  
 - [x] Improved PBS sensor naming (cleaner UI without datastore prefix)  
 - [x] Internal refactor and code cleanup for better stability and maintainability  
-
+- [x] **Create backups directly from PVE (VMs & Containers) via Home Assistant**
+- [x] Additional PBS maintenance sensors (progress, duration, logs)  
 - [ ] Custom Lovelace Card templates  
 - [ ] Official HACS Repository submission  
-- [ ] Additional PBS maintenance sensors (progress, duration, logs)  
 - [ ] Optional advanced PBS dashboard  
-- [ ] **Create backups directly from PVE (VMs & Containers) via Home Assistant**  
+  
 
 ---
 
