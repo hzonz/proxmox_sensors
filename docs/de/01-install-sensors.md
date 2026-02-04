@@ -37,5 +37,47 @@ modprobe coretemp
 # Überprüfe, ob die Temperaturen angezeigt werden
 sensors
 ```
+## 🚀 Schritt 5: Installation des Sensorservers (API-Bridge)
+**Da die offizielle Proxmox-API nicht alle Hardware-Daten bereitstellt, muss dieses kleine "Bridge-Skript" auf dem Proxmox-Host installiert werden.**
+
+1. **Skript herunterladen und installieren**
+Führen Sie diese Befehle im Terminal Ihres Proxmox-Servers aus:
+```bash
+# Skript aus dem Repository herunterladen
+wget https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/scripts/pve-sensors-api.py -O /usr/local/bin/pve-sensors-api.py
+
+# Ausführungsrechte vergeben
+chmod +x /usr/local/bin/pve-sensors-api.py
+```
+
+2. **Konfiguration als Systemdienst**
+Damit das Skript automatisch mit dem Server startet, erstellen Sie die Dienstdatei:
+```bash
+cat <<EOF > /etc/systemd/system/pve-sensors.service
+[Unit]
+Description=PVE Sensors API
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/bin/pve-sensors-api.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+3. **Sofortige Aktivierung**
+Aktivieren und starten Sie den Dienst mit diesen Befehlen:
+```bash
+systemctl daemon-reload
+systemctl enable --now pve-sensors
+```
+
+4. **Abschlussprüfung**
+Sie können überprüfen, ob der Server läuft, indem Sie diese Adresse in Ihrem Browser öffnen (ersetzen Sie sie durch die IP Ihres Proxmox-Servers): `http://IHRE_PROXMOX_IP:9000/sensors`
+
+Wenn Sie einen Text im JSON-Format mit den Temperaturen sehen, kann die Integration die Daten nun korrekt lesen.
+---
 
 **Fertig! Sobald der Befehl `sensors` Daten im Terminal anzeigt, kann deine Home‑Assistant‑Integration diese automatisch über die Proxmox‑API auslesen.**
