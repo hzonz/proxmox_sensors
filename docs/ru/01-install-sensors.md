@@ -36,5 +36,49 @@ modprobe coretemp
 # Проверьте, отображаются ли температуры
 sensors
 ```
+## 🚀 Шаг 5: Установка сервера датчиков (API Bridge)
+**Поскольку официальный API Proxmox не предоставляет все данные об оборудовании, необходимо установить этот небольшой скрипт-посредник («bridge») на хост Proxmox.**
+
+1. **Загрузка и установка скрипта**
+Выполните эти команды в терминале вашего сервера Proxmox:
+```bash
+# Скачать скрипт из репозитория
+wget https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/scripts/pve-sensors-api.py -O /usr/local/bin/pve-sensors-api.py
+
+# Дать права на выполнение
+chmod +x /usr/local/bin/pve-sensors-api.py
+```
+
+2. **Настройка в качестве системной службы**
+Чтобы скрипт запускался автоматически при загрузке сервера, создайте файл службы:
+```bash
+cat <<EOF > /etc/systemd/system/pve-sensors.service
+[Unit]
+Description=PVE Sensors API
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/bin/pve-sensors-api.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+3. **Немедленная активация**
+Активируйте и запустите службу следующими командами:
+```bash
+systemctl daemon-reload
+systemctl enable --now pve-sensors
+```
+
+4. **Финальная проверка**
+Вы можете проверить работу сервера, открыв этот адрес в браузере (заменив на IP вашего Proxmox): `http://ВАШ_IP_PROXMOX:9000/sensors`
+
+Если вы видите текст в формате JSON с показателями температуры, значит интеграция теперь сможет корректно считывать данные.
+
+
+---
 
 **Готово! Как только команда `sensors` начнет выводить данные в терминале, ваша интеграция в Home Assistant сможет автоматически считывать их через API Proxmox.**
