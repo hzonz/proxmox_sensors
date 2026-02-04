@@ -37,4 +37,47 @@ modprobe coretemp
 sensors
 ```
 
+## 🚀 Passaggio 5: Installazione del Server Sensori (API Bridge)
+**Poiché l'API ufficiale di Proxmox non espone tutti i dati hardware, è necessario installare questo piccolo script "ponte" sull'host Proxmox.**
+
+1. **Download e installazione dello script**
+Esegui questi comandi nel terminale del tuo server Proxmox:
+```bash
+# Scarica lo script dal repository
+wget https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/scripts/pve-sensors-api.py -O /usr/local/bin/pve-sensors-api.py
+
+# Assegna i permessi di esecuzione
+chmod +x /usr/local/bin/pve-sensors-api.py
+```
+
+2. **Configurazione come servizio di sistema**
+Per fare in modo che lo script si avvii automaticamente con il server, crea il file di servizio:
+```bash
+cat <<EOF > /etc/systemd/system/pve-sensors.service
+[Unit]
+Description=PVE Sensors API
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/bin/pve-sensors-api.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+3. **Attivazione immediata**
+Attiva e avvia il servizio con questi comandi:
+```bash
+systemctl daemon-reload
+systemctl enable --now pve-sensors
+```
+
+4. **Verifica finale**
+Puoi verificare che il server sia in funzione aprendo questo indirizzo nel tuo browser (sostituendolo con l'IP del tuo Proxmox): `http://TUO_IP_PROXMOX:9000/sensors`
+
+Se vedi un testo in formato JSON con le temperature, l'integrazione sarà ora in grado di leggere i dati correttamente.
+
+---
 **Fatto! Una volta che il comando `sensors` restituisce i dati nel terminale, la tua integrazione di Home Assistant sarà in grado di leggerli automaticamente tramite l'API di Proxmox.**
