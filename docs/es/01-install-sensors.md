@@ -66,8 +66,8 @@ sensors
 1. **Descarga e instalación del script**
 Ejecuta estos comandos en la terminal de tu servidor Proxmox:
 ```bash
-# Descargar el script desde el repositorio (ajusta la URL a tu repo de GitHub)
-wget https://raw.githubusercontent.com/TU_USUARIO/TU_REPO/main/scripts/pve-sensors-api.py -O /usr/local/bin/pve-sensors-api.py
+# Descargar el script desde el repositorio
+wget https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/scripts/pve-sensors-api.py -O /usr/local/bin/pve-sensors-api.py
 
 # Dar permisos de ejecución
 chmod +x /usr/local/bin/pve-sensors-api.py
