@@ -19,6 +19,7 @@ Before starting, keep the following in mind:
     * `Sys.Audit`: Allows viewing node status (CPU, RAM).
     * `VM.Audit`: Allows viewing the status of VMs and containers.
     * `Datastore.Audit`: Allows viewing disk space.
+    * `VM.PowerMgmt`: Allows power management (start, stop, reset, shutdown, …) of containers and VMs
 
 ---
 
