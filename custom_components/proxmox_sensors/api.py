@@ -198,6 +198,34 @@ class ProxmoxClient:
         """Send start/stop/reboot/shutdown to a container."""
         return await self.post(hass, f"nodes/{node}/lxc/{vmid}/status/{command}")
 
+    async def control_vm(self, hass, node: str, vmid: str, command: str):
+        """Send commands to a QEMU virtual machine.
+        
+        Supported commands: start, stop, shutdown, reboot, reset, 
+                           pause, resume, hibernate
+        """
+        LOGGER.info(f"Sending {command} command to VM {vmid} on node {node}")
+        
+        
+        if command == 'hibernate':
+            path = f"nodes/{node}/qemu/{vmid}/status/suspend"
+            data = {'todisk': 1}
+        else:
+            path = f"nodes/{node}/qemu/{vmid}/status/{command}"
+            data = {}
+        
+        if command in ['shutdown', 'reboot']:
+            data['timeout'] = 60
+        
+        result = await self.post(hass, path, data)
+        
+        if result:
+            LOGGER.info(f"Comando {command} enviado exitosamente a VM {vmid}")
+        else:
+            LOGGER.error(f"Error al enviar comando {command} a VM {vmid}")
+        
+        return result
+
     async def get_lm_sensors_http(self, hass, node: str):
         """Fetch temperature and fan data from an external sensor script."""
         url = f"http://{self._host}:9000/sensors"
