@@ -20,9 +20,9 @@
         "title": "3. Access Credentials",
         "description": "Enter the credentials to connect to your server.",
         "data": {
-          "username": "Username (e.g., root@pam or admin@pve)",
+          "username": "Username (e.g., homeassistant@pve)",
           "password": "Password",
-          "token_id": "Token ID (e.g., user@pve!mytoken)",
+          "token_id": "Token ID (e.g., ha-token) - without leading username and exclamation mark",
           "token_secret": "Token Secret",
           "node": "Proxmox Node Name (Required for PVE)",
           "enable_lm_sensors": "Monitor hardware temperatures (lm-sensors)",
