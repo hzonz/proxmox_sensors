@@ -239,6 +239,21 @@ class ProxmoxClient:
                 return {}
 
         return await hass.async_add_executor_job(_fetch)
+
+    async def get_smart_data_http(self, hass, node: str):
+        """Fetch SMART data from external script."""
+        url = f"http://{self._host}:9000/smart"
+        
+        def _fetch():
+            try:
+                r = requests.get(url, timeout=15)
+                r.raise_for_status()
+                return r.json()
+            except Exception as e:
+                LOGGER.error(f"Error fetching SMART data from {url}: {e}")
+                return {}
+        
+        return await hass.async_add_executor_job(_fetch)
         
     async def start_vzdump(self, hass, node: str, vmid: str, storage: str, notes: str = None):
         """Send backup from Home Assistant."""
