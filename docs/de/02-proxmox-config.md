@@ -1,80 +1,79 @@
 # 🔐 Schritt 2: Benutzer- und Berechtigungskonfiguration
-**Damit Home Assistant sicher mit Proxmox kommunizieren kann, ist es empfehlenswert, nicht den Benutzer root zu verwenden. In dieser Anleitung erstellen wir einen Zugriff mit „Nur-Lesen“-Rechten.**
+
+**Damit Home Assistant sicher mit Proxmox kommunizieren kann, wird empfohlen, nicht den root-Benutzer zu verwenden. Wir erstellen einen dedizierten Benutzer und weisen die notwendigen Berechtigungen zu, damit die Integration zu 100% funktioniert.**
+
+> ⚠️ **WICHTIG:**  
+> Aufgrund der erweiterten Funktionen der Integration (Steuerung von VMs/CTs, Einzel- und Massen-Backups, PBS-Aktionen…) ist es notwendig, **Administratorberechtigungen** sowohl in PVE als auch in PBS zuzuweisen.
+
+---
 
 ## 1. Unterschied zwischen PVE und PBS
-Bevor du beginnst, solltest du Folgendes beachten:
 
-* **Proxmox VE (PVE): Du kannst einen normalen Benutzer/Passwort-Zugang oder ein API-Token verwenden.**
+### **Proxmox VE (PVE)**
+- Sie können **Benutzer/Passwort** oder **API-Token** verwenden.  
+- Der Benutzer muss die Rolle **PVEAdmin** haben.
 
-* **Proxmox Backup Server (PBS): Hier ist ein API-Token zwingend erforderlich. Herkömmliche Login-Methoden schlagen oft aufgrund von Sicherheitsbeschränkungen oder fehlenden Berechtigungen im Datastore fehl.**
-
----
-
-## 2. Erstellung der Rolle (Berechtigungen)
-**Eine „Rolle“ definiert, was die Integration tun darf.**
-
-1. Gehe zu **Datacenter > Permissions > Roles**.
-2. Klicke auf **Create** und gib der Rolle den Namen `HA-Monitor`.
+### **Proxmox Backup Server (PBS)**
+- Es ist **zwingend erforderlich**, einen **API-Token** zu verwenden.  
+- Der Benutzer muss die Rolle **Administrator** haben (PBS verfügt nicht über eine gültige Zwischenrolle).
 
 ---
 
-## 3. Rollenerstellung (Berechtigungen)
-Eine „Rolle“ definiert, was die Integration tun darf.
+## 2. Benutzererstellung
 
-1. Gehe zu **Datacenter > Permissions > Roles**.  
-2. Klicke auf **Create** und gib der Rolle den Namen `HA-Monitor`.  
-3. Wähle folgende Privilegien (**Privileges**) aus:
-    * `Sys.Audit`: Ermöglicht das Anzeigen des Node-Status (CPU, RAM).
-    * `VM.Audit`: Ermöglicht das Anzeigen des Status von VMs und Containern.
-    * `Datastore.Audit`: Ermöglicht das Anzeigen des Speicherplatzes.
-
----
-
-## 4. Benutzererstellung
-1. Gehe zu **Datacenter > Permissions > Users**.
-2. Klicke auf **Add**.
-3. **User:** `homeassistant` (Realm kann auf `pve` bleiben).
-4. Vergib ein sicheres Passwort, falls du diese Methode für PVE verwenden möchtest.
+1. Gehen Sie zu **Datacenter → Permissions → Users**  
+2. Klicken Sie auf **Add**  
+3. Konfigurieren Sie:  
+   - **User:** `homeassistant`  
+   - **Realm:** `pve`  
+   - **Password:** nur wenn Sie die Passwort-Anmeldung in PVE verwenden möchten  
+4. Speichern Sie die Änderungen
 
 ---
 
-## 5. Zuweisung der Rolle
-**Jetzt musst du Proxmox mitteilen, dass dieser Benutzer die erstellte Rolle besitzt:**
+## 3. Zuweisung der korrekten Rolle
 
-1. Gehe zu **Datacenter > Permissions**.  
-2. Klicke auf **Add > User Permission**.  
-3. Konfiguriere folgende Felder:
-    * **Path:** `/` (Sehr wichtig, damit die Integration den gesamten Server sehen kann).
-    * **User:** `homeassistant@pve` (oder der Benutzer, den du erstellt hast).
-    * **Role:** `HA-Monitor`.
+1. Gehen Sie zu **Datacenter → Permissions**  
+2. Klicken Sie auf **Add → User Permission**  
+3. Konfigurieren Sie die folgenden Felder:
+
+### ✔ Für PVE:
+- **Path:** `/`  
+- **User:** `homeassistant@pve`  
+- **Role:** `PVEAdmin`  
+
+### ✔ Für PBS:
+- **Path:** `/`  
+- **User:** `homeassistant@pve`  
+- **Role:** `Administrator`  
+
+> 💡 **Warum `/` notwendig ist:**  
+> Die Integration benötigt globalen Zugriff, um Nodes, VMs, CTs, Festplatten, Datastores und Aufgaben zu lesen.
 
 ---
 
-## 6. Erstellung des API-Tokens (Pflicht für PBS)
-**Wenn du einen PBS überwachen möchtest oder keine Passwörter in PVE verwenden willst, führe diese Schritte aus:**
+## 4. API-Token-Generierung (Obligatorisch für PBS)
 
-1. Gehe zu **Datacenter > Permissions > API Tokens**.
-2. Klicke auf **Add** und fülle das Formular aus:
-    * **User:** Wähle den Benutzer `homeassistant`.
-    * **Token ID:** `ha-token` (oder ein beliebiger Name).
-    * **Privilege Separation:** ⚠️ **DEAKTIVIERE dieses Kontrollkästchen**.  
-      Wenn es aktiviert bleibt, erbt das Token die Benutzerrechte nicht und die Integration schlägt fehl.
-3. Nach dem Klick auf **Add** erscheint ein Fenster mit zwei wichtigen Informationen:
-    * **Token ID:** (Beispiel: `homeassistant@pve!ha-token`)
-    * **Secret:** (Eine lange Zeichenkette aus Buchstaben und Zahlen)
+1. Gehen Sie zu **Datacenter → Permissions → API Tokens**  
+2. Klicken Sie auf **Add**  
+3. Konfigurieren Sie:  
+   - **User:** `homeassistant@pve`  
+   - **Token ID:** `ha-token`  
+   - **Privilege Separation:** **nicht angekreuzt**  
+   - **Expire:** **Never**  
+4. Bei der Erstellung des Tokens zeigt Proxmox an:  
+   - **Token ID**  
+   - **Secret** (nur einmal angezeigt)
 
 > [!WARNING]
-> **Kopiere das „Secret“ jetzt und bewahre es sicher auf.**  
-> Sobald du das Fenster schließt, zeigt Proxmox es aus Sicherheitsgründen nie wieder an.
-
----
+> **Kopieren Sie das "Secret" jetzt und bewahren Sie es an einem sicheren Ort auf.** Sobald Sie dieses Fenster schließen, zeigt Proxmox es aus Sicherheitsgründen nie wieder an.
 
 > [!TIP]
-> ### 💡 Secret vergessen?
-> Kein Problem. Auch wenn Proxmox das Secret aus Sicherheitsgründen nicht erneut anzeigt, musst du das Token nicht löschen:
+> ### 💡 Haben Sie vergessen, das Secret zu kopieren?
+> Keine Sorge. Obwohl Proxmox es aus Sicherheitsgründen nicht wieder anzeigt, müssen Sie den Token nicht löschen und von vorne beginnen:
 > 
-> 1. Wähle in der Liste der **API Tokens** das bereits erstellte Token aus.  
-> 2. Klicke auf **Regenerate**.  
-> 3. Das alte Secret wird sofort ungültig und du erhältst ein **neues Secret**.  
+> 1. Wählen Sie in der **API Tokens**-Liste den bereits erstellten Token aus.
+> 2. Klicken Sie auf die Schaltfläche **Regenerate**.
+> 3. Das System macht den alten Schlüssel sofort ungültig und gibt Ihnen ein **neues Secret**.
 > 
-> *Denke daran: Wenn du das Secret regenerierst, musst du es auch in Home Assistant aktualisieren, damit die Integration wieder funktioniert.*
+> *Denken Sie daran: Wenn Sie das Secret regenerieren, müssen Sie es in der Home Assistant-Konfiguration aktualisieren, damit die Integration wieder eine Verbindung herstellen kann.*
