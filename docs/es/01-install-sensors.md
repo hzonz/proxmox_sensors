@@ -1,6 +1,6 @@
 # 🚀 Paso 1: Instalación y configuración de sensores
 
-**Esta guía explica cómo preparar el nodo Proxmox para que exponga los datos de hardware y asegure que las lecturas de temperatura estén disponibles para Home Assistant.**
+**Esta guía explica cómo preparar el nodo Proxmox para que exponga los datos de hardware y asegure que las lecturas de temperatura y los datos Smart estén disponibles para Home Assistant.**
 
 
 ## 1. Instalación de dependencias
