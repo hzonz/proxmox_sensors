@@ -161,6 +161,14 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 - Uptime and basic info sensors.
 - Clean device grouping per VM in Home Assistant.
 
+<details>
+  <summary>🖥️ VMs</summary>
+  <p align="center">
+    <img src="img/pve/vm_control.png" alt="CPU Temp" width="600">
+  </p>
+</details>
+
+
 ---
 
 ### 📦 Containers (LXC)
@@ -169,6 +177,14 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 - Network RX/TX per container.
 - Uptime and basic info sensors.
 - Same clean device structure as VMs.
+
+<details>
+  <summary>📦 CTs</summary>
+  <p align="center">
+    <img src="img/pve/ct_control.png" alt="CPU Temp" width="600">
+  </p>
+</details>
+
 
 ---
 
@@ -183,12 +199,55 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 - Garbage Collector (GC) status and related sensors.
 - Last task: type, status, message and duration.
 
+<details>
+  <summary>🗄️ DATASTORE</summary>
+  <p align="center">
+    <img src="img/pbs/datastore.png" alt="DATASTORE" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ PBS Server</summary>
+  <p align="center">
+    <img src="img/pbs/pbs_server.png" alt="Datastore Maintenance" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ Task</summary>
+  <p align="center">
+    <img src="img/pbs/gc_status_attr.png" alt="GC Status" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ GC Status</summary>
+  <p align="center">
+    <img src="img/pbs/task.png" alt="TASK" width="600">
+  </p>
+</details>
+
+
 **PBS control actions:**
 
 - Run **Garbage Collector (GC)**.
 - Run **Prune**.
 - Run **Verify**.
 - Run **Sync**.
+
+<details>
+  <summary>🗄️ Dtatastore Maintenance</summary>
+  <p align="center">
+    <img src="img/pbs/datastore_maintenance.png" alt="Datastore Maintenance" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ Last Task</summary>
+  <p align="center">
+    <img src="img/pbs/last_task_stat.png" alt="Datastore Maintenance" width="600">
+  </p>
+</details>
 
 ---
 
