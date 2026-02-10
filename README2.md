@@ -40,17 +40,17 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 
 ## 📑 Table of Contents
 
-- [Dashboard Preview](#dashboard-preview)
-- [Key Features](#key-features-v200)
-- [Supported Versions](#supported-versions)
-- [Node Status & Performance](#node-status--performance)
-- [Disks & SMART](#disks--smart)
-- [Virtual Machines (QEMU)](#virtual-machines-qemu)
-- [Containers (LXC)](#containers-lxc)
-- [Proxmox Backup Server (PBS)](#proxmox-backup-server-pbs)
+- [Key Features](##key-features-v200)
+- [Node Status & Performance](##node-status--performance)
+- [Disks & SMART](##disks--smart)
+- [Virtual Machines (QEMU)](##virtual-machines-qemu)
+- [Containers (LXC)](##containers-lxc)
+- [Proxmox Backup Server (PBS)](##proxmox-backup-server-pbs)
+- [PBS control actions](##PBS-control-actions)
+- [Control Actions (PVE & PBS)](##Control-Actions-PVE-&-PBS)
+- [Installation](##installation)
 - [Visual Setup Guide](#visual-setup-guide)
-- [Installation](#installation)
-- [Contributing](#contributing--community)
+- [Contributing](##contributing--community)
 
 
 ---
@@ -238,7 +238,7 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 
 ---
 
-**PBS control actions:**
+##PBS control actions:
 
 - Run **Garbage Collector (GC)**.
 - Run **Prune**.
