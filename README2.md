@@ -30,6 +30,15 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 
 ---
 
+## 🧩 Supported Versions
+
+- Proxmox VE 7.x / 8.x / 9.x
+- Proxmox Backup Server 3.x / 4.x  
+- Home Assistant 2024.x or newer  
+
+
+---
+
 <details>
   <summary>🖼️ Dashboard Preview</summary>
   <p align="center">
@@ -51,50 +60,7 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 
 ---
 
-## Guía Visual de Configuración
-
-<details>
-  <summary>🪪 Captura: Server Connection</summary>
-  <p align="center">
-    <img src="img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
-  </p>
-  > No se usa "http://" ni "https://". Ya lo hacemos por tí.
-</details>
-
-<details>
-  <summary>🪪 Captura: Loguin mediante User y Password (solo PVE)</summary>
-  <p align="center">
-    <img src="img/install/access_passw.png" alt="Login Proxmox" width="600">
-  </p>
-  > Asegúrate de usar el reino `pam` o `pve` según tu configuración de usuario.
-</details>
-
-<details> 
-  <summary>🪪 Captura: Loguin mediante User y Token (PVE y PBS)</summary>
-  <p align="center">
-    <img src="img/install/access_token.png" alt="Login Proxmox" width="600">
-  </p>
-  **En el campo Token_id solo se debe poner el nombre del token**
-</details>
-
-<details>
-  <summary>⚙️ Captura: Resources Selection</summary>
-  <p align="center">
-    <img src="img/install/resources_select.png" alt="Login Proxmox" width="600">
-  </p>
-  *Nota: Selecciona los CTs, VMs y Storages que quieres añadir así como las opciones*
-</details>
-
----
-
 ### 🧠 Node Status & Performance
-
-<details>
-  <summary>🔳 NODE Attributes</summary>
-  <p align="center">
-    <img src="img/pve/node_attr.png" alt="NODE" width="600">
-  </p>
-</details>
 
 - CPU usage, I/O wait, load average.
 - RAM total/used/free and percentage.
@@ -102,23 +68,37 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 - Network RX/TX sensors for node, VMs and containers.
 
 <details>
-  <summary>🌡️ CPU Temp</summary>
+  <summary>🔳 Node Attributes</summary>
   <p align="center">
-    <img src="img/pve/cpu_temp_attr.png" alt="CPU Temp" width="600">
+    <img src="img/pve/node_attr.png" alt="Node Attributes" width="600">
   </p>
 </details>
 
 <details>
-  <summary>🌡️ Chipset Temp</summary>
+  <summary>⭕ Node Controls</summary>
   <p align="center">
-    <img src="img/pve/chipset_temp.png" alt="Chipset Temp" width="600">
+    <img src="img/pve/node_controls.png" alt="Node Controls" width="600">
   </p>
 </details>
 
 <details>
-  <summary>⏳ CPU Wait (I/O Wait)</summary>
+  <summary>🌡️ CPU Temperature</summary>
   <p align="center">
-    <img src="img/pve/cpu_wait.png" alt="CPU I/O" width="600">
+    <img src="img/pve/cpu_temp_attr.png" alt="CPU Temperature" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🌡️ Chipset Temperature</summary>
+  <p align="center">
+    <img src="img/pve/chipset_temp.png" alt="Chipset Temperature" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>⏳ CPU I/O Wait</summary>
+  <p align="center">
+    <img src="img/pve/cpu_wait.png" alt="CPU I/O Wait" width="600">
   </p>
 </details>
 
@@ -132,25 +112,26 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 - Dedicated temperature sensors per disk type (SATA, NVMe, etc.).
 
 <details>
-  <summary>💾 Disks</summary>
+  <summary>💾 Disk Sensors</summary>
   <p align="center">
-    <img src="img/pve/disks_sensors.png" alt="Disks" width="600">
+    <img src="img/pve/disks_sensors.png" alt="Disk Sensors" width="600">
   </p>
 </details>
 
 <details>
-  <summary>🩺 Disk Smart</summary>
+  <summary>🩺 HDD/SSD SMART Attributes</summary>
   <p align="center">
-    <img src="img/pve/disk_hd_smart_attr.png" alt="Disk Smart" width="600">
+    <img src="img/pve/disk_hd_smart_attr.png" alt="HDD SMART" width="600">
   </p>
 </details>
 
 <details>
-  <summary>🩺 NVME Smart</summary>
+  <summary>🩺 NVMe SMART Attributes</summary>
   <p align="center">
-    <img src="img/pve/disk_nvme_smart_attr.png" alt="NVME Smart" width="600">
+    <img src="img/pve/disk_nvme_smart_attr.png" alt="NVMe SMART" width="600">
   </p>
 </details>
+
 
 ---
 
@@ -162,12 +143,11 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 - Clean device grouping per VM in Home Assistant.
 
 <details>
-  <summary>🖥️ VMs</summary>
+  <summary>🖥️ VM Controls & Sensors</summary>
   <p align="center">
-    <img src="img/pve/vm_control.png" alt="CPU Temp" width="600">
+    <img src="img/pve/vm_control.png" alt="VM Control" width="600">
   </p>
 </details>
-
 
 ---
 
@@ -179,12 +159,11 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 - Same clean device structure as VMs.
 
 <details>
-  <summary>📦 CTs</summary>
+  <summary>📦 Container Controls & Sensors</summary>
   <p align="center">
-    <img src="img/pve/ct_control.png" alt="CPU Temp" width="600">
+    <img src="img/pve/ct_control.png" alt="CT Control" width="600">
   </p>
 </details>
-
 
 ---
 
@@ -200,33 +179,48 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 - Last task: type, status, message and duration.
 
 <details>
-  <summary>🗄️ DATASTORE</summary>
+  <summary>🗄️ Datastore Overview</summary>
   <p align="center">
-    <img src="img/pbs/datastore.png" alt="DATASTORE" width="600">
+    <img src="img/pbs/datastore.png" alt="Datastore" width="600">
   </p>
 </details>
 
 <details>
   <summary>🗄️ PBS Server</summary>
   <p align="center">
-    <img src="img/pbs/pbs_server.png" alt="Datastore Maintenance" width="600">
+    <img src="img/pbs/pbs_server.png" alt="PBS Server" width="600">
   </p>
 </details>
 
 <details>
-  <summary>🗄️ TASK</summary>
+  <summary>🗄️ Task Details</summary>
   <p align="center">
-    <img src="img/pbs/task.png" alt="TASK" width="600">
+    <img src="img/pbs/task.png" alt="PBS Task" width="600">
   </p>
 </details>
 
 <details>
-  <summary>🗄️ GC Status</summary>
+  <summary>🗄️ Garbage Collector Status</summary>
   <p align="center">
     <img src="img/pbs/gc_status_attr.png" alt="GC Status" width="600">
   </p>
 </details>
 
+<details>
+  <summary>🗄️ Datastore Maintenance</summary>
+  <p align="center">
+    <img src="img/pbs/datastore_maintenance.png" alt="Datastore Maintenance" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ Last Task Summary</summary>
+  <p align="center">
+    <img src="img/pbs/last_task_stat.png" alt="Last Task" width="600">
+  </p>
+</details>
+
+---
 
 **PBS control actions:**
 
@@ -307,6 +301,44 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 3. Add the integration from **Settings → Devices & Services**.
 
 ---
+
+## 🧭 Visual Setup Guide
+
+Below you can find a complete visual walkthrough of the setup process, including login methods, resource selection, and configuration steps.
+
+<details>
+  <summary>🪪 Captura: Server Connection</summary>
+  <p align="center">
+    <img src="img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
+  </p>
+  > No se usa "http://" ni "https://". Ya lo hacemos por tí.
+</details>
+
+<details>
+  <summary>🪪 Captura: Loguin mediante User y Password (solo PVE)</summary>
+  <p align="center">
+    <img src="img/install/access_passw.png" alt="Login Proxmox" width="600">
+  </p>
+  > Asegúrate de usar el reino `pam` o `pve` según tu configuración de usuario.
+</details>
+
+<details> 
+  <summary>🪪 Captura: Loguin mediante User y Token (PVE y PBS)</summary>
+  <p align="center">
+    <img src="img/install/access_token.png" alt="Login Proxmox" width="600">
+  </p>
+  **En el campo Token_id solo se debe poner el nombre del token**
+</details>
+
+<details>
+  <summary>⚙️ Captura: Resources Selection</summary>
+  <p align="center">
+    <img src="img/install/resources_select.png" alt="Login Proxmox" width="600">
+  </p>
+  *Nota: Selecciona los CTs, VMs y Storages que quieres añadir así como las opciones*
+</details>
+
+
 **If you enjoy this integration or find it useful, please consider giving the project a ⭐ on GitHub.**  
 **It helps visibility, motivates development, and supports future features.**
 
