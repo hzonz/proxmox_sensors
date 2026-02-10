@@ -85,6 +85,7 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
   *Nota: Selecciona los CTs, VMs y Storages que quieres añadir así como las opciones*
 </details>
 
+---
 
 ### 🧠 Node Status & Performance
 
