@@ -4,7 +4,7 @@
 
 # 🚀 Proxmox Extended Sensors
 
-## 🚀 Introduction
+## Introduction
 
 **Proxmox Extended Sensors is the most complete, efficient, and advanced integration for Home Assistant, designed to provide real control and deep monitoring of Proxmox VE and Proxmox Backup Server (PBS).**
 
