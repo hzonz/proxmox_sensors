@@ -245,7 +245,7 @@ This service is ideal for scheduled nightly backups or automated maintenance rou
 <details>
   <summary>📦 Massive Backup Service</summary>
   <p align="center">
-    <img src="img/pve/massive_backup.png" alt="Massive Backup Service" width="600">
+    <img src="img/pve/massive_backups.png" alt="Massive Backup Service" width="600">
   </p>
 </details>
 
