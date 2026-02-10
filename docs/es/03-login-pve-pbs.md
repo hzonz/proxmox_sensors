@@ -93,7 +93,7 @@ Tras conectar, la integración escaneará tu servidor y podrás elegir qué moni
 <details>
   <summary>🪪 Captura: Server Connection</summary>
   <p align="center">
-    <img src="..img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
+    <img src="...img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
   </p>
   > No se usa "http://" ni "https://". Ya lo hacemos por tí.
 </details>
@@ -101,7 +101,7 @@ Tras conectar, la integración escaneará tu servidor y podrás elegir qué moni
 <details>
   <summary>🪪 Captura: Loguin mediante User y Password (solo PVE)</summary>
   <p align="center">
-    <img src="..img/install/access_passw.png" alt="Login Proxmox" width="600">
+    <img src="...img/install/access_passw.png" alt="Login Proxmox" width="600">
   </p>
   > Asegúrate de usar el reino `pam` o `pve` según tu configuración de usuario.
 </details>
@@ -109,7 +109,7 @@ Tras conectar, la integración escaneará tu servidor y podrás elegir qué moni
 <details> 
   <summary>🪪 Captura: Loguin mediante User y Token (PVE y PBS)</summary>
   <p align="center">
-    <img src="..img/install/access_token.png" alt="Login Proxmox" width="600">
+    <img src="...img/install/access_token.png" alt="Login Proxmox" width="600">
   </p>
   **En el campo Token_id solo se debe poner el nombre del token**
 </details>
@@ -117,7 +117,7 @@ Tras conectar, la integración escaneará tu servidor y podrás elegir qué moni
 <details>
   <summary>⚙️ Captura: Resources Selection</summary>
   <p align="center">
-    <img src="..img/install/resources_select.png" alt="Login Proxmox" width="600">
+    <img src="...img/install/resources_select.png" alt="Login Proxmox" width="600">
   </p>
   *Nota: Selecciona los CTs, VMs y Storages que quieres añadir así como las opciones*
 </details>
