@@ -62,12 +62,15 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 </details>
 
 <details>
-  <summary>🪪 Captura: Tipos de Loguin</summary>
+  <summary>🪪 Captura: Loguin mediante User y Password (solo PVE)</summary>
   <p align="center">
     <img src="img/install/access_passw.png" alt="Login Proxmox" width="600">
   </p>
   > Asegúrate de usar el reino `pam` o `pve` según tu configuración de usuario.
+<details>
 
+<details> 
+  <summary>🪪 Captura: Loguin mediante User y Token (PVE y PBS)</summary>
   <p align="center">
     <img src="img/install/access_token.png" alt="Login Proxmox" width="600">
   </p>
@@ -98,6 +101,34 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 - Total/used space, wear level (NVMe), and more.
 - SMART‑related attributes for HDD/SSD/NVMe (where available).
 - Dedicated temperature sensors per disk type (SATA, NVMe, etc.).
+
+<details>
+  <summary>🩺 Captura: Diask Smart</summary>
+  <p align="center">
+    <img src="img/pve/disk_hd_smart_attr.png" alt="Disk Smart" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🩺 Captura: Disk Smart</summary>
+  <p align="center">
+    <img src="img/pve/disk_hd_smart_attr.png" alt="Disk Smart" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🩺 Captura: NVME Smart</summary>
+  <p align="center">
+    <img src="img/pve/disk_nvme_smart_attr.png" alt="NVME Smart" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🩺 Captura: CPU Temp</summary>
+  <p align="center">
+    <img src="img/pve/cpu_temp_attr.png" alt="CPU Temp" width="600">
+  </p>
+</details>
 
 ---
 
