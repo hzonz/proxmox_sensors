@@ -1,63 +1,146 @@
 # 🔌 Paso 3: Instalación de la Integración en Home Assistant
 
-Para visualizar los datos (incluyendo las temperaturas de hardware), utilizaremos la integración **Proxmox Extended Sensors**.
-
-## 1. Instalación mediante HACS
-Al ser una integración personalizada, primero debemos añadirla a nuestra tienda HACS:
-
-1. Ve a **HACS > Integraciones**.
-2. Haz clic en los tres puntos de la esquina superior derecha y selecciona **Repositorios personalizados**.
-3. Pega la URL de este repositorio: `https://github.com/Javisen/proxmox_sensors/`
-4. En **Categoría**, selecciona `Integración` y haz clic en **Añadir**.
-5. Busca la integración, instálala y **reinicia Home Assistant**.
-
-## 2. Configuración de la Integración
-Una vez reiniciado, sigue estos pasos:
-
-1. Ve a **Ajustes > Dispositivos y Servicios**.
-2. Haz clic en **Añadir Integración** y busca `Proxmox Extended Sensors`.
-
-## 3. Datos de Conexión
-El formulario de login es muy sencillo, pero presta atención a estos detalles:
-
-* **Host:** * Si es en tu red local: Pon solo la IP (ej. `192.168.1.50`). **No hace falta poner el puerto**.
-    * Si accedes desde el exterior: Pon tu dominio. **No escribas `http://` ni `https://`**, la integración lo detecta automáticamente.
-* **Tipo de servidor:** Selecciona entre **PVE** (Proxmox Virtual Environment) o **PBS** (Proxmox Backup Server).
-* **Usar Token:** Selecciona si vas a usar el API Token creado en el Paso 2 o login tradicional.
-
-### Opción A: Login con Usuario (Sin Token)
-Si prefieres no usar token, rellena estos campos:
-* **User:** Siempre con el formato `usuario@realm` (ejemplo: `homeassistant@pve` o `root@pam`).
-* **Password:** La contraseña del usuario.
-* **Node Name:** El nombre de tu nodo Proxmox (el que aparece en el árbol de la izquierda en la web de Proxmox).
-
-### Opción B: Login con Token (Obligatorio en PBS)
-Si prefieres usar token, rellena estos campos:
-* **User:** Siempre con el formato `usuario@realm` (ejemplo: `homeassistant@pve` o `root@pam`).
-* **token_id:** El nombre identificador que le diste al token (ejemplo: `ha-token`). No confundir con el ID completo.
-* **Token_secret:** La cadena de caracteres (secreto) que generó Proxmox.
+Para visualizar los datos (incluyendo temperaturas, sensores de hardware, discos, PBS, VMs y CTs), utilizaremos la integración **Proxmox Extended Sensors**.
 
 ---
 
-## ✅ Selección de Entidades (SOLO EN ENTORNO PVE)
-Una vez que hagas clic en enviar, la integración (en modo PVE) escaneará tu servidor y te permitirá elegir qué quieres monitorizar:
-* **VMs:** Máquinas virtuales específicas.
-* **CTs:** Contenedores LXC.
-* **Discos Físicos:** Discos duros y SSDs conectados.
-* **Storages:** Particiones de almacenamiento y su espacio libre.
+## 1. Instalación mediante HACS
 
-> [!TIP]
-> **Solo selecciona lo que realmente necesites.** Esto mantendrá tu Home Assistant limpio y con mejor rendimiento.
+Al ser una integración personalizada, primero debemos añadirla a HACS:
 
-## ⚠️ Nota importante para PBS en entornos compartidos (Ej. Tuxis)
+1. Ve a **HACS → Integraciones**  
+2. Haz clic en los **tres puntos** (arriba a la derecha)  
+3. Selecciona **Repositorios personalizados**  
+4. Añade este repositorio: `https://github.com/Javisen/proxmox_sensors/`
+5. En **Categoría**, selecciona `Integración`  
+6. Instálala y **reinicia Home Assistant**
 
-Si utilizas la versión gratuita de **Tuxis** o proveedores similares de PBS gestionado, debes entender que la integración tendrá limitaciones importantes. Esto ocurre porque tu instancia de PBS corre en un **entorno compartido (Multi-tenant)** y no en un servidor dedicado.
+---
 
-### ¿Por qué no verás todos los sensores?
-A diferencia de un Proxmox local, en estos servicios:
-* **No hay acceso al Hardware Real:** No tienes acceso al filesystem real ni al almacenamiento físico directo.
-* **Infraestructura Oculta:** No puedes monitorizar el backend (Ceph/ZFS) que ellos utilizan, ya que es propiedad del proveedor.
-* **Privacidad y Seguridad:** El proveedor bloquea el acceso a métricas globales del sistema para evitar que un cliente pueda inferir información sobre otros usuarios o sobre la carga total de su infraestructura.
-* **Sin permisos de Root:** Al no tener acceso a la raíz (`/`) del sistema, no se pueden extraer datos de sensores de temperatura o revoluciones de ventiladores del nodo.
+## 2. Configuración de la Integración
 
-**Resultado:** En estos casos, la integración no mostrara nada, tan solo sensores sin informacion. Trabajaremos para intentar mostrar los datos del datacenter personal en futuras versiones.
+Una vez reiniciado:
+
+1. Ve a **Ajustes → Dispositivos y Servicios**  
+2. Haz clic en **Añadir Integración**  
+3. Busca **Proxmox Extended Sensors**
+
+---
+
+## 3. Datos de Conexión
+
+El formulario es sencillo, pero hay detalles importantes:
+
+### 🔹 Host
+- **En red local:** solo la IP → `192.168.1.50`  
+*(No pongas puerto ni http/https)*  
+- **Desde el exterior:** tu dominio → `proxmox.midominio.com`  
+*(La integración detecta automáticamente http/https)*
+
+### 🔹 Tipo de servidor
+- **PVE** → Proxmox Virtual Environment  
+- **PBS** → Proxmox Backup Server  
+
+### 🔹 Método de autenticación
+- **Login tradicional** (solo PVE)  
+- **API Token** (obligatorio en PBS)
+
+---
+
+## 🔐 Opción A: Login con Usuario (sin Token)
+
+Solo válido para **PVE**.
+
+Campos:
+
+- **User:** `usuario@realm`  
+Ejemplos:  
+- `homeassistant@pve`  
+- `root@pam`  
+- **Password:** la contraseña del usuario  
+- **Node Name:** nombre del nodo (tal como aparece en Proxmox)
+
+---
+
+## 🔐 Opción B: Login con Token (recomendado y obligatorio en PBS)
+
+Campos:
+
+- **User:** `usuario@realm`  
+- **token_id:** solo el nombre del token → `ha-token`  
+*(No pongas `usuario@pve!token`)*  
+- **Token_secret:** el Secret generado por Proxmox  
+
+---
+
+## ✅ Selección de Entidades (solo en PVE)
+
+Tras conectar, la integración escaneará tu servidor y podrás elegir qué monitorizar:
+
+- **VMs**  
+- **CTs**  
+- **Discos físicos**  
+- **Storages**  
+
+> [!TIP]  
+> Selecciona solo lo que necesites para mantener Home Assistant limpio y rápido.
+
+---
+## 🧭 Guia Visual de Instalación
+
+**A continuación puede encontrar un recorrido visual completo del proceso de configuración, incluidos los métodos de inicio de sesión, la selección de recursos y los pasos de configuración.**
+
+<details>
+  <summary>🪪 Captura: Server Connection</summary>
+  <p align="center">
+    <img src="img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
+  </p>
+  > No se usa "http://" ni "https://". Ya lo hacemos por tí.
+</details>
+
+<details>
+  <summary>🪪 Captura: Loguin mediante User y Password (solo PVE)</summary>
+  <p align="center">
+    <img src="img/install/access_passw.png" alt="Login Proxmox" width="600">
+  </p>
+  > Asegúrate de usar el reino `pam` o `pve` según tu configuración de usuario.
+</details>
+
+<details> 
+  <summary>🪪 Captura: Loguin mediante User y Token (PVE y PBS)</summary>
+  <p align="center">
+    <img src="img/install/access_token.png" alt="Login Proxmox" width="600">
+  </p>
+  **En el campo Token_id solo se debe poner el nombre del token**
+</details>
+
+<details>
+  <summary>⚙️ Captura: Resources Selection</summary>
+  <p align="center">
+    <img src="img/install/resources_select.png" alt="Login Proxmox" width="600">
+  </p>
+  *Nota: Selecciona los CTs, VMs y Storages que quieres añadir así como las opciones*
+</details>
+
+---
+
+
+## ⚠️ Nota importante para PBS en entornos compartidos (Tuxis, Hetzner, etc.)
+
+Si usas un PBS **gestionado** o **multi‑tenant**, como Tuxis Free PBS:
+
+- No verás sensores de hardware  
+- No verás temperaturas  
+- No verás discos físicos  
+- No verás métricas del nodo  
+
+Esto es normal porque:
+
+- No tienes acceso al hardware real  
+- El proveedor oculta la infraestructura  
+- No tienes permisos root  
+- No puedes acceder al filesystem real  
+
+**Resultado:**  
+La integración solo mostrará sensores vacíos o sin datos.  
+En futuras versiones intentaremos mostrar métricas del datastore personal.
