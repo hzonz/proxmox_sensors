@@ -67,7 +67,7 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
     <img src="img/install/access_passw.png" alt="Login Proxmox" width="600">
   </p>
   > Asegúrate de usar el reino `pam` o `pve` según tu configuración de usuario.
-<details>
+</details>
 
 <details> 
   <summary>🪪 Captura: Loguin mediante User y Token (PVE y PBS)</summary>
