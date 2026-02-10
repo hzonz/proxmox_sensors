@@ -1,8 +1,9 @@
 {
   "name": "Proxmox Extended Sensors",
   "render_readme": true,
-  "country": "ES",
-  "homeassistant": "2023.6.0",
-  "domains": ["sensor"],
-  "iot_class": "local_polling"
+  "homeassistant": "2023.8.0",
+  "hide_default_branch": true,
+  "zip_release": false,
+  "filename": "proxmox_sensors.zip",
+  "persistent_directory": "proxmox_sensors"
 }
