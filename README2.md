@@ -56,7 +56,7 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 <details>
   <summary>📸 Captura: Proceso de Logueo user + passw</summary>
   <p align="center">
-    <img src="https://raw.githubusercontent.com/Javisen/proxmox_sensors/img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
+    <img src="https://raw.githubusercontent.com/Javisen/proxmox_sensors/tree/img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
   </p>
   > Asegúrate de usar el reino `pam` o `pve` según tu configuración de usuario.
 </details>
