@@ -266,15 +266,6 @@ No special configuration is required — PBS handles deduplication and indexing 
 
 ---
 
-<details>
-  <summary>📦 Container Controls & Sensors</summary>
-  <p align="center">
-    <img src="img/pve/ct_control.png" alt="CT Control" width="600">
-  </p>
-</details>
-
-
----
 
 ### 🗄️ Proxmox Backup Server (PBS)
 
