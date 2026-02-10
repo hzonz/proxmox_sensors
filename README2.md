@@ -40,17 +40,17 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 
 ## 📑 Table of Contents
 
-- [Key Features](##key-features-v200)
-- [Node Status & Performance](##node-status--performance)
-- [Disks & SMART](##disks--smart)
-- [Virtual Machines (QEMU)](##virtual-machines-qemu)
-- [Containers (LXC)](##containers-lxc)
-- [Proxmox Backup Server (PBS)](##proxmox-backup-server-pbs)
-- [PBS control actions](##PBS-control-actions)
-- [Control Actions (PVE & PBS)](##Control-Actions-PVE-&-PBS)
-- [Installation](##installation)
+- [Key Features](#key-features-v200)
+- [Node Status & Performance](#node-status--performance)
+- [Disks & SMART](#disks--smart)
+- [Virtual Machines (QEMU)](#virtual-machines-qemu)
+- [Containers (LXC)](#containers-lxc)
+- [Proxmox Backup Server (PBS)](#proxmox-backup-server-pbs)
+- [Control Actions (PVE & PBS)](#control-actions-pve--pbs)
+- [Installation](#installation)
 - [Visual Setup Guide](#visual-setup-guide)
-- [Contributing](##contributing--community)
+- [Contributing](#contributing--community)
+
 
 
 ---
