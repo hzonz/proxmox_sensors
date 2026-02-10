@@ -10,12 +10,12 @@ Come installare e configurare **lm-sensors** sul tuo nodo Proxmox per abilitare 
 ---
 
 ## 🔑 [02. Configurazione di Proxmox](02-proxmox-config.md)
-Come creare un **utente** e un **API Token** sicuro in Proxmox (PVE & PBS) con i permessi minimi necessari.
+Come creare un **utente** e un **API Token** sicuri in Proxmox (PVE e PBS) con i permessi minimi necessari.
 
 ---
 
-## ⚙️ [03. Accesso all'Integrazione (PVE & PBS)](03-login-pve-pbs.md)
-Guida al processo di configurazione iniziale in Home Assistant e connessione ai tuoi server.
+## ⚙️ [03. Accesso dell’Integrazione (PVE e PBS)](03-login-pve-pbs.md)
+Guida attraverso la configurazione iniziale in Home Assistant e la connessione ai tuoi server.
 
 ---
 
@@ -29,107 +29,184 @@ Domande comuni, problemi noti e come risolverli.
 </p>
 
 ---
+
 # 🚀 Proxmox Extended Sensors
 
-**L'integrazione più completa, efficiente e organizzata per monitorare Proxmox VE e PBS da Home Assistant.**
+## Introduzione
 
-Questa integrazione è progettata per utenti avanzati che necessitano di un controllo totale sul proprio hardware senza sovraccaricare il server.
-A differenza di altre soluzioni, Proxmox Sensors Extended si concentra sull'efficienza energetica, l'autenticazione sicura tramite Token e un'organizzazione visiva impeccabile.
+**Proxmox Extended Sensors è l’integrazione più completa, efficiente e avanzata per Home Assistant, progettata per offrire un controllo reale e un monitoraggio approfondito di Proxmox VE e Proxmox Backup Server (PBS).**
 
----
+Questa integrazione va ben oltre la semplice visualizzazione dei dati: offre **visibilità totale** della tua infrastruttura e aggiunge **vere capacità di controllo**, permettendoti di gestire nodi, macchine virtuali, container, dischi, datastores e attività PBS direttamente da Home Assistant.
 
-## 🔥 Caratteristiche Principali
+A differenza di altre soluzioni, Proxmox Extended Sensors è costruita con un approccio professionale:
 
-### 🌡️ Monitoraggio Hardware Avanzato
+- **Monitoraggio avanzato** di hardware, VM, CT, dischi e PBS.  
+- **Azioni di controllo complete** (avvio, arresto, spegnimento, riavvio, reset, pausa, ibernazione…).  
+- **Servizi di backup completamente integrati**, sia singoli che multipli.  
+- **Compatibilità totale con PBS**, inclusa deduplicazione e naming automatico.  
+- **Autenticazione sicura basata su Token**.  
+- **Struttura pulita e organizzata** di entità e dispositivi.  
+- **Uso minimo delle risorse** grazie a un polling ottimizzato.
 
-**Non accontentarti solo dell'uso della CPU. Guarda cosa succede davvero "sotto il cofano":**
+I backup creati da Home Assistant si integrano perfettamente con quelli creati da Proxmox VE, utilizzando nomi identificabili come:  
+**HA-{{vmid}}-{{guestname}}**  
+e mantengono **tutti i vantaggi di PBS**, inclusa la deduplicazione e la compatibilità con le catene di backup esistenti.
 
-* **Temperature in tempo reale:** Core della CPU, VRM e unità NVMe/SSD/HDD.
-* **Sensori meccanici:** Velocità delle ventole (RPM) e voltaggi della scheda madre.
-* **Sensori intelligenti:** Vengono create solo le entità che riportano dati validi, mantenendo il sistema pulito.
-
-**(Nota: richiede l'installazione di lm-sensors sull'host Proxmox).**
-
----
-
-### 🧠 Ottimizzato per le Prestazioni
-
-**Progettato pensando all'hardware con risorse limitate:**
-
-* **DataUpdateCoordinator:** Minimizza le chiamate all'API di Proxmox per evitare di saturare il processore del server.
-* **Silent SSL:** Verifica automatica dei certificati SSL (inclusi quelli auto-firmati) senza riempire i log di errori.
+In sintesi, questa integrazione trasforma Home Assistant in un **vero pannello di controllo per Proxmox**, combinando monitoraggio dettagliato, automazione avanzata e controllo totale dell’infrastruttura.
 
 ---
 
-### 🗄️ Proxmox Backup Server (PBS) Avanzato
+## 🧩 Versioni Supportate
 
-* **Modalità Esterna:** Connettiti facilmente a server PBS remoti usando solo il dominio.
-* **Monitoraggio delle Attività:** Stato dettagliato dell'ultimo Backup, Garbage Collector o attività di Verifica.
-
----
-
-### 🎨 Interfaccia Dinamica e Organizzata
-
-* **Smart Dashboard:** I sensori vengono raggruppati automaticamente in dispositivi:
-  1. Nodo
-  2. Dischi fisici
-  3. Macchine virtuali
-  4. Container (LXC)
-  5. Storage
-* **Auto-Naming:** Prefissi automatici (es. `pv1-cpu-temp`) per mantenere i tuoi dashboard ordinati in modo logico.
+- Proxmox VE 7.x / 8.x / 9.x  
+- Proxmox Backup Server 3.x / 4.x  
+- Home Assistant 2024.x o successivo
 
 ---
 
-**Esempio di Dashboard**
+## 📑 Indice dei Contenuti
 
-<p align="center">
-  <img src="/img/Dashboard.png" alt="Proxmox Extended Sensors Dashboard" width="1000"/>
-</p>
-
----
-
-## Sensori in Evidenza
-
-## PVE
-
-### 🖥️ Sensori Hardware (PVE & PBS)
-
-Temperature CPU • Temperature VRM • Temperature NVMe/SSD/HDD  
-Velocità ventole (RPM) • Voltaggi • Sensori di energia • Entità `pvesensors`  
-• Temperatura del chipset
+- [Funzionalità Chiave](#-caratteristiche-chiave-v200)  
+- [Stato e Prestazioni del Nodo](#-stato-e-prestazioni-del-nodo)  
+- [Dischi e SMART](#-dischi-e-smart)  
+- [Macchine Virtuali (QEMU)](#-macchine-virtuali-qemu)  
+- [Container (LXC)](#-container-lxc)  
+- [Servizi di Backup](#-servizi-di-backup-vms-e-cts)  
+- [Proxmox Backup Server (PBS)](#-proxmox-backup-server-pbs)  
+- [Azioni di Controllo (PVE e PBS)](#-azioni-di-controllo-pve-e-pbs)  
+- [Installazione](#-installazione)  
+- [Guida Visiva alla Configurazione](#-guida-visiva-alla-configurazione)  
+- [Contributi](#-contributi-e-community)
 
 ---
 
-### 🧠 Stato del Nodo
-
-Utilizzo CPU (%) • Utilizzo RAM (%) • RAM usata/totale  
-Tempo di attività (uptime) • Load average • CPU I/O Wait
+<details>
+  <summary>🖼️ Anteprima Dashboard</summary>
+  <p align="center">
+  <img src="/img/Dashboard.png" alt="Login Proxmox">
+  </p>
+  *Esempio di un dashboard moderno con **Card-Mod** (Modalità Scura) e i nostri sensori strutturati:*
+</details>
 
 ---
 
-### 💾 Dischi
+## 🔥 Funzionalità Chiave (v2.0.0)
 
-Capacità totale • Spazio usato (GB e %)  
-Livello di usura (NVMe) • Stato SMART (se disponibile)
+### 🌡️ Monitoraggio Hardware Avanzato (PVE e PBS)
+
+- **Temperature in tempo reale:** core CPU, VRM, chipset, NVMe/SSD/HDD.  
+- **Sensori meccanici:** velocità delle ventole (RPM), voltaggi e altri sensori della scheda madre.  
+- **Filtraggio intelligente:** vengono create solo entità con dati validi per mantenere il sistema pulito.  
+  > Richiede `lm-sensors` sull’host Proxmox.
+
+---
+
+### 🧠 Stato e Prestazioni del Nodo
+
+- Utilizzo CPU, I/O wait, load average.  
+- RAM totale/usata/libera e percentuale.  
+- Uptime e versione del kernel/PVE.  
+- Sensori di rete RX/TX per nodo, VM e container.
+
+<details>
+  <summary>🔳 Attributi del Nodo</summary>
+  <p align="center">
+    <img src="../../img/pve/node_attr.png" alt="Attributi del Nodo" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>⭕ Controlli del Nodo</summary>
+  <p align="center">
+    <img src="../../img/pve/node_controls.png" alt="Controlli del Nodo" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🌡️ Temperatura CPU</summary>
+  <p align="center">
+    <img src="../../img/pve/cpu_temp_attr.png" alt="Temperatura CPU" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🌡️ Temperatura Chipset</summary>
+  <p align="center">
+    <img src="../../img/pve/chipset_temp.png" alt="Temperatura Chipset" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>⏳ CPU I/O Wait</summary>
+  <p align="center">
+    <img src="../../img/pve/cpu_wait.png" alt="CPU I/O Wait" width="600">
+  </p>
+</details>
+
+---
+
+### 💾 Dischi & SMART
+
+- Sensori dei dischi fisici raggruppati come dispositivi dedicati.  
+- Spazio totale/usato, livello di usura (NVMe wear level) e altro.  
+- Attributi SMART per HDD/SSD/NVMe (se disponibili).  
+- Sensori di temperatura dedicati per tipo di disco (SATA, NVMe, ecc.).
+
+<details>
+  <summary>💾 Sensori Disco</summary>
+  <p align="center">
+    <img src="../../img/pve/disks_sensors.png" alt="Sensori Disco" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🩺 Attributi SMART HDD/SSD</summary>
+  <p align="center">
+    <img src="../../img/pve/disk_hd_smart_attr.png" alt="SMART HDD" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🩺 Attributi SMART NVMe</summary>
+  <p align="center">
+    <img src="../../img/pve/disk_nvme_smart_attr.png" alt="SMART NVMe" width="600">
+  </p>
+</details>
 
 ---
 
 ### 🖥️ Macchine Virtuali (QEMU)
 
-Utilizzo CPU (%) • Utilizzo RAM (%) • Traffico di Rete Tx/Rx  
-Stato (acceso/spento) • Selezione automatica/manualamente
+- Stato, utilizzo CPU, RAM usata/totale, disco usato/totale.  
+- Rete RX/TX per VM.  
+- Uptime e sensori informativi di base.  
+- Raggruppamento pulito dei dispositivi per VM in Home Assistant.
+
+<details>
+  <summary>🖥️ Controlli e Sensori VM</summary>
+  <p align="center">
+    <img src="../../img/pve/vm_control.png" alt="Controllo VM" width="600">
+  </p>
+</details>
 
 ---
 
 ### 📦 Container (LXC)
 
-Utilizzo CPU (%) • Utilizzo RAM (%) • Traffico di Rete Tx/Rx  
-Stato • Selezione automatica/manuale • e molti altri
+- Stato, utilizzo CPU, RAM usata/totale, disco usato/totale.  
+- Rete RX/TX per container.  
+- Uptime e sensori informativi di base.  
+- Stessa struttura pulita delle VM.
+
+<details>
+  <summary>📦 Controlli e Sensori Container</summary>
+  <p align="center">
+    <img src="../../img/pve/ct_control.png" alt="Controllo CT" width="600">
+  </p>
+</details>
 
 ---
 
-### 🗄️ Proxmox Backup Server (PBS)
+## 💾 Servizi di Backup (VM e CT)
 
-Utilizzo datastore (GB e %) • Numero di backup  
-Stato del Garbage Collector • Stato dell'ultima attività di backup  
-• Informazioni complete sulle attività e altro ancora
+L’integrazione include due potenti servizi di backup che permettono di creare **backup Proxmox direttamente da Home Assistant**, completamente compatibili con Proxmox VE e Proxmox Backup Server (PBS).
