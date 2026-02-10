@@ -51,6 +51,36 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 
 ---
 
+## Guía Visual de Configuración
+
+<details>
+  <summary>📸 Captura: Proceso de Logueo</summary>
+  <p align="center">
+    <img src="https://github.com/Javisen/proxmox_sensors/tree/main/img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
+  </p>
+  
+  > Asegúrate de usar el reino `pam` o `pve` según tu configuración de usuario.
+</details>
+
+<details>
+  <summary>⚙️ Captura: Configuración de la Integración</summary>
+  <br>
+  
+  ![Configuración](ruta/a/tu/imagen_config.png)
+  
+  *Nota: Introduce la IP del nodo y el token de la API.*
+</details>
+
+<details>
+  <summary>📊 Captura: Detalles de los Sensores</summary>
+  <br>
+  
+  ![Sensores](ruta/a/tu/imagen_sensores.png)
+  
+  Lista de sensores incluidos: CPU Usage, RAM, Status y Uptime.
+</details>
+
+
 ### 🧠 Node Status & Performance
 
 - CPU usage, I/O wait, load average.
