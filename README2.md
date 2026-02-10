@@ -89,10 +89,38 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 
 ### 🧠 Node Status & Performance
 
+<details>
+  <summary>🔳 NODE Attributes</summary>
+  <p align="center">
+    <img src="img/pve/node_attr.png" alt="NODE" width="600">
+  </p>
+</details>
+
 - CPU usage, I/O wait, load average.
 - RAM total/used/free and percentage.
 - Uptime and kernel/PVE version.
 - Network RX/TX sensors for node, VMs and containers.
+
+<details>
+  <summary>🌡️ CPU Temp</summary>
+  <p align="center">
+    <img src="img/pve/cpu_temp_attr.png" alt="CPU Temp" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🌡️ Chipset Temp</summary>
+  <p align="center">
+    <img src="img/pve/chipset_temp.png" alt="Chipset Temp" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>⏳ CPU Wait (I/O Wait)</summary>
+  <p align="center">
+    <img src="img/pve/cpu_wait.png" alt="CPU I/O" width="600">
+  </p>
+</details>
 
 ---
 
@@ -104,30 +132,23 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 - Dedicated temperature sensors per disk type (SATA, NVMe, etc.).
 
 <details>
-  <summary>🩺 Captura: Diask Smart</summary>
+  <summary>💾 Disks</summary>
+  <p align="center">
+    <img src="img/pve/disks_sensors.png" alt="Disks" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🩺 Disk Smart</summary>
   <p align="center">
     <img src="img/pve/disk_hd_smart_attr.png" alt="Disk Smart" width="600">
   </p>
 </details>
 
 <details>
-  <summary>🩺 Captura: Disk Smart</summary>
-  <p align="center">
-    <img src="img/pve/disk_hd_smart_attr.png" alt="Disk Smart" width="600">
-  </p>
-</details>
-
-<details>
-  <summary>🩺 Captura: NVME Smart</summary>
+  <summary>🩺 NVME Smart</summary>
   <p align="center">
     <img src="img/pve/disk_nvme_smart_attr.png" alt="NVME Smart" width="600">
-  </p>
-</details>
-
-<details>
-  <summary>🩺 Captura: CPU Temp</summary>
-  <p align="center">
-    <img src="img/pve/cpu_temp_attr.png" alt="CPU Temp" width="600">
   </p>
 </details>
 
