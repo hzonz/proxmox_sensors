@@ -54,36 +54,32 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 ## Guía Visual de Configuración
 
 <details>
-  <summary>📸 Captura: Proceso de Logueo user + passw</summary>
+  <summary>🪪 Captura: Server Connection</summary>
   <p align="center">
     <img src="img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
   </p>
-  > Asegúrate de usar el reino `pam` o `pve` según tu configuración de usuario.
+  > No se usa "http://" ni "https://". Ya lo hacemos por tí.
 </details>
 
 <details>
-  <summary>📸 Captura: Proceso de Logueo user + token</summary>
+  <summary>🪪 Captura: Tipos de Loguin</summary>
+  <p align="center">
+    <img src="img/install/access_passw.png" alt="Login Proxmox" width="600">
+  </p>
+  > Asegúrate de usar el reino `pam` o `pve` según tu configuración de usuario.
+
   <p align="center">
     <img src="img/install/access_token.png" alt="Login Proxmox" width="600">
   </p>
-  > Asegúrate de usar el reino `pam` o `pve` según tu configuración de usuario.
-</details>
-<details>
-  <summary>⚙️ Captura: Configuración de la Integración</summary>
-  <br>
-  
-  ![Configuración]([ruta/a/tu/imagen_config.png](https://raw.githubusercontent.com/Javisen/proxmox_sensors/img/install/setup_pve_1.png))
-  
-  *Nota: Introduce la IP del nodo y el token de la API.*
+  **En el campo Token_id solo se debe poner el nombre del token**
 </details>
 
 <details>
-  <summary>📊 Captura: Detalles de los Sensores</summary>
-  <br>
-  
-  ![Sensores](ruta/a/tu/imagen_sensores.png)
-  
-  Lista de sensores incluidos: CPU Usage, RAM, Status y Uptime.
+  <summary>⚙️ Captura: Resources Selection</summary>
+  <p align="center">
+    <img src="img/install/resources_select.png" alt="Login Proxmox" width="600">
+  </p>
+  *Nota: Selecciona los CTs, VMs y Storages que quieres añadir así como las opciones*
 </details>
 
 
