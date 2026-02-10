@@ -1,59 +1,58 @@
 # ❓ FAQ — Domande Frequenti
 
-Di seguito troverai i dubbi e i problemi più comuni riscontrati durante l'uso dell'integrazione **Proxmox Sensors Extended**, insieme alle relative soluzioni rapide.
+Qui trovi le domande e i problemi più comuni relativi all’integrazione **Proxmox Extended Sensors**, insieme alle soluzioni rapide.
 
 ---
 
-## 🔐 Non riesco a loggarmi nell'integrazione (PVE o PBS)
+## 🔐 Non riesco ad accedere all’integrazione (PVE o PBS)
 
-### ✔ 1. Non inserire `http://` né `https://`
-Inserisci **solo il dominio o l'IP**, ad esempio:
+### ✔ 1. Non inserire `http://` o `https://`
+Inserisci solo il dominio o l’indirizzo IP, ad esempio:
 
-`192.168.1.10`
-`pve.mio-dominio.com`
+192.168.1.10  
+pve.mio-dominio.com
 
 ---
 
 ### ✔ 2. Non inserire la porta
-L'integrazione rileva automaticamente la porta corretta.
+L’integrazione rileva automaticamente la porta corretta.
 
-### ✔ 3. Controlla i permessi del Token API
-L'utente deve avere:
+---
 
-- **PVE:** - `Sys.Audit`  
-  - `VM.Audit`  
-  - `Datastore.Audit`  
-  - `Permissions.Modify` (solo se utilizzi la selezione automatica di VM/LXC)
+### ✔ 3. Controlla i permessi dell’utente o del Token API
+L’utente deve avere:
 
-- **PBS:** - `Datastore.Audit`  
-  - `Datastore.Read`  
-  - `Sys.Audit`
+- PVE: `PVEAdmin`  
+- PBS: `Administrator`
+
+I permessi devono essere assegnati alla root `/`.
 
 ---
 
 ### ✔ 4. Assicurati che il Token sia attivo
 In Proxmox → Datacenter → Permissions → API Tokens  
-Deve apparire **Enabled: Yes**.
+Deve mostrare **Enabled: Yes**.
 
 ---
 
-## 🔑 Ricevo "Permesso negato" anche se il Token è corretto
+## 🔑 Dice “Permission denied” anche se il Token è corretto
 
-Questo di solito è dovuto a:
+Le cause più comuni:
 
-### ✔ 1. Il Token non ha permessi nella radice `/`
-In Proxmox, i permessi devono essere assegnati in: `/ (root)`. **Non su un nodo specifico.**
+### ✔ 1. Il Token non ha permessi sulla root `/`
+I permessi devono essere assegnati a `/ (root)`  
+Non a un nodo specifico.
 
 ### ✔ 2. Il Token appartiene a un utente senza permessi
-L'utente padre deve avere i permessi, non solo il Token.
+L’utente deve avere il ruolo `PVEAdmin` o `Administrator`.
 
 ---
 
-## 🌐 L'integrazione non rileva il mio PBS di Tuxis
+## 🌐 L’integrazione non rileva il mio PBS Tuxis
 
-Questo è normale.
+È normale.
 
-I server PBS gestiti da Tuxis **non permettono l'accesso alle metriche interne** tramite API:
+I server PBS gestiti da Tuxis **non espongono metriche interne** tramite API:
 
 - spazio del datastore  
 - utilizzo del disco  
@@ -63,216 +62,222 @@ I server PBS gestiti da Tuxis **non permettono l'accesso alle metriche interne**
 - SMART  
 - CPU/RAM  
 
-Non si tratta di un errore dell'integrazione:  
-Tuxis blocca questi endpoint per progettazione.
+Non è un bug dell’integrazione.  
+Tuxis blocca intenzionalmente questi endpoint.
 
-L'integrazione rileva automaticamente che si tratta di un PBS di Tuxis e nasconde i sensori non disponibili.
+L’integrazione rileva automaticamente un PBS Tuxis e nasconde i sensori non disponibili.
 
 ---
 
 ## 📦 Non vedo i sensori dello spazio del datastore in PBS
 
-### ✔ Se il tuo PBS è di Tuxis → **non sono disponibili**
-Per motivi di sicurezza, Tuxis blocca: `/api2/json/admin/datastore/<name>/status`
+### ✔ Se il tuo PBS è Tuxis → questi dati non sono disponibili
+Tuxis blocca l’endpoint che restituisce lo stato del datastore.
 
-Senza questo endpoint, non è possibile ottenere:
+Senza questo endpoint non è possibile ottenere:
 
 - spazio totale  
 - spazio libero  
 - percentuale di utilizzo  
 - deduplicazione  
 - chunks  
-- GC (Garbage Collector)
+- GC  
 
 ---
 
-## 🌡️ Non appaiono i sensori di temperatura in PVE
+## 🌡️ I sensori di temperatura non compaiono in PVE
 
-### ✔ 1. Devi installare `lm-sensors` sul nodo
-Guida completa: [01. Configurazione dei Sensori Hardware](01-install-sensors.md)
-
-### ✔ 2. Devi eseguire `sensors-detect`
-E accettare tutte le opzioni sicure.
-
-### ✔ 3. Devi caricare i moduli raccomandati
+### ✔ 1. `lm-sensors` deve essere installato sul nodo  
+### ✔ 2. Devi eseguire `sensors-detect`  
+### ✔ 3. Devi caricare i moduli consigliati  
 Esempio:
 
-```bash
-modprobe coretemp
-modprobe nct6775
-```
-### ✔ 4. Assicurati della persistenza dei sensori
-Affinché i sensori funzionino dopo il riavvio, assicurati di aver seguito i passaggi per aggiungere i moduli necessari al file `/etc/modules`.
+modprobe coretemp  
+modprobe nct6775  
+
+### ✔ 4. Devi creare un servizio systemd  
+Per mantenere i sensori attivi dopo il riavvio.
 
 ---
 
-## 🖥️ Non appaiono i sensori dei dischi NVMe/SSD/HDD
-### ✔ 1. Il disco deve supportare la lettura della temperatura
-Alcuni modelli OEM non espongono i sensori.
+## 🖥️ I sensori NVMe/SSD/HDD non compaiono
 
-### ✔ 2. Nei dischi NVMe virtualizzati (VM) non ci sono sensori
-Funzionano solo su hardware reale.
+### ✔ 1. Il disco deve supportare la lettura della temperatura  
+Alcuni modelli OEM non espongono sensori.
 
-### ✔ 3. In PBS di Tuxis non vengono esposti i sensori del disco
-Si tratta di una limitazione del fornitore.
+### ✔ 2. Gli NVMe virtualizzati nelle VM non hanno sensori  
+Solo l’hardware fisico li espone.
 
-## 🧠 Non appaiono le mie VM o i miei container
-
-### ✔ 1. Controlla i permessi del Token
-Deve avere il privilegio: `VM.Audit`
-
-### ✔ 2. Se usi la selezione automatica
-L'integrazione richiede il privilegio: `Permissions.Modify`
-
-### ✔ 3. Se usi un cluster
-Devi connetterti al nodo principale, non a un nodo secondario.
+### ✔ 3. I PBS Tuxis non espongono sensori dei dischi  
+Limitazione del provider.
 
 ---
 
-## 🔄 L'integrazione impiega tempo ad aggiornare i valori
-Questo è normale.
+## 🧠 Le mie VM o i miei container non compaiono
 
-L'integrazione utilizza il `DataUpdateCoordinator` per:
+### ✔ 1. Controlla i permessi dell’utente  
+Deve avere il ruolo `PVEAdmin`.
 
-* evitare di saturare l'API
-* ridurre il carico sul nodo
-* migliorare le prestazioni
-
-**L'intervallo predefinito è di 10 secondi ed è configurabile.**
+### ✔ 2. Se usi un cluster  
+Devi collegarti al **nodo principale**, non a un nodo secondario.
 
 ---
 
-## 🧩 Posso usare più PVE e PBS contemporaneamente?
-### Sì.
-L'integrazione permette di aggiungere più istanze, ognuna con il proprio Token.
+## 🔄 L’integrazione aggiorna i valori lentamente
+
+È normale.
+
+L’integrazione utilizza un coordinatore interno per:
+
+- evitare sovraccarichi dell’API  
+- ridurre il carico sul nodo  
+- migliorare le prestazioni  
+
+L’intervallo predefinito è 10 secondi (modificabile).
 
 ---
 
-## 🔒 È sicuro usare i Token API?
-### Sì.
+## 🧩 Posso usare più server PVE e PBS?
 
-L'integrazione:
-
-* non memorizza password
-* usa solo Token con permessi minimi
-* non esegue comandi sul server
-* non modifica la configurazione di Proxmox
-* non apre porte aggiuntive
+Sì.  
+L’integrazione supporta più istanze, ognuna con il proprio Token.
 
 ---
 
-## 🧹 Come elimino i vecchi sensori?
-**Home Assistant elimina automaticamente le entità orfane.**
+## 🔒 Gli API Token sono sicuri?
 
-**Se vuoi forzare la pulizia:**
+Sì.
 
-* Rimuovi l'integrazione
-* Riavvia Home Assistant
-* Aggiungila di nuovo
+L’integrazione:
 
----
-
-## 🛠️ Dove posso segnalare errori?
-**Puoi aprire una "issue" su GitHub indicando:**
-
-* versione di HA
-* versione di Proxmox
-* log rilevanti
-* passaggi per riprodurre l'errore
-* tipo di server (PVE, PBS, Tuxis, ecc.)
+- non memorizza password  
+- utilizza solo Token  
+- non esegue comandi sul server  
+- non modifica la configurazione di Proxmox  
+- non apre porte aggiuntive  
 
 ---
 
-# 🧾 Checklist prima di aprire una Issue
+## 🧹 Come elimino vecchi sensori?
 
-Prima di segnalare un problema, controlla questa lista rapida.
-Il 90% degli errori si risolve qui:
+Home Assistant rimuove automaticamente le entità orfane.
 
-### ✔ 1. Riesci ad accedere a Proxmox dal browser?
-Se non riesci a entrare nell'interfaccia web di PVE/PBS, nemmeno l'integrazione potrà farlo.
+Per forzare la pulizia:
 
-### ✔ 2. Stai usando solo il dominio/IP?
-Non inserire `http://`, `https://` né porte.
-
-### ✔ 3. Il Token API è attivo?
-In Proxmox → Datacenter → Permissions → API Tokens
-Deve apparire **Enabled: Yes**.
-
-### ✔ 4. L'utente ha i permessi nella radice `/`?
-I permessi devono essere assegnati in: `/ (root)`. Non su un nodo specifico.
-
-### ✔ 5. Hai installato e configurato `lm-sensors` in PVE?
-Senza questo, i sensori hardware non appariranno.
-
-### ✔ 6. Il PBS è di Tuxis?
-In tal caso, ricorda che **non espone metriche interne** (spazio, hardware, RRD).
-
-### ✔ 7. Hai riavviato Home Assistant dopo aver cambiato i permessi?
-HA mantiene in cache i vecchi permessi.
-
-### ✔ 8. Ci sono errori nei log di Home Assistant?
-Vai su:
-**Impostazioni → Sistema → Registri**
-
-### ✔ 9. Hai provato in modalità incognito?
-Il frontend di HA mantiene le risorse in cache per settimane.
+1. Rimuovi l’integrazione  
+2. Riavvia Home Assistant  
+3. Aggiungila di nuovo  
 
 ---
 
-# 🚫 Limitazioni Note
+## 🛠️ Dove posso segnalare problemi?
 
-Queste limitazioni non sono errori dell'integrazione, ma restrizioni di Proxmox o del fornitore:
+Apri un issue su GitHub includendo:
 
-### 🔒 1. PBS di Tuxis
-I server PBS gestiti da Tuxis **non permettono di accedere a:**
+- versione di HA  
+- versione di Proxmox  
+- log rilevanti  
+- passaggi per riprodurre  
+- tipo di server (PVE, PBS, Tuxis, ecc.)  
 
-- spazio del datastore
-- utilizzo del disco
-- deduplicazione
-- chunks
-- statistiche RRD
-- hardware del nodo
-- temperatura
-- SMART
-- CPU/RAM
+---
 
-L'integrazione rileva automaticamente questa limitazione e nasconde i sensori non disponibili.
+# 🧾 Checklist prima di aprire un Issue
+
+Questa lista risolve il 90% dei problemi:
+
+### ✔ 1. Puoi accedere a Proxmox dal browser?  
+Se l’interfaccia web PVE/PBS non è accessibile, l’integrazione non funzionerà.
+
+### ✔ 2. Stai usando solo dominio/IP?  
+Niente `http://`, `https://` o porte.
+
+### ✔ 3. Il Token API è attivo?  
+Deve mostrare **Enabled: Yes**.
+
+### ✔ 4. L’utente ha permessi sulla root `/`?  
+I permessi devono essere assegnati a `/ (root)`.
+
+### ✔ 5. `lm-sensors` è installato e configurato?  
+Senza questo pacchetto non appariranno sensori hardware.
+
+### ✔ 6. Il tuo PBS è Tuxis?  
+In tal caso, le metriche interne non sono disponibili.
+
+### ✔ 7. Hai riavviato Home Assistant dopo aver modificato i permessi?  
+HA memorizza in cache i permessi precedenti.
+
+### ✔ 8. Ci sono errori nei log di HA?  
+Controlla la sezione “Integrazioni”.
+
+### ✔ 9. Hai provato la modalità in incognito?  
+Il frontend di HA memorizza le risorse per molto tempo.
+
+---
+
+# 🚫 Limitazioni Conosciute
+
+Queste limitazioni non sono bug dell’integrazione, ma restrizioni di Proxmox o del provider.
+
+---
+
+### 🔒 1. PBS Tuxis
+
+I PBS Tuxis non espongono:
+
+- spazio del datastore  
+- utilizzo del disco  
+- deduplicazione  
+- chunks  
+- statistiche RRD  
+- hardware del nodo  
+- temperatura  
+- SMART  
+- CPU/RAM  
+
+L’integrazione nasconde automaticamente questi sensori.
 
 ---
 
 ### 🧊 2. Sensori hardware nelle macchine virtuali
-Le VM **non espongono sensori reali**:
 
-- temperature
-- ventole
-- voltaggi
-- SMART
+Le VM non espongono sensori reali:
 
-Funzionano solo su hardware fisico.
+- temperature  
+- ventole  
+- tensioni  
+- SMART  
 
----
-
-### 📦 3. Dischi NVMe/SSD senza sensori
-Alcuni modelli OEM o controller RAID **non espongono la temperatura** né lo stato SMART.
+Solo l’hardware fisico li supporta.
 
 ---
 
-### 🔐 4. Token senza permessi in `/`
-Se i permessi sono assegnati a un nodo invece che alla radice, Proxmox blocca l'API.
+### 📦 3. NVMe/SSD senza sensori
+
+Alcuni modelli OEM o controller RAID non espongono temperatura o SMART.
+
+---
+
+### 🔐 4. Token senza permessi su `/`
+
+Se i permessi vengono assegnati a un nodo invece che alla root, Proxmox blocca l’API.
 
 ---
 
 ### 🕒 5. Intervalli di aggiornamento
-Per evitare di saturare l'API, l'integrazione utilizza un intervallo minimo di aggiornamento. Non è un errore se i valori impiegano alcuni secondi per aggiornarsi.
+
+L’integrazione utilizza un intervallo minimo per evitare sovraccarichi dell’API.  
+È normale che i valori impieghino qualche secondo ad aggiornarsi.
 
 ---
 
 ### 🧩 6. Cluster Proxmox
-Devi connetterti al **nodo principale** del cluster. I nodi secondari non espongono l'intera API.
+
+Devi collegarti al **nodo principale** del cluster.  
+I nodi secondari non espongono l’intera API.
 
 ---
 
-### 🌐 7. Certificati SSL auto-firmati
-L'integrazione li accetta automaticamente, ma alcuni browser potrebbero mostrare avvisi.
+### 🌐 7. Certificati SSL autofirmati
 
----
+L’integrazione li accetta automaticamente, ma alcuni browser possono mostrare avvisi.
