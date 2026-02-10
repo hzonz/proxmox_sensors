@@ -210,3 +210,266 @@ En résumé, cette intégration transforme Home Assistant en un **véritable pan
 ## 💾 Services de Sauvegarde (VMs et CTs)
 
 L’intégration inclut deux puissants services de sauvegarde permettant de créer **des backups Proxmox directement depuis Home Assistant**, totalement compatibles avec Proxmox VE et Proxmox Backup Server (PBS).
+
+---
+
+### 🟦 1. Service de Sauvegarde Individuelle  
+Crée une sauvegarde d’une VM ou d’un CT spécifique.
+
+**Service :** `proxmox_sensors.create_vzdump_backup`
+
+**Options disponibles :**
+
+- **Nœud** – Sélectionne le nœud Proxmox.  
+- **Stockage de destination** – Tout stockage compatible avec les sauvegardes (local, NFS, PBS, etc.).  
+- **ID de VM/CT** – ID de la machine à sauvegarder.  
+- **Mode de sauvegarde :**  
+  - `snapshot`  
+  - `suspend`  
+  - `stop`  
+- **Compression :**  
+  - `zstd`  
+  - `gzip`  
+  - `lzo`  
+  - `none`
+
+Les sauvegardes créées depuis Home Assistant sont automatiquement nommées :  
+**HA-{{vmid}}-{{guestname}}**
+
+Cela garantit une identification facile tout en maintenant une **compatibilité totale avec les sauvegardes existantes de Proxmox**.
+
+<details>
+  <summary>📦 Service de Sauvegarde Individuelle</summary>
+  <p align="center">
+    <img src="../../img/pve/single_backup.png" alt="Service de Sauvegarde Individuelle" width="600">
+  </p>
+</details>
+
+---
+
+### 🟩 2. Service de Sauvegarde Massive  
+Effectue des sauvegardes de **toutes les VMs et/ou CTs** d’un nœud sélectionné.
+
+**Service :** `proxmox_sensors.backup_all`
+
+**Options disponibles :**
+
+- **Nœud** – Sélectionne le nœud à sauvegarder.  
+- **Stockage de destination** – Tout stockage compatible avec les sauvegardes.  
+- **Mode de sauvegarde :** snapshot / suspend / stop.  
+- **Compression :** zstd / gzip / lzo / none.  
+- **Nombre maximal de sauvegardes simultanées** – Contrôle l’exécution en parallèle.  
+- **Délai entre sauvegardes** – Secondes entre chaque sauvegarde.  
+- **Inclure les VMs** – Interrupteur (Oui/Non).  
+- **Inclure les CTs** – Interrupteur (Oui/Non).
+
+Ce service est idéal pour les sauvegardes nocturnes planifiées ou les routines de maintenance automatisées.
+
+<details>
+  <summary>📦 Service de Sauvegarde Massive</summary>
+  <p align="center">
+    <img src="../../img/pve/massive_backups.png" alt="Service de Sauvegarde Massive" width="600">
+  </p>
+</details>
+
+---
+
+### 🟧 Compatibilité PBS et Déduplication
+
+Les sauvegardes créées via ces services :
+
+- Sont stockées exactement comme celles créées depuis Proxmox VE  
+- Utilisent la même structure de noms et de métadonnées  
+- Supportent automatiquement la **déduplication PBS**  
+- S’intègrent parfaitement aux chaînes de sauvegardes existantes  
+- Apparaissent dans le datastore PBS avec une compatibilité totale  
+
+Aucune configuration spéciale n’est requise : PBS gère la déduplication et l’indexation exactement comme si la sauvegarde avait été créée depuis l’interface graphique ou la CLI de Proxmox.
+
+---
+
+### 🗄️ Proxmox Backup Server (PBS)
+
+**Supervision avancée du datastore et des tâches :**
+
+- Utilisation du datastore (GB et %), total, utilisé et libre.  
+- Ratio de déduplication et nombre de sauvegardes.  
+- Heure, taille et état de la dernière sauvegarde.  
+- Erreurs de sauvegarde et résumé des tâches.  
+- État du Garbage Collector (GC) et capteurs associés.  
+- Dernière tâche : type, état, message et durée.
+
+<details>
+  <summary>🗄️ Vue d’ensemble du Datastore</summary>
+  <p align="center">
+    <img src="../../img/pbs/datastore.png" alt="Datastore" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ Serveur PBS</summary>
+  <p align="center">
+    <img src="../../img/pbs/pbs_server.png" alt="Serveur PBS" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ Détails des Tâches</summary>
+  <p align="center">
+    <img src="../../img/pbs/task.png" alt="Tâche PBS" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ État du Garbage Collector</summary>
+  <p align="center">
+    <img src="../../img/pbs/gc_status_attr.png" alt="État GC" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ Maintenance du Datastore</summary>
+  <p align="center">
+    <img src="../../img/pbs/datastore_maintenance.png" alt="Maintenance Datastore" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ Résumé de la Dernière Tâche</summary>
+  <p align="center">
+    <img src="../../img/pbs/last_task_stat.png" alt="Dernière Tâche" width="600">
+  </p>
+</details>
+
+---
+
+## Actions de contrôle PBS :
+
+- Exécuter **Garbage Collector (GC)**  
+- Exécuter **Prune**  
+- Exécuter **Verify**  
+- Exécuter **Sync**  
+
+<details>
+  <summary>🗄️ Maintenance du Datastore</summary>
+  <p align="center">
+    <img src="../../img/pbs/datastore_maintenance.png" alt="Maintenance Datastore" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ Dernière Tâche</summary>
+  <p align="center">
+    <img src="../../img/pbs/last_task_stat.png" alt="Dernière Tâche" width="600">
+  </p>
+</details>
+
+---
+
+### 🎛️ Actions de Contrôle (PVE & PBS)
+
+**Contrôles du nœud :**
+
+- Éteindre le nœud  
+- Redémarrer le nœud  
+
+**Contrôles des machines virtuelles (QEMU) :**
+
+- Démarrer, Arrêter, Éteindre, Redémarrer, Reset  
+- Pause, Reprise, Hibernation  
+
+**Contrôles des conteneurs (LXC) :**
+
+- Démarrer, Arrêter, Éteindre, Redémarrer  
+
+**Contrôles PBS :**
+
+- GC, Prune, Verify, Sync (par datastore)
+
+---
+
+### 🎨 Organisation Visuelle et Nommage
+
+- Les capteurs sont automatiquement regroupés en appareils logiques :
+  1. Nœud  
+  2. Disques physiques  
+  3. Machines virtuelles  
+  4. Conteneurs  
+  5. Stockages / Datastores  
+  6. Serveur PBS et tâches  
+
+- Nommage cohérent et clair pour garder les dashboards lisibles et évolutifs.
+
+---
+
+## 🧩 Installation
+
+### 🔹 Via HACS (recommandé)
+
+1. Ouvre **HACS → Intégrations**  
+2. Clique sur les trois points (⋮) → **Custom repositories**  
+3. Ajoute ce dépôt :  
+   - URL : `https://github.com/Javisen/proxmox_sensors`  
+   - Catégorie : **Integration**  
+4. Recherche **“Proxmox Extended Sensors”** dans HACS et installe‑le  
+5. Redémarre Home Assistant  
+6. Va dans **Paramètres → Appareils & Services → Ajouter une intégration** et cherche **Proxmox Extended Sensors**
+
+### 🔹 Installation manuelle
+
+1. Copie le dossier `custom_components/proxmox_sensors` dans :  
+   - `/config/custom_components/proxmox_sensors`  
+2. Redémarre Home Assistant  
+3. Ajoute l’intégration depuis **Paramètres → Appareils & Services**
+
+---
+
+## 🧭 Guide Visuel de Configuration
+
+Ci‑dessous, un guide visuel complet du processus de configuration, incluant les méthodes de connexion, la sélection des ressources et les étapes d’installation.
+
+<details>
+  <summary>🪪 Connexion au Serveur</summary>
+  <p align="center">
+    <img src="../../img/install/setup_pve_1.png" alt="Connexion Proxmox" width="600">
+  </p>
+  > Pas besoin de saisir "http://" ou "https://". Nous le faisons automatiquement.
+</details>
+
+<details>
+  <summary>🪪 Connexion avec Nom d’utilisateur et Mot de passe (PVE uniquement)</summary>
+  <p align="center">
+    <img src="../../img/install/access_passw.png" alt="Connexion Proxmox" width="600">
+  </p>
+  > Assure‑toi d’utiliser le bon realm (`pam` ou `pve`).
+</details>
+
+<details> 
+  <summary>🪪 Connexion avec Utilisateur et Token (PVE et PBS)</summary>
+  <p align="center">
+    <img src="../../img/install/access_token.png" alt="Connexion Proxmox" width="600">
+  </p>
+  **Dans le champ Token_id, tu dois uniquement entrer le nom du token.**
+</details>
+
+<details>
+  <summary>⚙️ Sélection des Ressources</summary>
+  <p align="center">
+    <img src="../../img/install/resources_select.png" alt="Sélection des Ressources" width="600">
+  </p>
+  *Note : sélectionne les CTs, VMs et Stockages que tu veux ajouter, ainsi que les options correspondantes.*
+</details>
+
+---
+
+**Si tu apprécies cette intégration ou la trouves utile, pense à laisser une ⭐ sur GitHub.**  
+**Cela aide à la visibilité, motive le développement et soutient les futures fonctionnalités.**
+
+## 🤝 Contributions & Communauté
+
+Les contributions sont les bienvenues ! Tu peux ouvrir des issues ou des pull requests.  
+**[Voir le dépôt GitHub](https://github.com/Javisen/proxmox_sensors)**
+
+---
+
+<p align="center"><i>Maintenu par Javisen – Licence MIT</i></p>
