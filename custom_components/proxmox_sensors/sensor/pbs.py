@@ -24,15 +24,6 @@ class ProxmoxPBSVersionSensor(ProxmoxPbsBaseSensor):
     def _get_value(self):
         return self.coordinator.data.get("pbs_version", "Unknown")
 
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, "server")},
-            "name": "Server",
-            "manufacturer": "Proxmox",
-            "model": "Backup Server",
-        }
-
 
 class ProxmoxPBSReleaseSensor(ProxmoxPbsBaseSensor):
     def __init__(self, coordinator, server_id):
@@ -46,15 +37,6 @@ class ProxmoxPBSReleaseSensor(ProxmoxPbsBaseSensor):
 
     def _get_value(self):
         return self.coordinator.data.get("pbs_release", "Unknown")
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, "server")},
-            "name": "Server",
-            "manufacturer": "Proxmox",
-            "model": "Backup Server",
-        }
 
 
 class ProxmoxPBSAuthStatusSensor(ProxmoxPbsBaseSensor):
@@ -70,15 +52,6 @@ class ProxmoxPBSAuthStatusSensor(ProxmoxPbsBaseSensor):
     def _get_value(self):
         return self.coordinator.data.get("pbs_auth_status", "UNKNOWN")
 
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, "server")},
-            "name": "Server",
-            "manufacturer": "Proxmox",
-            "model": "Backup Server",
-        }
-
 
 class ProxmoxPBSCpuSensor(ProxmoxPbsBaseSensor):
     def __init__(self, coordinator, server_id):
@@ -89,15 +62,6 @@ class ProxmoxPBSCpuSensor(ProxmoxPbsBaseSensor):
         status = self.coordinator.data.get("pbs_node_status", {})
         cpu = status.get("cpu")
         return round(cpu * 100, 2) if cpu is not None else 0
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, "server")},
-            "name": "Server",
-            "manufacturer": "Proxmox",
-            "model": "Backup Server",
-        }
 
 
 class ProxmoxPBSRamSensor(ProxmoxPbsBaseSensor):
@@ -124,22 +88,13 @@ class ProxmoxPBSRamSensor(ProxmoxPbsBaseSensor):
             "free_gb": round(memory.get("free", 0) / (1024**3), 2),
         }
 
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, "server")},
-            "name": "Server",
-            "manufacturer": "Proxmox",
-            "model": "Backup Server",
-        }
-
 
 class ProxmoxPBSRamTotalSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, server_id):
         super().__init__(coordinator)
         self._server_id = server_id
         self._attr_name = "RAM Total"
-        self._attr_unique_id = f"pbs_ram_total_{server_id}"
+        self._attr_unique_id = f"pbs_{server_id}_ram_total"
         self._attr_icon = "mdi:memory"
         self._attr_native_unit_of_measurement = "GB"
 
@@ -151,10 +106,10 @@ class ProxmoxPBSRamTotalSensor(CoordinatorEntity, SensorEntity):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, "server")},
+            "identifiers": {(DOMAIN, f"pbs_server_{self._server_id}")},
+            "name": f"PBS Server {self._server_id.upper()}",
             "manufacturer": "Proxmox",
-            "model": "Proxmox Backup Server",
-            "name": "PBS Server",
+            "model": "Backup Server",
         }
 
 
@@ -163,7 +118,7 @@ class ProxmoxPBSRamUsedSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._server_id = server_id
         self._attr_name = "RAM Used"
-        self._attr_unique_id = f"pbs_ram_used_{server_id}"
+        self._attr_unique_id = f"pbs_{server_id}_ram_used"
         self._attr_icon = "mdi:memory"
         self._attr_native_unit_of_measurement = "GB"
 
@@ -175,10 +130,10 @@ class ProxmoxPBSRamUsedSensor(CoordinatorEntity, SensorEntity):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, "server")},
+            "identifiers": {(DOMAIN, f"pbs_server_{self._server_id}")},
+            "name": f"PBS Server {self._server_id.upper()}",
             "manufacturer": "Proxmox",
-            "model": "Proxmox Backup Server",
-            "name": "PBS Server",
+            "model": "Backup Server",
         }
 
 
@@ -187,7 +142,7 @@ class ProxmoxPBSRamFreeSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._server_id = server_id
         self._attr_name = "RAM Free"
-        self._attr_unique_id = f"pbs_ram_free_{server_id}"
+        self._attr_unique_id = f"pbs_{server_id}_ram_free"
         self._attr_icon = "mdi:memory"
         self._attr_native_unit_of_measurement = "GB"
 
@@ -199,10 +154,10 @@ class ProxmoxPBSRamFreeSensor(CoordinatorEntity, SensorEntity):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, "server")},
+            "identifiers": {(DOMAIN, f"pbs_server_{self._server_id}")},
+            "name": f"PBS Server {self._server_id.upper()}",
             "manufacturer": "Proxmox",
-            "model": "Proxmox Backup Server",
-            "name": "PBS Server",
+            "model": "Backup Server",
         }
 
 
@@ -229,8 +184,8 @@ class ProxmoxPBSTaskSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, "tasks")},
-            "name": "Tasks",
+            "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
+            "name": f"Tasks - {self._server_id.upper()}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Tasks",
         }
@@ -256,8 +211,8 @@ class ProxmoxPBSTaskTypeSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, "tasks")},
-            "name": "Tasks",
+            "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
+            "name": f"Tasks - {self._server_id.upper()}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Tasks",
         }
@@ -316,8 +271,8 @@ class ProxmoxPBSTaskStatusSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, "tasks")},
-            "name": "Tasks",
+            "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
+            "name": f"Tasks - {self._server_id.upper()}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Tasks",
         }
@@ -344,8 +299,8 @@ class ProxmoxPBSTaskMessageSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, "tasks")},
-            "name": "Tasks",
+            "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
+            "name": f"Tasks - {self._server_id.upper()}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Tasks",
         }
@@ -384,8 +339,8 @@ class ProxmoxPBSTaskDurationSensor(ProxmoxPbsBaseSensor):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, "tasks")},
-            "name": "Tasks",
+            "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
+            "name": f"Tasks - {self._server_id.upper()}",
             "manufacturer": "Proxmox",
             "model": "Backup Server Tasks",
         }
