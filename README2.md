@@ -338,6 +338,7 @@ Below you can find a complete visual walkthrough of the setup process, including
   *Nota: Selecciona los CTs, VMs y Storages que quieres añadir así como las opciones*
 </details>
 
+---
 
 **If you enjoy this integration or find it useful, please consider giving the project a ⭐ on GitHub.**  
 **It helps visibility, motivates development, and supports future features.**
