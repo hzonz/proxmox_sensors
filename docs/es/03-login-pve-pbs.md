@@ -1,7 +1,7 @@
 # 🔌 Paso 3: Instalación de la Integración en Home Assistant
 
 Para visualizar los datos (incluyendo temperaturas, sensores de hardware, discos, PBS, VMs y CTs), utilizaremos la integración **Proxmox Extended Sensors**.
-
+[Gia visual de Instalacion](#-Guia-Visual-de-Instalación)
 ---
 
 ## 1. Instalación mediante HACS
