@@ -1,57 +1,82 @@
 # 🚀 Schritt 1: Installation und Konfiguration der Sensoren
-**Diese Anleitung erklärt, wie der Proxmox-Knoten vorbereitet wird, damit er Hardwaredaten bereitstellt und sicherstellt, dass Temperaturwerte für Home Assistant verfügbar sind.**
+
+**Diese Anleitung erklärt, wie Sie den Proxmox-Knoten so vorbereiten, dass er Hardwaredaten bereitstellt und sicherstellt, dass Temperaturwerte und Smart-Daten für Home Assistant verfügbar sind.**
+
 
 ## 1. Installation der Abhängigkeiten
-* **Zuerst installieren wir die notwendigen Werkzeuge, um die integrierten Sensoren des Mainboards und der CPU auszulesen:**
+
+*Damit die Integration alle Hardwaresensoren und SMART-Attribute der Festplatten lesen kann, müssen die folgenden Tools in Proxmox installiert werden:*
+
+- **lm-sensors** → Sensoren für CPU, Mainboard, Chipsatz, VRM, Lüfter…**
+- **smartmontools** → SMART-Informationen von HDD, SSD und NVMe**
+
 
 ```bash
-apt update && apt install lm-sensors -y
+
+apt update && apt install lm-sensors smartmontools -y
+
 ```
 
 ## 2. Hardware-Erkennung
-* **Damit das System erkennt, welche Treiber benötigt werden, führen wir den Erkennungsassistenten aus:**
+
+* **Führen Sie den Erkennungs-Assistenten aus, um die erforderlichen Module zu identifizieren:**
+
 
 ```bash
+
 sensors-detect
+
 ```
 
-**Beantworte alle Fragen mit YES (oder drücke einfach Enter). Am Ende identifiziert das System die benötigten Module (z. B. `coretemp` für Intel-CPUs).**
+**Antworten Sie auf alle Fragen mit YES (oder drücken Sie Enter). Am Ende wird das System die benötigten Module identifizieren (zum Beispiel: `coretemp` für Intel-CPUs).**
 
-## 3. Module dauerhaft aktivieren
-**Damit die Sensoren nach einem Neustart automatisch geladen werden, stellt der Assistent `sensors-detect` am Ende eine wichtige Frage:**
 
-```text
-Do you want to add these lines automatically to /etc/modules? (yes/NO)
-```
+## 3. Persistenz der Module
+
+**Damit die Sensoren beim Neustart des Servers automatisch aktiviert werden, stellt Ihnen der Assistent `sensors-detect` am Ende des Prozesses eine wichtige Frage:**
+
+
+`Do you want to add these lines automatically to /etc/modules? (yes/NO)`
+
+
 
 > [!CAUTION]
-> **Du musst `yes` manuell eingeben und Enter drücken.** Wenn du nur Enter drückst, ohne etwas einzugeben, wird standardmäßig `NO` ausgewählt. In diesem Fall werden die Sensoren nach einem Neustart nicht geladen und Home Assistant erhält keine Temperaturdaten mehr.
+> **Sie müssen manuell `yes` eingeben und Enter drücken.** Wenn Sie nur Enter drücken, ohne etwas zu schreiben, wählt das System standardmäßig `NO`. In diesem Fall werden die Sensoren nach einem Neustart nicht geladen, und Home Assistant empfängt keine Temperaturdaten mehr.
+
+
 
 ## 4. Sofortige Überprüfung
-**Um die Sensoren sofort zu aktivieren, ohne den Server neu zu starten, führe Folgendes aus:**
+
+**Um die Sensoren sofort ohne Neustart zu aktivieren, führen Sie Folgendes aus:**
+
+
 
 ```bash
-# Lade die erkannten Module (Beispiel für Intel)
+
+# Lädt die erkannten Module (Beispiel für Intel)
+
 modprobe coretemp
 
-# Überprüfe, ob die Temperaturen angezeigt werden
-sensors
-```
-## 🚀 Schritt 5: Installation des Sensorservers (API-Bridge)
-**Da die offizielle Proxmox-API nicht alle Hardware-Daten bereitstellt, muss dieses kleine "Bridge-Skript" auf dem Proxmox-Host installiert werden.**
+# Überprüfen Sie, ob die Temperaturen angezeigt werden
 
-1. **Skript herunterladen und installieren**
+sensors
+
+```
+
+## 🚀 Schritt 5: Installation des Sensorservers (API Bridge)
+**Die offizielle Proxmox-API stellt nicht alle Hardwaresensoren bereit. Daher ist es notwendig, ein kleines Skript zu installieren, das als Brücke zwischen Proxmox und Home Assistant fungiert.**
+
+1. **Download und Installation des Skripts**
 Führen Sie diese Befehle im Terminal Ihres Proxmox-Servers aus:
 ```bash
 # Skript aus dem Repository herunterladen
-wget https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/scripts/pve-sensors-api.py -O /usr/local/bin/pve-sensors-api.py
+wget [https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/scripts/pve-sensors-api.py](https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/scripts/pve-sensors-api.py) -O /usr/local/bin/pve-sensors-api.py
 
 # Ausführungsrechte vergeben
 chmod +x /usr/local/bin/pve-sensors-api.py
 ```
-
 2. **Konfiguration als Systemdienst**
-Damit das Skript automatisch mit dem Server startet, erstellen Sie die Dienstdatei:
+Erstellen Sie die Dienstdatei:
 ```bash
 cat <<EOF > /etc/systemd/system/pve-sensors.service
 [Unit]
@@ -68,16 +93,20 @@ EOF
 ```
 
 3. **Sofortige Aktivierung**
-Aktivieren und starten Sie den Dienst mit diesen Befehlen:
+
 ```bash
 systemctl daemon-reload
 systemctl enable --now pve-sensors
 ```
 
-4. **Abschlussprüfung**
-Sie können überprüfen, ob der Server läuft, indem Sie diese Adresse in Ihrem Browser öffnen (ersetzen Sie sie durch die IP Ihres Proxmox-Servers): `http://IHRE_PROXMOX_IP:9000/sensors`
+4. **Abschließende Überprüfung**
+Öffnen Sie in Ihrem Browser:
+```
+http://IHRE_PROXMOX_IP:9000/sensors
+```
 
-Wenn Sie einen Text im JSON-Format mit den Temperaturen sehen, kann die Integration die Daten nun korrekt lesen.
----
+Wenn ein JSON mit Temperaturen und Sensoren erscheint, funktioniert der Server ordnungsgemäß.
 
-**Fertig! Sobald der Befehl `sensors` Daten im Terminal anzeigt, kann deine Home‑Assistant‑Integration diese automatisch über die Proxmox‑API auslesen.**
+## ✔ Fazit
+
+**Sobald der Befehl "sensors" Werte zurückgibt und der Dienst "pve-sensors" aktiv ist, kann Home Assistant alle Hardwaredaten ohne zusätzliche Konfigurationen abrufen.**
