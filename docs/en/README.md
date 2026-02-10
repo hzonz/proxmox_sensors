@@ -113,35 +113,35 @@ In short, this integration turns Home Assistant into a **complete control panel 
 <details>
   <summary>🔳 Node Attributes</summary>
   <p align="center">
-    <img src="img/pve/node_attr.png" alt="Node Attributes" width="600">
+    <img src="../../img/pve/node_attr.png" alt="Node Attributes" width="600">
   </p>
 </details>
 
 <details>
   <summary>⭕ Node Controls</summary>
   <p align="center">
-    <img src="img/pve/node_controls.png" alt="Node Controls" width="600">
+    <img src="../../img/pve/node_controls.png" alt="Node Controls" width="600">
   </p>
 </details>
 
 <details>
   <summary>🌡️ CPU Temperature</summary>
   <p align="center">
-    <img src="img/pve/cpu_temp_attr.png" alt="CPU Temperature" width="600">
+    <img src="../../img/pve/cpu_temp_attr.png" alt="CPU Temperature" width="600">
   </p>
 </details>
 
 <details>
   <summary>🌡️ Chipset Temperature</summary>
   <p align="center">
-    <img src="img/pve/chipset_temp.png" alt="Chipset Temperature" width="600">
+    <img src="../../img/pve/chipset_temp.png" alt="Chipset Temperature" width="600">
   </p>
 </details>
 
 <details>
   <summary>⏳ CPU I/O Wait</summary>
   <p align="center">
-    <img src="img/pve/cpu_wait.png" alt="CPU I/O Wait" width="600">
+    <img src="../../img/pve/cpu_wait.png" alt="CPU I/O Wait" width="600">
   </p>
 </details>
 
@@ -157,21 +157,21 @@ In short, this integration turns Home Assistant into a **complete control panel 
 <details>
   <summary>💾 Disk Sensors</summary>
   <p align="center">
-    <img src="img/pve/disks_sensors.png" alt="Disk Sensors" width="600">
+    <img src="../../img/pve/disks_sensors.png" alt="Disk Sensors" width="600">
   </p>
 </details>
 
 <details>
   <summary>🩺 HDD/SSD SMART Attributes</summary>
   <p align="center">
-    <img src="img/pve/disk_hd_smart_attr.png" alt="HDD SMART" width="600">
+    <img src="../../img/pve/disk_hd_smart_attr.png" alt="HDD SMART" width="600">
   </p>
 </details>
 
 <details>
   <summary>🩺 NVMe SMART Attributes</summary>
   <p align="center">
-    <img src="img/pve/disk_nvme_smart_attr.png" alt="NVMe SMART" width="600">
+    <img src="../../img/pve/disk_nvme_smart_attr.png" alt="NVMe SMART" width="600">
   </p>
 </details>
 
@@ -188,7 +188,7 @@ In short, this integration turns Home Assistant into a **complete control panel 
 <details>
   <summary>🖥️ VM Controls & Sensors</summary>
   <p align="center">
-    <img src="img/pve/vm_control.png" alt="VM Control" width="600">
+    <img src="../../img/pve/vm_control.png" alt="VM Control" width="600">
   </p>
 </details>
 
@@ -204,7 +204,7 @@ In short, this integration turns Home Assistant into a **complete control panel 
 <details>
   <summary>📦 Container Controls & Sensors</summary>
   <p align="center">
-    <img src="img/pve/ct_control.png" alt="CT Control" width="600">
+    <img src="../../img/pve/ct_control.png" alt="CT Control" width="600">
   </p>
 </details>
 
@@ -244,7 +244,7 @@ This ensures they are easy to identify while remaining **fully compatible with e
 <details>
   <summary>📦 Single Backup Service</summary>
   <p align="center">
-    <img src="img/pve/single_backup.png" alt="Single Backup Service" width="600">
+    <img src="../../img/pve/single_backup.png" alt="Single Backup Service" width="600">
   </p>
 </details>
 
@@ -271,7 +271,7 @@ This service is ideal for scheduled nightly backups or automated maintenance rou
 <details>
   <summary>📦 Massive Backup Service</summary>
   <p align="center">
-    <img src="img/pve/massive_backups.png" alt="Massive Backup Service" width="600">
+    <img src="../../img/pve/massive_backups.png" alt="Massive Backup Service" width="600">
   </p>
 </details>
 
@@ -307,42 +307,42 @@ No special configuration is required — PBS handles deduplication and indexing 
 <details>
   <summary>🗄️ Datastore Overview</summary>
   <p align="center">
-    <img src="img/pbs/datastore.png" alt="Datastore" width="600">
+    <img src="../../img/pbs/datastore.png" alt="Datastore" width="600">
   </p>
 </details>
 
 <details>
   <summary>🗄️ PBS Server</summary>
   <p align="center">
-    <img src="img/pbs/pbs_server.png" alt="PBS Server" width="600">
+    <img src="../../img/pbs/pbs_server.png" alt="PBS Server" width="600">
   </p>
 </details>
 
 <details>
   <summary>🗄️ Task Details</summary>
   <p align="center">
-    <img src="img/pbs/task.png" alt="PBS Task" width="600">
+    <img src="../../img/pbs/task.png" alt="PBS Task" width="600">
   </p>
 </details>
 
 <details>
   <summary>🗄️ Garbage Collector Status</summary>
   <p align="center">
-    <img src="img/pbs/gc_status_attr.png" alt="GC Status" width="600">
+    <img src="../../img/pbs/gc_status_attr.png" alt="GC Status" width="600">
   </p>
 </details>
 
 <details>
   <summary>🗄️ Datastore Maintenance</summary>
   <p align="center">
-    <img src="img/pbs/datastore_maintenance.png" alt="Datastore Maintenance" width="600">
+    <img src="../../img/pbs/datastore_maintenance.png" alt="Datastore Maintenance" width="600">
   </p>
 </details>
 
 <details>
   <summary>🗄️ Last Task Summary</summary>
   <p align="center">
-    <img src="img/pbs/last_task_stat.png" alt="Last Task" width="600">
+    <img src="../../img/pbs/last_task_stat.png" alt="Last Task" width="600">
   </p>
 </details>
 
@@ -358,14 +358,14 @@ No special configuration is required — PBS handles deduplication and indexing 
 <details>
   <summary>🗄️ Dtatastore Maintenance</summary>
   <p align="center">
-    <img src="img/pbs/datastore_maintenance.png" alt="Datastore Maintenance" width="600">
+    <img src="../../img/pbs/datastore_maintenance.png" alt="Datastore Maintenance" width="600">
   </p>
 </details>
 
 <details>
   <summary>🗄️ Last Task</summary>
   <p align="center">
-    <img src="img/pbs/last_task_stat.png" alt="Datastore Maintenance" width="600">
+    <img src="../../img/pbs/last_task_stat.png" alt="Datastore Maintenance" width="600">
   </p>
 </details>
 
@@ -435,7 +435,7 @@ Below you can find a complete visual walkthrough of the setup process, including
 <details>
   <summary>🪪 Server Connection</summary>
   <p align="center">
-    <img src="img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
+    <img src="../../img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
   </p>
   > We don't use "http://" or "https://". We already do it for you..
 </details>
@@ -443,7 +443,7 @@ Below you can find a complete visual walkthrough of the setup process, including
 <details>
   <summary>🪪 Login using Username and Password (PVE only)</summary>
   <p align="center">
-    <img src="img/install/access_passw.png" alt="Login Proxmox" width="600">
+    <img src="../../img/install/access_passw.png" alt="Login Proxmox" width="600">
   </p>
   > Make sure to use the `pam` or `pve` realm according to your user settings.
 </details>
@@ -451,7 +451,7 @@ Below you can find a complete visual walkthrough of the setup process, including
 <details> 
   <summary>🪪 Login using User and Token (PVE and PBS)</summary>
   <p align="center">
-    <img src="img/install/access_token.png" alt="Login Proxmox" width="600">
+    <img src="../../img/install/access_token.png" alt="Login Proxmox" width="600">
   </p>
   **In the Token_id field, you should only enter the token name.**
 </details>
@@ -459,7 +459,7 @@ Below you can find a complete visual walkthrough of the setup process, including
 <details>
   <summary>⚙️ Resources Selection</summary>
   <p align="center">
-    <img src="img/install/resources_select.png" alt="Login Proxmox" width="600">
+    <img src="../../img/install/resources_select.png" alt="Login Proxmox" width="600">
   </p>
   *Note: Select the CTs, VMs, and Storages you want to add, as well as the options.*
 </details>
