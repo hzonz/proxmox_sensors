@@ -1,0 +1,159 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "1. Conexão ao Servidor",
+        "description": "Insira o endereço do seu servidor Proxmox. A porta é gerida automaticamente (8006 para PVE / 8007 para PBS).",
+        "data": {
+          "host": "Endereço do Servidor (IP ou FQDN)",
+          "platform_type": "Tipo de Servidor"
+        }
+      },
+      "auth_method": {
+        "title": "2. Método de Autenticação",
+        "description": "Selecione se deseja usar um Token de API seguro. Para PBS é obrigatório.",
+        "data": {
+          "use_token": "Usar Token de API (Recomendado)"
+        }
+      },
+      "credentials": {
+        "title": "3. Credenciais de Acesso",
+        "description": "Insira os dados necessários para conectar ao servidor.",
+        "data": {
+          "user": "Usuário (ex.: root@pam ou admin@pve)",
+          "password": "Senha",
+          "token_id": "Token ID (sem usuário@pve!)",
+          "token_secret": "Token Secret",
+          "node": "Nome do Nó Proxmox (somente PVE)",
+          "enable_lm_sensors": "Monitorizar temperaturas (lm-sensors)",
+          "verify_ssl": "Verificar Certificado SSL"
+        }
+      },
+      "select_resources": {
+        "title": "4. Seleção de Recursos",
+        "description": "Selecione os elementos que deseja monitorizar. Apenas os marcados criarão entidades no Home Assistant.",
+        "data": {
+          "vms": "Máquinas Virtuais (VM)",
+          "cts": "Contêineres (LXC)",
+          "storage": "Armazenamento",
+          "enable_physical_disks": "Monitorizar Discos Físicos",
+          "enable_node_controls": "Ativar ações de controlo do nó (desligar/reiniciar)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Erro de conexão. Verifique o endereço do servidor.",
+      "invalid_auth": "Falha na autenticação. Verifique as credenciais ou permissões do Token.",
+      "unknown": "Erro inesperado. Consulte os logs do Home Assistant."
+    },
+    "abort": {
+      "already_configured": "Este nó já está configurado."
+    }
+  },
+
+  "options": {
+    "abort": {
+      "pbs_no_options": "Este servidor PBS não possui opções configuráveis."
+    },
+    "step": {
+      "init": {
+        "title": "Opções do Proxmox Sensors",
+        "description": "Selecione os recursos que deseja continuar a monitorizar neste nó.",
+        "data": {
+          "vms": "Selecionar Máquinas Virtuais (VM)",
+          "cts": "Selecionar Contêineres (LXC)",
+          "storage": "Selecionar Armazenamento",
+          "enable_lm_sensors": "Ativar sensores de hardware (lm-sensors)",
+          "enable_physical_disks": "Ativar sensores de discos físicos",
+          "enable_smart_monitoring": "Ativar monitorização SMART",
+          "enable_node_controls": "Ativar ações de controlo do nó",
+          "enable_backup_progress": "Ativar sensor de progresso de backups",
+          "enable_storage_list": "Ativar sensor de lista de armazenamento",
+          "enable_nodes_list": "Ativar sensor de lista de nós",
+          "verify_ssl": "Verificar Certificado SSL"
+        }
+      }
+    }
+  },
+
+  "entity": {
+    "sensor": {
+      "cpu_usage": { "name": "Uso de CPU" },
+      "cpu_wait": { "name": "Espera de CPU (I/O Wait)" },
+      "uptime": { "name": "Tempo ligado" },
+      "kernel_version": { "name": "Versão do kernel" },
+      "pve_version": { "name": "Versão do PVE" },
+      "load_average": { "name": "Carga média" },
+      "network_rx": { "name": "Rede RX" },
+      "network_tx": { "name": "Rede TX" },
+
+      "last_task": { "name": "Última tarefa" },
+      "no_tasks": { "name": "Sem tarefas" },
+
+      "cpu_info": { "name": "Informações da CPU" },
+      "ksm_shared": { "name": "Memória compartilhada KSM" },
+      "memory_usage": { "name": "Uso de memória" },
+      "swap_usage": { "name": "Uso de swap" },
+      "rootfs_usage": { "name": "Uso do sistema de arquivos raiz" },
+
+      "node_info": { "name": "Nó Proxmox" },
+      "storages": { "name": "Armazenamentos Proxmox" },
+      "backup_progress": { "name": "Progresso dos backups" },
+
+      "vm_status": { "name": "Estado" },
+      "vm_cpu_usage": { "name": "Uso de CPU" },
+      "vm_network_rx": { "name": "Rede RX" },
+      "vm_network_tx": { "name": "Rede TX" },
+      "vm_memory_used": { "name": "Memória usada" },
+      "vm_memory_total": { "name": "Memória total" },
+      "vm_disk_used": { "name": "Disco usado" },
+      "vm_disk_total": { "name": "Disco total" },
+      "vm_uptime": { "name": "Tempo ligado" },
+
+      "ct_status": { "name": "Estado" },
+      "ct_cpu_usage": { "name": "Uso de CPU" },
+      "ct_memory_used": { "name": "Memória usada" },
+      "ct_memory_total": { "name": "Memória total" },
+      "ct_disk_used": { "name": "Disco usado" },
+      "ct_disk_total": { "name": "Disco total" },
+      "ct_network_rx": { "name": "Rede RX" },
+      "ct_network_tx": { "name": "Rede TX" },
+      "ct_uptime": { "name": "Tempo ligado" },
+
+      "storage_usage": { "name": "Uso" },
+      "storage_used": { "name": "Usado" },
+      "storage_available": { "name": "Disponível" },
+      "storage_total": { "name": "Total" },
+      "storage_type": { "name": "Tipo" },
+      "storage_path": { "name": "Caminho" },
+
+      "version": { "name": "Versão" },
+      "release": { "name": "Release" },
+      "auth_status": { "name": "Estado da autenticação" },
+      "node_cpu": { "name": "Uso de CPU" },
+      "node_ram": { "name": "Uso de RAM" },
+      "ram_total": { "name": "RAM total" },
+      "ram_used": { "name": "RAM usada" },
+      "ram_free": { "name": "RAM livre" },
+
+      "last_task_type": { "name": "Tipo da última tarefa" },
+      "last_task_status": { "name": "Estado da última tarefa" },
+      "last_task_message": { "name": "Mensagem da última tarefa" },
+      "last_task_duration": { "name": "Duração da última tarefa" },
+      "last_action": { "name": "Última ação" },
+
+      "datastore_usage": { "name": "Uso" },
+      "datastore_total": { "name": "Tamanho total" },
+      "datastore_used": { "name": "Tamanho usado" },
+      "datastore_free": { "name": "Espaço livre" },
+      "datastore_dedup": { "name": "Deduplicação" },
+      "datastore_backup_count": { "name": "Número de backups" },
+      "datastore_last_backup_time": { "name": "Hora do último backup" },
+      "datastore_last_backup_size": { "name": "Tamanho do último backup" },
+      "datastore_last_backup_status": { "name": "Estado do último backup" },
+      "datastore_backup_errors": { "name": "Erros de backup" },
+      "datastore_backups_summary": { "name": "Resumo dos backups" },
+      "datastore_gc_status": { "name": "Estado do GC" }
+    }
+  }
+}

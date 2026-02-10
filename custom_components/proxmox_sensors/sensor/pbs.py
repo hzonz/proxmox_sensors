@@ -1,22 +1,23 @@
 from datetime import datetime
 import logging
+
 from homeassistant.const import PERCENTAGE, UnitOfInformation
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.components.sensor import SensorEntity
+
 from ..const import DOMAIN
 from .base import ProxmoxPbsBaseSensor
 
-# Configuración del logger para seguimiento
 _LOGGER = logging.getLogger(__name__)
 
-# =========== PBS NODE-LEVEL ===================
 
 class ProxmoxPBSVersionSensor(ProxmoxPbsBaseSensor):
-    
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id="version",
-            name="Version"
+            name="Version",
         )
         self._attr_icon = "mdi:information-outline"
 
@@ -34,13 +35,12 @@ class ProxmoxPBSVersionSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSReleaseSensor(ProxmoxPbsBaseSensor):
- 
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id="release",
-            name="Release"
+            name="Release",
         )
         self._attr_icon = "mdi:tag"
 
@@ -58,13 +58,12 @@ class ProxmoxPBSReleaseSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSAuthStatusSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id="auth_status",
-            name="Auth Status"
+            name="Auth Status",
         )
         self._attr_icon = "mdi:shield-check"
 
@@ -82,7 +81,6 @@ class ProxmoxPBSAuthStatusSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSCpuSensor(ProxmoxPbsBaseSensor):
- 
     def __init__(self, coordinator, server_id):
         super().__init__(coordinator, server_id, "node_cpu", "CPU Usage", "%")
         self._attr_icon = "mdi:cpu-64-bit"
@@ -103,7 +101,6 @@ class ProxmoxPBSCpuSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSRamSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id):
         super().__init__(coordinator, server_id, "node_ram", "RAM Usage", "%")
         self._attr_icon = "mdi:memory"
@@ -136,16 +133,86 @@ class ProxmoxPBSRamSensor(ProxmoxPbsBaseSensor):
             "model": "Backup Server",
         }
 
-# ========== PBS GLOBAL TASKS ==================
+
+class ProxmoxPBSRamTotalSensor(CoordinatorEntity, SensorEntity):
+    def __init__(self, coordinator, server_id):
+        super().__init__(coordinator)
+        self._server_id = server_id
+        self._attr_name = "RAM Total"
+        self._attr_unique_id = f"pbs_ram_total_{server_id}"
+        self._attr_icon = "mdi:memory"
+        self._attr_native_unit_of_measurement = "GB"
+
+    @property
+    def native_value(self):
+        ram = self.coordinator.data.get("pbs_node_status", {}).get("memory", {})
+        return round(ram.get("total", 0) / (1024**3), 2)
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, "server")},
+            "manufacturer": "Proxmox",
+            "model": "Proxmox Backup Server",
+            "name": "PBS Server",
+        }
+
+
+class ProxmoxPBSRamUsedSensor(CoordinatorEntity, SensorEntity):
+    def __init__(self, coordinator, server_id):
+        super().__init__(coordinator)
+        self._server_id = server_id
+        self._attr_name = "RAM Used"
+        self._attr_unique_id = f"pbs_ram_used_{server_id}"
+        self._attr_icon = "mdi:memory"
+        self._attr_native_unit_of_measurement = "GB"
+
+    @property
+    def native_value(self):
+        ram = self.coordinator.data.get("pbs_node_status", {}).get("memory", {})
+        return round(ram.get("used", 0) / (1024**3), 2)
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, "server")},
+            "manufacturer": "Proxmox",
+            "model": "Proxmox Backup Server",
+            "name": "PBS Server",
+        }
+
+
+class ProxmoxPBSRamFreeSensor(CoordinatorEntity, SensorEntity):
+    def __init__(self, coordinator, server_id):
+        super().__init__(coordinator)
+        self._server_id = server_id
+        self._attr_name = "RAM Free"
+        self._attr_unique_id = f"pbs_ram_free_{server_id}"
+        self._attr_icon = "mdi:memory"
+        self._attr_native_unit_of_measurement = "GB"
+
+    @property
+    def native_value(self):
+        ram = self.coordinator.data.get("pbs_node_status", {}).get("memory", {})
+        return round(ram.get("free", 0) / (1024**3), 2)
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, "server")},
+            "manufacturer": "Proxmox",
+            "model": "Proxmox Backup Server",
+            "name": "PBS Server",
+        }
+
 
 class ProxmoxPBSTaskSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id="last_task",
-            name="Last Task"
+            name="Last Task",
         )
         self._attr_icon = "mdi:clipboard-list"
 
@@ -168,13 +235,14 @@ class ProxmoxPBSTaskSensor(ProxmoxPbsBaseSensor):
             "model": "Backup Server Tasks",
         }
 
+
 class ProxmoxPBSTaskTypeSensor(ProxmoxPbsBaseSensor):
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id="last_task_type",
-            name="Last Task Type"
+            name="Last Task Type",
         )
         self._attr_icon = "mdi:clipboard-text"
 
@@ -194,14 +262,14 @@ class ProxmoxPBSTaskTypeSensor(ProxmoxPbsBaseSensor):
             "model": "Backup Server Tasks",
         }
 
-class ProxmoxPBSTaskStatusSensor(ProxmoxPbsBaseSensor):
 
+class ProxmoxPBSTaskStatusSensor(ProxmoxPbsBaseSensor):
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id="last_task_status",
-            name="Last Task Status"
+            name="Last Task Status",
         )
         self._attr_icon = "mdi:information"
 
@@ -225,16 +293,15 @@ class ProxmoxPBSTaskStatusSensor(ProxmoxPbsBaseSensor):
 
     @property
     def extra_state_attributes(self):
-        """Atributos formateados para evitar timestamps largos."""
         tasks = self.coordinator.data.get("pbs_tasks", [])
         if not isinstance(tasks, list) or not tasks:
             return {}
 
         task = tasks[0]
-        
+
         def format_ts(ts):
             if ts and isinstance(ts, (int, float)):
-                return datetime.fromtimestamp(ts).strftime('%d/%m/%Y %H:%M:%S')
+                return datetime.fromtimestamp(ts).strftime("%d/%m/%Y %H:%M:%S")
             return ts
 
         return {
@@ -257,13 +324,12 @@ class ProxmoxPBSTaskStatusSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSTaskMessageSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id="last_task_message",
-            name="Last Task Message"
+            name="Last Task Message",
         )
         self._attr_icon = "mdi:message-text-outline"
 
@@ -286,14 +352,13 @@ class ProxmoxPBSTaskMessageSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSTaskDurationSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id="last_task_duration",
             name="Last Task Duration",
-            unit="s"
+            unit="s",
         )
         self._attr_icon = "mdi:timer-outline"
 
@@ -311,6 +376,7 @@ class ProxmoxPBSTaskDurationSensor(ProxmoxPbsBaseSensor):
 
         if start and not end:
             import time
+
             return int(time.time() - start)
 
         return 0
@@ -324,17 +390,15 @@ class ProxmoxPBSTaskDurationSensor(ProxmoxPbsBaseSensor):
             "model": "Backup Server Tasks",
         }
 
-# ========= PBS DATASTORE SENSORS ===================
 
 class ProxmoxPBSDatastoreUsageSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id=f"{store}_usage",
             name="Usage",
-            unit=PERCENTAGE
+            unit=PERCENTAGE,
         )
         self._store = store
         self._attr_icon = "mdi:database-clock"
@@ -356,14 +420,13 @@ class ProxmoxPBSDatastoreUsageSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSDatastoreSizeSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id, store, key, label, icon=None):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id=f"{store}_{key}",
             name=label,
-            unit=UnitOfInformation.GIGABYTES
+            unit=UnitOfInformation.GIGABYTES,
         )
         self._store = store
         self._key = key
@@ -371,7 +434,11 @@ class ProxmoxPBSDatastoreSizeSensor(ProxmoxPbsBaseSensor):
         if icon:
             self._attr_icon = icon
         else:
-            icons = {"total": "mdi:database", "used": "mdi:database-arrow-up", "free": "mdi:database-arrow-down"}
+            icons = {
+                "total": "mdi:database",
+                "used": "mdi:database-arrow-up",
+                "free": "mdi:database-arrow-down",
+            }
             self._attr_icon = icons.get(key, "mdi:database-outline")
 
     def _get_value(self):
@@ -389,14 +456,13 @@ class ProxmoxPBSDatastoreSizeSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSDedupSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id=f"{store}_dedup",
             name="Deduplication",
-            unit="x"
+            unit="x",
         )
         self._store = store
         self._attr_icon = "mdi:clippy"
@@ -418,13 +484,12 @@ class ProxmoxPBSDedupSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSBackupCountSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id=f"{store}_backup_count",
-            name="Backup Count"
+            name="Backup Count",
         )
         self._store = store
         self._attr_icon = "mdi:counter"
@@ -444,13 +509,12 @@ class ProxmoxPBSBackupCountSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSLastBackupTimeSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id=f"{store}_last_backup_time",
-            name="Last Backup Time"
+            name="Last Backup Time",
         )
         self._store = store
         self._attr_icon = "mdi:clock-outline"
@@ -476,14 +540,13 @@ class ProxmoxPBSLastBackupTimeSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSLastBackupSizeSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id=f"{store}_last_backup_size",
             name="Last Backup Size",
-            unit=UnitOfInformation.GIGABYTES
+            unit=UnitOfInformation.GIGABYTES,
         )
         self._store = store
         self._attr_icon = "mdi:database"
@@ -505,13 +568,12 @@ class ProxmoxPBSLastBackupSizeSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSLastBackupStatusSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id=f"{store}_last_backup_status",
-            name="Last Backup Status"
+            name="Last Backup Status",
         )
         self._store = store
         self._attr_icon = "mdi:check-circle-outline"
@@ -526,8 +588,10 @@ class ProxmoxPBSLastBackupStatusSensor(ProxmoxPbsBaseSensor):
         ver = last.get("verification")
         if ver:
             state = ver.get("state")
-            if state == "ok": return "Verified OK"
-            if state == "failed": return "Verification Failed"
+            if state == "ok":
+                return "Verified OK"
+            if state == "failed":
+                return "Verification Failed"
             return str(state).capitalize()
 
         return "Finished (Not Verified)"
@@ -535,9 +599,12 @@ class ProxmoxPBSLastBackupStatusSensor(ProxmoxPbsBaseSensor):
     @property
     def icon(self):
         status = self.native_value
-        if status == "Verified OK": return "mdi:check-decagram"
-        if status == "Verification Failed": return "mdi:alert-decagram"
-        if status == "No backups": return "mdi:database-off"
+        if status == "Verified OK":
+            return "mdi:check-decagram"
+        if status == "Verification Failed":
+            return "mdi:alert-decagram"
+        if status == "No backups":
+            return "mdi:database-off"
         return "mdi:check-circle-outline"
 
     @property
@@ -551,13 +618,12 @@ class ProxmoxPBSLastBackupStatusSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSBackupErrorsSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id=f"{store}_backup_errors",
-            name="Backup Errors"
+            name="Backup Errors",
         )
         self._store = store
         self._attr_icon = "mdi:alert-circle-outline"
@@ -577,13 +643,12 @@ class ProxmoxPBSBackupErrorsSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSBackupsListSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id=f"{store}_backups_summary",
-            name="Backups Summary"
+            name="Backups Summary",
         )
         self._store = store
         self._attr_icon = "mdi:archive-clock-outline"
@@ -607,13 +672,17 @@ class ProxmoxPBSBackupsListSensor(ProxmoxPbsBaseSensor):
                 if key not in summary or b_time > summary[key]["raw_time"]:
                     summary[key] = {
                         "raw_time": b_time,
-                        "last_backup": datetime.fromtimestamp(b_time).strftime('%d/%m/%Y %H:%M:%S')
+                        "last_backup": datetime.fromtimestamp(b_time).strftime(
+                            "%d/%m/%Y %H:%M:%S"
+                        ),
                     }
 
         return {
-            "last_backups_per_resource": {k: v["last_backup"] for k, v in sorted(summary.items())},
+            "last_backups_per_resource": {
+                k: v["last_backup"] for k, v in sorted(summary.items())
+            },
             "total_snapshots": len(backups),
-            "datastore_name": self._store
+            "datastore_name": self._store,
         }
 
     @property
@@ -625,32 +694,39 @@ class ProxmoxPBSBackupsListSensor(ProxmoxPbsBaseSensor):
             "model": "Backup Server Datastore",
         }
 
-# ========== PBS GC PER DATASTORE ====================
 
 class ProxmoxPBSMaintenanceSensor(ProxmoxPbsBaseSensor):
-
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
             server_id=server_id,
             sensor_id=f"{store}_gc_status",
-            name="GC Status"
+            name="GC Status",
         )
         self._store = store
         self._attr_icon = "mdi:recycle-variant"
 
     def _get_value(self):
         data = self.coordinator.data.get("pbs_gc", {}).get(self._store, {})
-        last_run, pending, removed, processed = data.get("last-run"), data.get("pending-bytes", 0), data.get("removed-bytes", 0), data.get("processed-bytes", 0)
+        last_run, pending, removed, processed = (
+            data.get("last-run"),
+            data.get("pending-bytes", 0),
+            data.get("removed-bytes", 0),
+            data.get("processed-bytes", 0),
+        )
 
-        if not any([last_run, pending, removed, processed]): return "No Data"
+        if not any([last_run, pending, removed, processed]):
+            return "No Data"
 
         tasks = self.coordinator.data.get("pbs_tasks", [])
         task = tasks[0] if isinstance(tasks, list) and tasks else {}
-        if task.get("worker_type") == "garbage_collection" and not task.get("endtime"): return "Running"
-        if pending > 0: return "Pending"
-        if removed > 0: return "Cleaned"
-        
+        if task.get("worker_type") == "garbage_collection" and not task.get("endtime"):
+            return "Running"
+        if pending > 0:
+            return "Pending"
+        if removed > 0:
+            return "Cleaned"
+
         return "OK" if last_run else "At Rest"
 
     @property
@@ -660,9 +736,15 @@ class ProxmoxPBSMaintenanceSensor(ProxmoxPbsBaseSensor):
 
         last_run = data.get("last-run")
         if last_run:
-            attrs["last_run"] = datetime.fromtimestamp(last_run).strftime('%d/%m/%Y %H:%M:%S')
+            attrs["last_run"] = datetime.fromtimestamp(last_run).strftime(
+                "%d/%m/%Y %H:%M:%S"
+            )
 
-        for key, attr_name in [("removed-bytes", "removed_gb"), ("pending-bytes", "pending_gb"), ("processed-bytes", "processed_gb")]:
+        for key, attr_name in [
+            ("removed-bytes", "removed_gb"),
+            ("pending-bytes", "pending_gb"),
+            ("processed-bytes", "processed_gb"),
+        ]:
             val = data.get(key, 0)
             attrs[attr_name] = round(float(val) / (1024**3), 2) if val else 0.0
 

@@ -13,8 +13,14 @@ import homeassistant.helpers.config_validation as cv
 
 from .api import ProxmoxClient
 from .const import (
-    DOMAIN, CONF_HOST, CONF_USER, CONF_PASSWORD,
-    CONF_TOKEN_ID, CONF_TOKEN_SECRET, CONF_NODE, CONF_PLATFORM_TYPE,
+    DOMAIN,
+    CONF_HOST,
+    CONF_USER,
+    CONF_PASSWORD,
+    CONF_TOKEN_ID,
+    CONF_TOKEN_SECRET,
+    CONF_NODE,
+    CONF_PLATFORM_TYPE,
     CONF_VERIFY_SSL,
 )
 
@@ -22,13 +28,11 @@ _LOGGER = logging.getLogger(__name__)
 
 # --------SERVER TYPES AVAILABLE IN THE INTEGRATION---------
 
-SERVER_TYPES = {
-    "PVE": "Proxmox VE",
-    "PBS": "Proxmox Backup Server"
-}
+SERVER_TYPES = {"PVE": "Proxmox VE", "PBS": "Proxmox Backup Server"}
 
 
 # ======MAIN CONFIG FLOW CLASS====================
+
 
 class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle the configuration flow for Proxmox Sensors."""
@@ -50,10 +54,14 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(CONF_HOST): str,
-                vol.Required(CONF_PLATFORM_TYPE, default="PVE"): vol.In(SERVER_TYPES),
-            })
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_HOST): str,
+                    vol.Required(CONF_PLATFORM_TYPE, default="PVE"): vol.In(
+                        SERVER_TYPES
+                    ),
+                }
+            ),
         )
 
     # ===STEP 2 — AUTH METHOD (PASSWORD OR TOKEN)==========
@@ -66,9 +74,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="auth_method",
-            data_schema=vol.Schema({
-                vol.Required("use_token", default=False): bool
-            })
+            data_schema=vol.Schema({vol.Required("use_token", default=False): bool}),
         )
 
     #  STEP 3 — CREDENTIALS (USER + TOKEN/PASSWORD)+ NODE SELECTION (ONLY PVE)
@@ -95,11 +101,10 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             schema_dict[vol.Required(CONF_NODE)] = str
 
         schema_dict[vol.Optional("enable_lm_sensors", default=True)] = bool
-        schema_dict[vol.Optional(CONF_VERIFY_SSL, default=True)] = bool
+        schema_dict[vol.Optional(CONF_VERIFY_SSL, default=False)] = bool
 
         return self.async_show_form(
-            step_id="credentials",
-            data_schema=vol.Schema(schema_dict)
+            step_id="credentials", data_schema=vol.Schema(schema_dict)
         )
 
     # =======STEP 4 — SELECT RESOURCES (ONLY FOR PVE)========
@@ -110,7 +115,12 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._config["selected_vms"] = user_input.get("vms", [])
             self._config["selected_cts"] = user_input.get("cts", [])
             self._config["selected_storage"] = user_input.get("storage", [])
-            self._config["enable_physical_disks"] = user_input.get("enable_physical_disks", True)
+            self._config["enable_physical_disks"] = user_input.get(
+                "enable_physical_disks", True
+            )
+            self._config["enable_node_controls"] = user_input.get(
+                "enable_node_controls", False
+            )
             return await self._finish()
 
         client = ProxmoxClient(
@@ -132,25 +142,35 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             vm_options = {
                 str(v["vmid"]): f"{v['vmid']} ({v.get('name', 'VM')})"
-                for v in vms_data if "vmid" in v
+                for v in vms_data
+                if "vmid" in v
             }
             ct_options = {
                 str(c["vmid"]): f"{c['vmid']} ({c.get('name', 'CT')})"
-                for c in cts_data if "vmid" in c
+                for c in cts_data
+                if "vmid" in c
             }
             st_options = {
-                str(s["storage"]): s["storage"]
-                for s in storage_data if "storage" in s
+                str(s["storage"]): s["storage"] for s in storage_data if "storage" in s
             }
 
             return self.async_show_form(
                 step_id="select_resources",
-                data_schema=vol.Schema({
-                    vol.Optional("vms", default=list(vm_options.keys())): cv.multi_select(vm_options),
-                    vol.Optional("cts", default=list(ct_options.keys())): cv.multi_select(ct_options),
-                    vol.Optional("storage", default=list(st_options.keys())): cv.multi_select(st_options),
-                    vol.Optional("enable_physical_disks", default=True): bool,
-                })
+                data_schema=vol.Schema(
+                    {
+                        vol.Optional(
+                            "vms", default=list(vm_options.keys())
+                        ): cv.multi_select(vm_options),
+                        vol.Optional(
+                            "cts", default=list(ct_options.keys())
+                        ): cv.multi_select(ct_options),
+                        vol.Optional(
+                            "storage", default=list(st_options.keys())
+                        ): cv.multi_select(st_options),
+                        vol.Optional("enable_physical_disks", default=True): bool,
+                        vol.Optional("enable_node_controls", default=False): bool,
+                    }
+                ),
             )
 
         except Exception as e:
@@ -166,7 +186,9 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if self._config.get(CONF_PLATFORM_TYPE) == "PBS":
             entries = self.hass.config_entries.async_entries(DOMAIN)
-            pbs_entries = [e for e in entries if e.data.get(CONF_PLATFORM_TYPE) == "PBS"]
+            pbs_entries = [
+                e for e in entries if e.data.get(CONF_PLATFORM_TYPE) == "PBS"
+            ]
             self._config["server_id"] = f"pbs_{len(pbs_entries) + 1}"
         else:
             self._config["server_id"] = self._config[CONF_NODE]
@@ -186,4 +208,5 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry):
         """Return the options flow handler."""
         from .options_flow import ProxmoxOptionsFlow
+
         return ProxmoxOptionsFlow()

@@ -1,4 +1,5 @@
 """Sensor platform for Proxmox Sensors Extended."""
+
 from __future__ import annotations
 import logging
 
@@ -20,6 +21,9 @@ from .node import (
     ProxmoxSwapSensor,
     ProxmoxRootFSSensor,
     ProxmoxClusterTasksSensor,
+    PVEBackupProgressSensor,
+    ProxmoxNodesSensor,
+    ProxmoxStoragesSensor,
 )
 
 # Hardware Sensors (lm-sensors)
@@ -45,6 +49,9 @@ from .pbs import (
     ProxmoxPBSMaintenanceSensor,
     ProxmoxPBSCpuSensor,
     ProxmoxPBSRamSensor,
+    ProxmoxPBSRamTotalSensor,
+    ProxmoxPBSRamUsedSensor,
+    ProxmoxPBSRamFreeSensor,
     ProxmoxPBSBackupCountSensor,
     ProxmoxPBSLastBackupTimeSensor,
     ProxmoxPBSLastBackupSizeSensor,
@@ -65,20 +72,48 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ):
     """Set up all Proxmox sensors with user-selected filtering."""
 
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
 
-    selected_vms = entry.data.get("selected_vms", [])
-    selected_cts = entry.data.get("selected_cts", [])
-    selected_storage = entry.data.get("selected_storage", [])
-    enable_physical_disks = entry.data.get("enable_physical_disks", True)
-    enable_lm_sensors = entry.data.get("enable_lm_sensors", True)
+    selected_vms = entry.options.get("selected_vms", entry.data.get("selected_vms", []))
+    selected_cts = entry.options.get("selected_cts", entry.data.get("selected_cts", []))
+    selected_storage = entry.options.get(
+        "selected_storage", entry.data.get("selected_storage", [])
+    )
+
+    enable_physical_disks = entry.options.get(
+        "enable_physical_disks", entry.data.get("enable_physical_disks", True)
+    )
+
+    enable_lm_sensors = entry.options.get(
+        "enable_lm_sensors", entry.data.get("enable_lm_sensors", True)
+    )
+
+    enable_smart_monitoring = entry.options.get(
+        "enable_smart_monitoring", entry.data.get("enable_smart_monitoring", True)
+    )
+
+    enable_node_controls = entry.options.get(
+        "enable_node_controls", entry.data.get("enable_node_controls", False)
+    )
+
+    enable_backup_progress = entry.options.get(
+        "enable_backup_progress", entry.data.get("enable_backup_progress", True)
+    )
+
+    enable_storage_list = entry.options.get(
+        "enable_storage_list", entry.data.get("enable_storage_list", True)
+    )
+
+    enable_nodes_list = entry.options.get(
+        "enable_nodes_list", entry.data.get("enable_nodes_list", True)
+    )
+
+    hass.data[DOMAIN][entry.entry_id]["enable_node_controls"] = enable_node_controls
 
     node = entry.data.get(CONF_NODE, "Proxmox")
     server_type = entry.data.get(CONF_PLATFORM_TYPE, "PVE")
@@ -92,6 +127,86 @@ async def async_setup_entry(
 
     # =================PVE SECTION===================
     if server_type == "PVE":
+        # (fixes via_device)
+        device_registry = dr.async_get(hass)
+        device_registry.async_get_or_create(
+            config_entry_id=entry.entry_id,
+            identifiers={(DOMAIN, f"proxmox_node_{node}")},
+            manufacturer="Proxmox",
+            model="Proxmox Node",
+            name=f"Node: {node}",
+        )
+
+        # ========NODES LIST SENSOR (ONLY FOR PVE)========
+
+        if server_type == "PVE" and enable_nodes_list:
+            try:
+                nodes_sensor = ProxmoxNodesSensor(coordinator, entry.entry_id, node)
+                entities.append(nodes_sensor)
+            except Exception as e:
+                _LOGGER.error("Error creating nodes list sensor: %s", e)
+
+        # =======BACKUP PROGRESS SENSORS PER NODE=========
+        if enable_backup_progress:
+            try:
+                # Find all available nodes
+                nodes_available = []
+
+                # Look for nodes in VM data
+                if "vms" in c_data:
+                    for vm_data in c_data["vms"].values():
+                        if "node" in vm_data and vm_data["node"] not in nodes_available:
+                            nodes_available.append(vm_data["node"])
+
+                # Look for nodes in CT data
+                if "cts" in c_data:
+                    for ct_data in c_data["cts"].values():
+                        if "node" in ct_data and ct_data["node"] not in nodes_available:
+                            nodes_available.append(ct_data["node"])
+
+                # If no nodes found, use the configured node
+                if not nodes_available:
+                    nodes_available = [node]
+
+                # Create progress sensor for each node
+                for node_name in nodes_available:
+                    progress_sensor = PVEBackupProgressSensor(
+                        coordinator, node_name, entry.entry_id
+                    )
+                    entities.append(progress_sensor)
+                    _LOGGER.debug(
+                        "Added backup progress sensor for node: %s", node_name
+                    )
+
+            except Exception as e:
+                _LOGGER.error("Error creating backup progress sensors: %s", e)
+
+        # =========STORAGE LIST SENSORS PER NODE===========
+        if enable_storage_list:
+            try:
+                if "storage" in c_data:
+                    storage_sensor = ProxmoxStoragesSensor(
+                        coordinator, entry.entry_id, node
+                    )
+                    entities.append(storage_sensor)
+                    _LOGGER.debug("Added storage list sensor for node: %s", node)
+                elif "all_storages" in c_data and node in c_data["all_storages"]:
+                    # Multi-node setup with all_storages data
+                    storage_sensor = ProxmoxStoragesSensor(
+                        coordinator, entry.entry_id, node
+                    )
+                    entities.append(storage_sensor)
+                    _LOGGER.debug("Added storage list sensor for node: %s", node)
+                else:
+                    # Create basic storage sensor
+                    storage_sensor = ProxmoxStoragesSensor(
+                        coordinator, entry.entry_id, node
+                    )
+                    entities.append(storage_sensor)
+                    _LOGGER.debug("Added basic storage list sensor for node: %s", node)
+
+            except Exception as e:
+                _LOGGER.error("Error creating storage list sensors: %s", e)
 
         # Hardware monitoring (lm-sensors)
         if enable_lm_sensors:
@@ -105,27 +220,44 @@ async def async_setup_entry(
 
             for sensor_id in hardware_data:
                 sid = sensor_id.lower()
-                
+
                 # CPU: (Intel + AMD + Generics)
-                if any(x in sid for x in ["coretemp", "package", "cpu", "k10temp", "zenpower", "tctl", "tdie", "tccd"]):
+                if any(
+                    x in sid
+                    for x in [
+                        "coretemp",
+                        "package",
+                        "cpu",
+                        "k10temp",
+                        "zenpower",
+                        "tctl",
+                        "tdie",
+                        "tccd",
+                    ]
+                ):
                     cpu_sensors.append(sensor_id)
-                
+
                 # Chipset / Motherboard
                 elif any(x in sid for x in ["pch", "acpitz", "it87", "nct67"]):
                     pch_sensors.append(sensor_id)
-                
+
                 # NVMe:
                 elif any(x in sid for x in ["nvme", "composite"]):
                     nvme_sensors.append(sensor_id)
-                
+
                 # Disks SATA / SSD
-                elif any(x in sid for x in ["drivetemp", "scsi", "sda", "sdb", "sdc", "sdd", "sde"]):
+                elif any(
+                    x in sid
+                    for x in ["drivetemp", "scsi", "sda", "sdb", "sdc", "sdd", "sde"]
+                ):
                     sata_sensors.append(sensor_id)
-                
+
                 else:
                     other_sensors.append(sensor_id)
 
-            ordered_sensors = cpu_sensors + pch_sensors + nvme_sensors + sata_sensors + other_sensors
+            ordered_sensors = (
+                cpu_sensors + pch_sensors + nvme_sensors + sata_sensors + other_sensors
+            )
 
             for sensor_id in ordered_sensors:
                 sensor = ProxmoxHardwareSensor(coordinator, sensor_id, node)
@@ -136,6 +268,7 @@ async def async_setup_entry(
         node_data = c_data.get("node", {})
         if node_data:
             entities.append(ProxmoxClusterTasksSensor(coordinator, node))
+            # NOTE: PVEBackupProgressSensor already added above
 
             mapping = {
                 "cpuinfo": ProxmoxCPUInfoSensor,
@@ -150,7 +283,11 @@ async def async_setup_entry(
                     entities.append(cls(coordinator, node))
 
             for key in node_data:
-                if key not in mapping and key not in ("kversion", "boot-info", "last_task"):
+                if key not in mapping and key not in (
+                    "kversion",
+                    "boot-info",
+                    "last_task",
+                ):
                     entities.append(ProxmoxNodeSensor(coordinator, key, node))
 
         # Physical Disks
@@ -159,8 +296,12 @@ async def async_setup_entry(
                 d_model = str(d_info.get("model", "")).lower()
                 if d_model and "boot" not in d_model:
                     entities.append(
-                        ProxmoxDiskSensor(coordinator, d_id, node, d_info.get("model") or d_id)
+                        ProxmoxDiskSensor(
+                            coordinator, d_id, node, d_info.get("model") or d_id
+                        )
                     )
+                    # NOTE: SMART data is already included as attributes in ProxmoxDiskSensor
+                    # We don't need to create separate SMART sensors
 
         # Storage pools
         storage_map = c_data.get("storage", {})
@@ -174,7 +315,11 @@ async def async_setup_entry(
                     ("Type", "type"),
                     ("Path", "path"),
                 ]:
-                    entities.append(ProxmoxStorageAttributeSensor(coordinator, st_name, st, label, key, node))
+                    entities.append(
+                        ProxmoxStorageAttributeSensor(
+                            coordinator, st_name, st, label, key, node
+                        )
+                    )
 
         # Virtual Machines
         vm_map = c_data.get("vms", {})
@@ -191,7 +336,11 @@ async def async_setup_entry(
                     ("network_rx", "MB", "mdi:download-network"),
                     ("network_tx", "MB", "mdi:upload-network"),
                 ]:
-                    entities.append(ProxmoxVMAttributeSensor(coordinator, vm_id, node, label, attr, unit, icon))
+                    entities.append(
+                        ProxmoxVMAttributeSensor(
+                            coordinator, vm_id, node, label, attr, unit, icon
+                        )
+                    )
 
         # Containers (LXC)
         ct_map = c_data.get("cts", {})
@@ -215,7 +364,7 @@ async def async_setup_entry(
                         )
                     )
 
-    # ===================PBS SECTION====================
+    # ==============PBS SECTION====================
     elif server_type == "PBS":
 
         server_id = entry.data["server_id"]
@@ -224,14 +373,19 @@ async def async_setup_entry(
         if c_data.get("pbs_node_status"):
             entities.append(ProxmoxPBSCpuSensor(coordinator, server_id))
             entities.append(ProxmoxPBSRamSensor(coordinator, server_id))
+            entities.append(ProxmoxPBSRamTotalSensor(coordinator, server_id))
+            entities.append(ProxmoxPBSRamUsedSensor(coordinator, server_id))
+            entities.append(ProxmoxPBSRamFreeSensor(coordinator, server_id))
 
         # Datastores
         for store_id in c_data.get("pbs_datastores", {}):
 
-            # NEW SENSOR: Last Action
+            # Last Action
             entities.append(PBSLastActionSensor(coordinator, store_id))
 
-            entities.append(ProxmoxPBSDatastoreUsageSensor(coordinator, server_id, store_id))
+            entities.append(
+                ProxmoxPBSDatastoreUsageSensor(coordinator, server_id, store_id)
+            )
 
             for key, lbl, icon in [
                 ("total", "Total", "mdi:harddisk"),
@@ -245,13 +399,27 @@ async def async_setup_entry(
                 )
 
             entities.append(ProxmoxPBSDedupSensor(coordinator, server_id, store_id))
-            entities.append(ProxmoxPBSMaintenanceSensor(coordinator, server_id, store_id))
-            entities.append(ProxmoxPBSBackupCountSensor(coordinator, server_id, store_id))
-            entities.append(ProxmoxPBSLastBackupTimeSensor(coordinator, server_id, store_id))
-            entities.append(ProxmoxPBSLastBackupSizeSensor(coordinator, server_id, store_id))
-            entities.append(ProxmoxPBSLastBackupStatusSensor(coordinator, server_id, store_id))
-            entities.append(ProxmoxPBSBackupErrorsSensor(coordinator, server_id, store_id))
-            entities.append(ProxmoxPBSBackupsListSensor(coordinator, server_id, store_id))
+            entities.append(
+                ProxmoxPBSMaintenanceSensor(coordinator, server_id, store_id)
+            )
+            entities.append(
+                ProxmoxPBSBackupCountSensor(coordinator, server_id, store_id)
+            )
+            entities.append(
+                ProxmoxPBSLastBackupTimeSensor(coordinator, server_id, store_id)
+            )
+            entities.append(
+                ProxmoxPBSLastBackupSizeSensor(coordinator, server_id, store_id)
+            )
+            entities.append(
+                ProxmoxPBSLastBackupStatusSensor(coordinator, server_id, store_id)
+            )
+            entities.append(
+                ProxmoxPBSBackupErrorsSensor(coordinator, server_id, store_id)
+            )
+            entities.append(
+                ProxmoxPBSBackupsListSensor(coordinator, server_id, store_id)
+            )
 
         # Global PBS Status
         entities.append(ProxmoxPBSTaskSensor(coordinator, server_id))

@@ -1,13 +1,15 @@
 """Storage sensors for Proxmox storage pools."""
+
 from .base import ProxmoxBaseSensor
 from ..const import DOMAIN
+
 
 class ProxmoxStorageSensor(ProxmoxBaseSensor):
 
     def __init__(self, coordinator, storage_name, st, node=None):
-        uid = f"proxmox_storage_{node}_{storage_name}_percent_v3"
+        uid = f"proxmox_storage_{node}_{storage_name}_percent_v1"
         super().__init__(coordinator, storage_name, "Usage", "%", uid, node)
-        
+
         self._storage_name = storage_name
         self._attr_icon = "mdi:database"
         self._attr_state_class = "measurement"
@@ -16,7 +18,9 @@ class ProxmoxStorageSensor(ProxmoxBaseSensor):
     def device_info(self):
         node_id = self._node.lower()
         return {
-            "identifiers": {(DOMAIN, f"proxmox_storage_{node_id}_{self._storage_name}")},
+            "identifiers": {
+                (DOMAIN, f"proxmox_storage_{node_id}_{self._storage_name}")
+            },
             "name": f"5. Storage: {self._storage_name}",
             "via_device": (DOMAIN, f"proxmox_node_{node_id}"),
             "manufacturer": "Proxmox",
@@ -24,19 +28,22 @@ class ProxmoxStorageSensor(ProxmoxBaseSensor):
         }
 
     def _get_value(self):
-        storage_data = self.coordinator.data.get("storage", {}).get(self._storage_name, {})
+        storage_data = self.coordinator.data.get("storage", {}).get(
+            self._storage_name, {}
+        )
         used = storage_data.get("used") or 0
         total = storage_data.get("total") or 0
         if total == 0:
             return 0
         return round((used / total) * 100, 2)
 
+
 class ProxmoxStorageAttributeSensor(ProxmoxBaseSensor):
 
     def __init__(self, coordinator, storage_name, st, label, key, node=None):
-        uid = f"proxmox_storage_{node}_{storage_name}_{key}_v3"
+        uid = f"proxmox_storage_{node}_{storage_name}_{key}_v1"
         unit = "GB" if key in ("used", "avail", "total") else None
-        
+
         super().__init__(coordinator, storage_name, label, unit, uid, node)
 
         self._storage_name = storage_name
@@ -59,18 +66,22 @@ class ProxmoxStorageAttributeSensor(ProxmoxBaseSensor):
     def device_info(self):
         node_id = self._node.lower()
         return {
-            "identifiers": {(DOMAIN, f"proxmox_storage_{node_id}_{self._storage_name}")},
+            "identifiers": {
+                (DOMAIN, f"proxmox_storage_{node_id}_{self._storage_name}")
+            },
             "name": f"5. Storage: {self._storage_name}",
         }
 
     def _get_value(self):
-        storage_data = self.coordinator.data.get("storage", {}).get(self._storage_name, {})
-        
+        storage_data = self.coordinator.data.get("storage", {}).get(
+            self._storage_name, {}
+        )
+
         if self._key == "path":
             return storage_data.get("content") or storage_data.get("storage") or "N/A"
-            
+
         value = storage_data.get(self._key)
-        
+
         if value is None or value == "":
             return "Unknown" if not self.unit_of_measurement else 0
 

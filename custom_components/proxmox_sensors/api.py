@@ -1,28 +1,15 @@
-# ============================================================
-#  API — PROXMOX SENSORS EXTENDED
-# ============================================================
-
 from typing import Any, Optional
 import logging
 import requests
 import urllib3
 from proxmoxer import ProxmoxAPI
 
-# Disable SSL warnings when certificate verification is disabled
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 LOGGER = logging.getLogger(__name__)
 
 
 class ProxmoxClient:
-    """
-    Unified API client for both Proxmox VE (PVE) and Proxmox Backup Server (PBS).
-
-    - PVE uses the official proxmoxer library.
-    - PBS uses a lightweight HTTP client to support restricted tokens
-      on hosted PBS providers (e.g., Tuxis).
-    """
-
     def __init__(
         self,
         host: str,
@@ -44,12 +31,7 @@ class ProxmoxClient:
         self._verify_ssl = verify_ssl
         self._proxmox: Optional[ProxmoxAPI] = None
 
-    # ============================================================
-    #  PVE CLIENT INITIALIZATION
-    # ============================================================
-
     def _build_client_sync(self):
-        """Initialize the proxmoxer client for PVE."""
         if self._server_type == "PBS":
             return
 
@@ -77,11 +59,12 @@ class ProxmoxClient:
                     timeout=timeout_val,
                 )
         except Exception as err:
-            LOGGER.error("Failed to initialize Proxmoxer client on %s: %s", self._host, err)
+            LOGGER.error(
+                "Failed to initialize Proxmoxer client on %s: %s", self._host, err
+            )
             self._proxmox = None
 
     async def get_api_client(self, hass):
-        """Return the PVE API client, initializing it if needed."""
         if self._server_type == "PBS":
             return None
 
@@ -90,14 +73,11 @@ class ProxmoxClient:
 
         return self._proxmox
 
-    # ============================================================
-    #  GENERIC GET/POST WRAPPERS
-    # ============================================================
-
     async def get(self, hass, path: str) -> Any:
-        """Unified GET request for both PVE and PBS."""
         if self._server_type == "PBS":
-            return await hass.async_add_executor_job(self._pbs_request, "GET", path, None)
+            return await hass.async_add_executor_job(
+                self._pbs_request, "GET", path, None
+            )
 
         proxmox = await self.get_api_client(hass)
         if proxmox is None:
@@ -110,7 +90,6 @@ class ProxmoxClient:
             return None
 
     async def post(self, hass, path: str, data=None) -> Any:
-        """Unified POST request for PVE."""
         proxmox = await self.get_api_client(hass)
         if proxmox is None:
             return None
@@ -124,45 +103,34 @@ class ProxmoxClient:
             LOGGER.error("PVE POST error on %s: %s", path, err)
             return None
 
-
-    # ============================================================
-    #  PVE METHODS
-    # ============================================================
+    async def get_cluster_resources(self, hass):
+        return await self.get(hass, "cluster/resources") or []
 
     async def get_cluster_tasks(self, hass):
-        """Return recent cluster tasks."""
         return await self.get(hass, "cluster/tasks") or []
 
     async def get_node_status(self, hass, node: str):
-        """Return general node status."""
         return await self.get(hass, f"nodes/{node}/status")
 
     async def get_node_network(self, hass, node: str):
-        """Return node network interfaces (para TX/RX)."""
         return await self.get(hass, f"nodes/{node}/network") or []
 
     async def get_vms(self, hass, node: str):
-        """Return all VMs in a node."""
         return await self.get(hass, f"nodes/{node}/qemu") or []
 
     async def get_containers(self, hass, node: str):
-        """Return all LXC containers in a node."""
         return await self.get(hass, f"nodes/{node}/lxc") or []
 
     async def get_container_status(self, hass, node: str, vmid: str):
-        """Return detailed container status."""
         return await self.get(hass, f"nodes/{node}/lxc/{vmid}/status/current")
 
     async def get_qemu_status(self, hass, node: str, vmid: str):
-        """Return detailed QEMU VM status."""
         return await self.get(hass, f"nodes/{node}/qemu/{vmid}/status/current")
 
     async def get_lxc_status(self, hass, node: str, vmid: str):
-        """Return detailed LXC container status."""
         return await self.get(hass, f"nodes/{node}/lxc/{vmid}/status/current")
 
     async def get_vm_type(self, hass, node: str, vmid: str) -> str:
-        """Return 'qemu' or 'lxc' depending on VM type."""
         vms = await self.get_vms(hass, node)
         if isinstance(vms, list):
             for vm in vms:
@@ -178,7 +146,6 @@ class ProxmoxClient:
         return "unknown"
 
     async def get_vm_status(self, hass, node: str, vmid: str):
-        """Return VM or CT status, auto-detecting type."""
         vmtype = await self.get_vm_type(hass, node, vmid)
         if vmtype == "qemu":
             return await self.get_qemu_status(hass, node, vmid)
@@ -187,47 +154,100 @@ class ProxmoxClient:
         return None
 
     async def get_storages(self, hass, node: str):
-        """Return storage resources."""
         return await self.get(hass, f"nodes/{node}/storage") or []
 
     async def get_disks(self, hass, node: str):
-        """Return physical disks."""
         return await self.get(hass, f"nodes/{node}/disks/list") or []
 
-    async def control_container(self, hass, node: str, vmid: str, command: str):
-        """Send start/stop/reboot/shutdown to a container."""
-        return await self.post(hass, f"nodes/{node}/lxc/{vmid}/status/{command}")
-
     async def control_vm(self, hass, node: str, vmid: str, command: str):
-        """Send commands to a QEMU virtual machine.
-        
-        Supported commands: start, stop, shutdown, reboot, reset, 
-                           pause, resume, hibernate
-        """
         LOGGER.info(f"Sending {command} command to VM {vmid} on node {node}")
-        
-        
-        if command == 'hibernate':
+
+        valid_vm_commands = [
+            "start",
+            "stop",
+            "shutdown",
+            "reboot",
+            "reset",
+            "suspend",
+            "resume",
+            "hibernate",
+        ]
+        if command not in valid_vm_commands:
+            LOGGER.error(f"Invalid VM command: {command}")
+            return False
+
+        if command == "hibernate":
             path = f"nodes/{node}/qemu/{vmid}/status/suspend"
-            data = {'todisk': 1}
+            data = {"todisk": 1}
         else:
             path = f"nodes/{node}/qemu/{vmid}/status/{command}"
             data = {}
-        
-        if command in ['shutdown', 'reboot']:
-            data['timeout'] = 60
-        
+
+        if command in ["shutdown", "reboot"]:
+            data["timeout"] = 60
+
         result = await self.post(hass, path, data)
-        
+
         if result:
-            LOGGER.info(f"Comando {command} enviado exitosamente a VM {vmid}")
+            LOGGER.info(f"VM command {command} sent successfully to VM {vmid}")
         else:
-            LOGGER.error(f"Error al enviar comando {command} a VM {vmid}")
-        
+            LOGGER.error(f"Error sending VM command {command} to VM {vmid}")
+
         return result
 
+    async def execute_vm_command(self, hass, node: str, vmid: str, command: str):
+        return await self.control_vm(hass, node, vmid, command)
+
+    async def execute_ct_command(self, hass, node: str, vmid: str, command: str):
+        return await self.control_container(hass, node, vmid, command)
+
+    async def execute_node_command(self, hass, node: str, command: str):
+        if command == "reboot":
+            return await self.reboot_node(hass, node)
+        elif command == "shutdown":
+            return await self.shutdown_node(hass, node)
+        else:
+            LOGGER.error(f"Invalid node command: {command}")
+            return False
+
+    async def control_container(self, hass, node: str, vmid: str, command: str):
+        LOGGER.info(f"Sending {command} command to CT {vmid} on node {node}")
+
+        valid_ct_commands = ["start", "stop", "shutdown", "reboot"]
+        if command not in valid_ct_commands:
+            LOGGER.error(
+                f"Invalid CT command: {command}. Valid commands: {valid_ct_commands}"
+            )
+            return False
+
+        path = f"nodes/{node}/lxc/{vmid}/status/{command}"
+        data = {}
+
+        if command in ["shutdown", "reboot"]:
+            data["timeout"] = 60
+
+        result = await self.post(hass, path, data)
+
+        if result:
+            LOGGER.info(f"CT command {command} sent successfully to CT {vmid}")
+        else:
+            LOGGER.error(f"Error sending CT command {command} to CT {vmid}")
+
+        return result
+
+    async def shutdown_node(self, hass, node: str):
+        LOGGER.info(f"Sending shutdown command to node {node}")
+        path = f"nodes/{node}/status"
+        data = {"command": "shutdown"}
+        return await self.post(hass, path, data)
+
+    async def reboot_node(self, hass, node: str):
+        LOGGER.info(f"Sending reboot command to node {node}")
+        path = f"nodes/{node}/status"
+        data = {"command": "reboot"}
+        return await self.post(hass, path, data)
+
     async def get_lm_sensors_http(self, hass, node: str):
-        """Fetch temperature and fan data from an external sensor script."""
         url = f"http://{self._host}:9000/sensors"
 
         def _fetch():
@@ -241,9 +261,8 @@ class ProxmoxClient:
         return await hass.async_add_executor_job(_fetch)
 
     async def get_smart_data_http(self, hass, node: str):
-        """Fetch SMART data from external script."""
         url = f"http://{self._host}:9000/smart"
-        
+
         def _fetch():
             try:
                 r = requests.get(url, timeout=15)
@@ -252,54 +271,62 @@ class ProxmoxClient:
             except Exception as e:
                 LOGGER.error(f"Error fetching SMART data from {url}: {e}")
                 return {}
-        
+
         return await hass.async_add_executor_job(_fetch)
-        
-    async def start_vzdump(self, hass, node: str, vmid: str, storage: str, notes: str = None):
-        """Send backup from Home Assistant."""
+
+    async def start_vzdump(
+        self,
+        hass,
+        node: str,
+        vmid: str,
+        storage: str,
+        notes: str = None,
+        mode: str = "snapshot",
+        compress: str = "zstd",
+    ):
         if not node or not vmid or not storage:
             raise ValueError("node, vmid, and storage are required to start a backup")
 
         path = f"nodes/{node}/vzdump"
-        
-        # Optimized parameters for PBS:
-        # - snapshot: allows backups without shutting down the VM.
-        # - zstd: fast and efficient compression.
+        if compress == "none":
+            compress = "0"
+
+        valid_modes = ["snapshot", "suspend", "stop"]
+        if mode not in valid_modes:
+            raise ValueError(
+                f"Invalid mode: {mode}. Must be one of: {', '.join(valid_modes)}"
+            )
+
+        valid_compress = ["0", "1", "lzo", "gzip", "zstd", "none"]
+        if compress not in valid_compress:
+            raise ValueError(
+                f"Invalid compression: {compress}. Must be one of: {', '.join(valid_compress)}"
+            )
+
         data = {
             "vmid": vmid,
             "storage": storage,
-            "mode": "snapshot",
-            "compress": "zstd"
+            "mode": mode,
+            "compress": compress,
         }
 
         if notes:
             data["notes-template"] = notes
-        
-        LOGGER.debug("Sending vzdump order to PVE with notes: %s", data)
 
         result = await self.post(hass, path, data)
 
         if result:
-            LOGGER.info("vzdump successfully launched with notes: %s", result)
+            LOGGER.info(
+                f"vzdump started successfully for {vmid} (mode={mode}, compress={compress})"
+            )
         else:
-            LOGGER.warning("vzdump did not return a response (possible error or permissions)")
+            LOGGER.warning(f"vzdump returned no response for {vmid}")
 
         return result
 
-    # ============================================================
-    #  PBS LOW-LEVEL REQUEST + WRAPPERS
-    # ============================================================
-
     def _pbs_request(self, method: str, path: str, data=None):
-        """
-        Lightweight PBS API request handler.
-
-        Designed to work even with restricted token permissions
-        (e.g., hosted PBS providers such as Tuxis).
-        """
         port = self._port or 8007
 
-        # Normalize host (remove protocol and any existing port)
         clean_host = (
             self._host.replace("https://", "")
             .replace("http://", "")
@@ -308,7 +335,6 @@ class ProxmoxClient:
         )
         url = f"https://{clean_host}:{port}/api2/json/{path}"
 
-        # Build token identifier: user@realm!tokenid
         if not self._user or not self._token_secret:
             LOGGER.error("PBS token authentication requires user and token_secret")
             return None
@@ -327,12 +353,19 @@ class ProxmoxClient:
 
         try:
             if method == "GET":
-                r = requests.get(url, headers=headers, verify=self._verify_ssl, timeout=15)
+                r = requests.get(
+                    url, headers=headers, verify=self._verify_ssl, timeout=15
+                )
             else:
-                r = requests.post(url, headers=headers, json=(data or {}), verify=self._verify_ssl, timeout=15)
+                r = requests.post(
+                    url,
+                    headers=headers,
+                    json=(data or {}),
+                    verify=self._verify_ssl,
+                    timeout=15,
+                )
 
             if r.status_code == 403:
-                LOGGER.debug("PBS request forbidden on path %s (403)", path)
                 return None
 
             if r.status_code >= 400:
@@ -342,54 +375,44 @@ class ProxmoxClient:
             return r.json().get("data")
 
         except Exception as err:
-            LOGGER.debug("PBS path %s unreachable: %s", path, err)
             return None
 
     async def pbs_get(self, hass, path: str) -> Any:
-        """Explicit GET wrapper for PBS endpoints."""
         return await hass.async_add_executor_job(self._pbs_request, "GET", path, None)
 
     async def pbs_post(self, hass, path: str, data=None) -> Any:
-        """Explicit POST wrapper for PBS endpoints."""
-        return await hass.async_add_executor_job(self._pbs_request, "POST", path, data or {})
-
-    # ============================================================
-    #  PBS HIGH-LEVEL METHODS
-    # ============================================================
+        return await hass.async_add_executor_job(
+            self._pbs_request, "POST", path, data or {}
+        )
 
     async def get_pbs_datastores(self, hass):
-        """Return all PBS datastores."""
         data = await self.pbs_get(hass, "admin/datastore")
-        return [d["store"] for d in data if isinstance(d, dict) and "store" in d] if data else []
+        return (
+            [d["store"] for d in data if isinstance(d, dict) and "store" in d]
+            if data
+            else []
+        )
 
     async def get_pbs_datastore_status(self, hass, store: str):
-        """Return datastore status."""
         return await self.pbs_get(hass, f"admin/datastore/{store}/status") or {}
 
     async def get_pbs_datastore_usage(self, hass, store: str):
-        """Return GC usage information."""
         return await self.pbs_get(hass, f"admin/datastore/{store}/gc") or {}
 
     async def get_pbs_tasks(self, hass):
-        """Return recent PBS tasks."""
         return await self.pbs_get(hass, "nodes/localhost/tasks") or []
 
     async def get_pbs_version(self, hass):
-        """Return PBS version information."""
         return await self.pbs_get(hass, "version") or {}
 
     async def get_pbs_backup_list(self, hass, store: str):
-        """Return all backups inside a datastore."""
         return await self.pbs_get(hass, f"admin/datastore/{store}/snapshots") or []
 
     async def get_pbs_node_status(self, hass):
-        """Return PBS node hardware status (CPU, RAM, etc.)."""
         return await self.pbs_get(hass, "nodes/localhost/status") or {}
 
     async def get_pbs_gc(self, hass, store: str):
-        """Return GC info for a specific datastore."""
         return await self.pbs_get(hass, f"admin/datastore/{store}/gc") or {}
 
     async def get_pbs_snapshots(self, hass, store: str):
-        """Return snapshots for a specific datastore."""
         return await self.pbs_get(hass, f"admin/datastore/{store}/snapshots") or []

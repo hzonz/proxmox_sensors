@@ -1,22 +1,34 @@
 """Container (LXC) sensors for Proxmox."""
+
 from .base import ProxmoxBaseSensor
 from ..const import DOMAIN
 
+
 class ProxmoxContainerSensor(ProxmoxBaseSensor):
+    """Main CT status sensor."""
 
     def __init__(self, coordinator, ct_id, node, label):
-        name = "Status"
-        uid = f"proxmox_ct_{node}_{ct_id}_status_v4"
         self._label = label
-        super().__init__(coordinator, ct_id, name, None, uid, node)
+        uid = f"proxmox_ct_{node}_{ct_id}_status_v1"
+
+        super().__init__(
+            coordinator,
+            ct_id,
+            None,
+            None,
+            uid,
+            node,
+        )
+
+        self._attr_translation_key = "ct_status"
         self._attr_icon = "mdi:label-outline"
 
     @property
     def device_info(self):
         node_id = self._node.lower()
         return {
-            "identifiers": {(DOMAIN, f"proxmox_ct_{self._sensor_id}_v4")},
-            "name": f"3. CT: {self._label}",
+            "identifiers": {(DOMAIN, f"proxmox_ct_{self._sensor_id}_v1")},
+            "name": f"3. CT: {self._label}-({self._sensor_id})",
             "via_device": (DOMAIN, f"proxmox_node_{node_id}"),
             "manufacturer": "Proxmox",
             "model": "LXC Container",
@@ -28,22 +40,36 @@ class ProxmoxContainerSensor(ProxmoxBaseSensor):
 
 
 class ProxmoxContainerAttributeSensor(ProxmoxBaseSensor):
+    """Attribute sensors for CTs (CPU, memory, disk, network, uptime)."""
 
     def __init__(self, coordinator, ct_id, node, label, attr_name, unit, icon):
-        display_name = attr_name.replace("_", " ").title()
-        uid = f"proxmox_ct_{node}_{ct_id}_{attr_name}_v4"
-
         self._label = label
         self._attr_key = attr_name
 
-        super().__init__(coordinator, ct_id, display_name, unit, uid, node)
+        uid = f"proxmox_ct_{node}_{ct_id}_{attr_name}_v1"
+
+        super().__init__(
+            coordinator,
+            ct_id,
+            None,
+            unit,
+            uid,
+            node,
+        )
+
+        # Translation key for HA
+        self._attr_translation_key = f"ct_{attr_name}"
         self._attr_icon = icon
 
     @property
     def device_info(self):
+        node_id = self._node.lower()
         return {
-            "identifiers": {(DOMAIN, f"proxmox_ct_{self._sensor_id}_v4")},
-            "name": f"3. CT: {self._label}",
+            "identifiers": {(DOMAIN, f"proxmox_ct_{self._sensor_id}_v1")},
+            "name": f"3. CT: {self._label}-({self._sensor_id})",
+            "via_device": (DOMAIN, f"proxmox_node_{node_id}"),
+            "manufacturer": "Proxmox",
+            "model": "LXC Container",
         }
 
     def _get_value(self):
