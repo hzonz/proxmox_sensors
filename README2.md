@@ -36,6 +36,22 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 - Proxmox Backup Server 3.x / 4.x  
 - Home Assistant 2024.x or newer  
 
+---
+
+## 📑 Table of Contents
+
+- [Dashboard Preview](#dashboard-preview)
+- [Key Features](#key-features-v200)
+- [Supported Versions](#supported-versions)
+- [Node Status & Performance](#node-status--performance)
+- [Disks & SMART](#disks--smart)
+- [Virtual Machines (QEMU)](#virtual-machines-qemu)
+- [Containers (LXC)](#containers-lxc)
+- [Proxmox Backup Server (PBS)](#proxmox-backup-server-pbs)
+- [Visual Setup Guide](#visual-setup-guide)
+- [Installation](#installation)
+- [Contributing](#contributing--community)
+
 
 ---
 
