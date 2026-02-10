@@ -211,3 +211,266 @@ Kurz gesagt verwandelt diese Integration Home Assistant in ein **vollwertiges Ko
 
 Die Integration enthält zwei leistungsstarke Backup‑Dienste, mit denen du **Proxmox‑Backups direkt aus Home Assistant** erstellen kannst – vollständig kompatibel mit Proxmox VE und Proxmox Backup Server (PBS).
 
+---
+
+### 🟦 1. Einzelner Backup‑Dienst  
+Erstellt ein Backup einer bestimmten VM oder eines bestimmten CT.
+
+**Dienst:** `proxmox_sensors.create_vzdump_backup`
+
+**Verfügbare Optionen:**
+
+- **Node** – Wähle den Proxmox‑Knoten.  
+- **Zielspeicher** – Jeder Speicher, der Backups unterstützt (local, NFS, PBS usw.).  
+- **VM/CT‑ID** – ID der Maschine, die gesichert werden soll.  
+- **Backup‑Modus:**  
+  - `snapshot`  
+  - `suspend`  
+  - `stop`  
+- **Kompression:**  
+  - `zstd`  
+  - `gzip`  
+  - `lzo`  
+  - `none`
+
+Backups, die aus Home Assistant erstellt werden, erhalten automatisch den Namen:  
+**HA-{{vmid}}-{{guestname}}**
+
+Dies stellt sicher, dass sie leicht zu identifizieren sind und gleichzeitig **vollständig kompatibel mit bestehenden Proxmox‑Backups** bleiben.
+
+<details>
+  <summary>📦 Einzelner Backup‑Dienst</summary>
+  <p align="center">
+    <img src="../../img/pve/single_backup.png" alt="Einzelner Backup-Dienst" width="600">
+  </p>
+</details>
+
+---
+
+### 🟩 2. Massen‑Backup‑Dienst  
+Erstellt Backups von **allen VMs und/oder CTs** auf einem ausgewählten Knoten.
+
+**Dienst:** `proxmox_sensors.backup_all`
+
+**Verfügbare Optionen:**
+
+- **Node** – Wähle den Knoten, der gesichert werden soll.  
+- **Zielspeicher** – Jeder Speicher mit Backup‑Fähigkeit.  
+- **Backup‑Modus:** snapshot / suspend / stop.  
+- **Kompression:** zstd / gzip / lzo / none.  
+- **Maximale gleichzeitige Backups** – Steuert parallele Ausführung.  
+- **Verzögerung zwischen Backups** – Sekunden zwischen den Sicherungen.  
+- **VMs einschließen** – Schalter (Ja/Nein).  
+- **CTs einschließen** – Schalter (Ja/Nein).
+
+Dieser Dienst ist ideal für geplante nächtliche Backups oder automatisierte Wartungsroutinen.
+
+<details>
+  <summary>📦 Massen‑Backup‑Dienst</summary>
+  <p align="center">
+    <img src="../../img/pve/massive_backups.png" alt="Massen-Backup-Dienst" width="600">
+  </p>
+</details>
+
+---
+
+### 🟧 PBS‑Kompatibilität & Deduplizierung
+
+Backups, die über diese Dienste erstellt werden:
+
+- Werden exakt so gespeichert wie Backups aus Proxmox VE  
+- Verwenden die gleiche Namens- und Metadatenstruktur  
+- Unterstützen automatisch die **PBS‑Deduplizierung**  
+- Integrieren sich nahtlos in bestehende Backup‑Ketten  
+- Erscheinen vollständig kompatibel im PBS‑Datastore  
+
+Es ist keine besondere Konfiguration erforderlich — PBS verarbeitet Deduplizierung und Indexierung genauso, als wäre das Backup über die Proxmox‑GUI oder CLI erstellt worden.
+
+---
+
+### 🗄️ Proxmox Backup Server (PBS)
+
+**Tiefgehende Überwachung von Datastore und Aufgaben:**
+
+- Datastore‑Nutzung (GB und %), gesamt, genutzt und frei.  
+- Deduplizierungsrate und Anzahl der Backups.  
+- Zeitpunkt, Größe und Status des letzten Backups.  
+- Backup‑Fehler und Aufgabenübersicht.  
+- Status des Garbage Collectors (GC) und zugehörige Sensoren.  
+- Letzte Aufgabe: Typ, Status, Nachricht und Dauer.
+
+<details>
+  <summary>🗄️ Datastore‑Übersicht</summary>
+  <p align="center">
+    <img src="../../img/pbs/datastore.png" alt="Datastore" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ PBS‑Server</summary>
+  <p align="center">
+    <img src="../../img/pbs/pbs_server.png" alt="PBS Server" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ Aufgaben‑Details</summary>
+  <p align="center">
+    <img src="../../img/pbs/task.png" alt="PBS Task" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ Garbage‑Collector‑Status</summary>
+  <p align="center">
+    <img src="../../img/pbs/gc_status_attr.png" alt="GC Status" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ Datastore‑Wartung</summary>
+  <p align="center">
+    <img src="../../img/pbs/datastore_maintenance.png" alt="Datastore Maintenance" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ Zusammenfassung der letzten Aufgabe</summary>
+  <p align="center">
+    <img src="../../img/pbs/last_task_stat.png" alt="Last Task" width="600">
+  </p>
+</details>
+
+---
+
+## PBS‑Steuerungsaktionen:
+
+- **Garbage Collector (GC)** ausführen  
+- **Prune** ausführen  
+- **Verify** ausführen  
+- **Sync** ausführen  
+
+<details>
+  <summary>🗄️ Datastore‑Wartung</summary>
+  <p align="center">
+    <img src="../../img/pbs/datastore_maintenance.png" alt="Datastore Maintenance" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ Letzte Aufgabe</summary>
+  <p align="center">
+    <img src="../../img/pbs/last_task_stat.png" alt="Datastore Maintenance" width="600">
+  </p>
+</details>
+
+---
+
+### 🎛️ Steuerungsaktionen (PVE & PBS)
+
+**Node‑Steuerung:**
+
+- Node herunterfahren  
+- Node neu starten  
+
+**VM‑Steuerung (QEMU):**
+
+- Starten, Stoppen, Herunterfahren, Neustarten, Reset  
+- Pausieren, Fortsetzen, Ruhezustand  
+
+**Container‑Steuerung (LXC):**
+
+- Starten, Stoppen, Herunterfahren, Neustarten  
+
+**PBS‑Steuerung:**
+
+- GC, Prune, Verify, Sync (pro Datastore)
+
+---
+
+### 🎨 Visuelle Organisation & Benennung
+
+- Sensoren werden automatisch in logische Geräte gruppiert:
+  1. Node  
+  2. Physische Festplatten  
+  3. Virtuelle Maschinen  
+  4. Container  
+  5. Storages / Datastores  
+  6. PBS‑Server und Aufgaben  
+
+- Konsistente, klare Benennung von Entitäten und Geräten für übersichtliche und skalierbare Dashboards.
+
+---
+
+## 🧩 Installation
+
+### 🔹 Über HACS (empfohlen)
+
+1. Öffne **HACS → Integrationen**.  
+2. Klicke auf die drei Punkte (⋮) → **Custom repositories**.  
+3. Füge dieses Repository hinzu:  
+   - URL: `https://github.com/Javisen/proxmox_sensors`  
+   - Kategorie: **Integration**  
+4. Suche nach **“Proxmox Extended Sensors”** in HACS und installiere es.  
+5. Starte Home Assistant neu.  
+6. Gehe zu **Einstellungen → Geräte & Dienste → Integration hinzufügen** und suche **Proxmox Extended Sensors**.
+
+### 🔹 Manuelle Installation
+
+1. Kopiere den Ordner `custom_components/proxmox_sensors` nach:  
+   - `/config/custom_components/proxmox_sensors`  
+2. Starte Home Assistant neu.  
+3. Füge die Integration über **Einstellungen → Geräte & Dienste** hinzu.
+
+---
+
+## 🧭 Visuelle Einrichtung
+
+Nachfolgend findest du eine vollständige visuelle Anleitung zum Einrichtungsprozess, einschließlich Login‑Methoden, Ressourcenauswahl und Konfigurationsschritten.
+
+<details>
+  <summary>🪪 Server‑Verbindung</summary>
+  <p align="center">
+    <img src="../../img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
+  </p>
+  > Du musst kein "http://" oder "https://" eingeben — das erledigen wir automatisch.
+</details>
+
+<details>
+  <summary>🪪 Login mit Benutzername und Passwort (nur PVE)</summary>
+  <p align="center">
+    <img src="../../img/install/access_passw.png" alt="Login Proxmox" width="600">
+  </p>
+  > Stelle sicher, dass du das richtige Realm (`pam` oder `pve`) verwendest.
+</details>
+
+<details> 
+  <summary>🪪 Login mit Benutzer und Token (PVE und PBS)</summary>
+  <p align="center">
+    <img src="../../img/install/access_token.png" alt="Login Proxmox" width="600">
+  </p>
+  **Im Feld Token_id musst du nur den Token‑Namen eingeben.**
+</details>
+
+<details>
+  <summary>⚙️ Ressourcenauswahl</summary>
+  <p align="center">
+    <img src="../../img/install/resources_select.png" alt="Login Proxmox" width="600">
+  </p>
+  *Hinweis: Wähle die CTs, VMs und Storages aus, die du hinzufügen möchtest, sowie die gewünschten Optionen.*
+</details>
+
+---
+
+**Wenn dir diese Integration gefällt oder sie dir hilft, hinterlasse gerne ein ⭐ auf GitHub.**  
+**Das verbessert die Sichtbarkeit, motiviert die Entwicklung und unterstützt zukünftige Funktionen.**
+
+## 🤝 Beiträge & Community
+
+Beiträge sind willkommen! Du kannst Issues oder Pull Requests erstellen.  
+**[Zum GitHub‑Repository](https://github.com/Javisen/proxmox_sensors)**
+
+---
+
+<p align="center"><i>Maintained by Javisen – MIT‑Lizenz</i></p>
+
