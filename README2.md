@@ -45,6 +45,7 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 - [Disks & SMART](#-disks--smart)
 - [Virtual Machines (QEMU)](#-virtual-machines-qemu)
 - [Containers (LXC)](#-containers-lxc)
+- [Backups Services](#-Backup-Services-VMs--CTs)
 - [Proxmox Backup Server (PBS)](#-proxmox-backup-server-pbs)
 - [Control Actions (PVE & PBS)](#-control-actions-pve--pbs)
 - [Installation](#-installation)
@@ -180,6 +181,98 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
     <img src="img/pve/ct_control.png" alt="CT Control" width="600">
   </p>
 </details>
+
+---
+
+## 💾 Backup Services (VMs & CTs)
+
+The integration includes two powerful backup services that allow you to create **Proxmox backups directly from Home Assistant**, fully compatible with Proxmox VE and Proxmox Backup Server (PBS).
+
+---
+
+### 🟦 1. Single Backup Service  
+Creates a backup of a specific VM or CT.
+
+**Service:** `proxmox_sensors.create_vzdump_backup`
+
+**Options available:**
+
+- **Node** – Select the Proxmox node  
+- **Target Storage** – Any storage supporting backups (local, NFS, PBS, etc.)  
+- **VM/CT ID** – ID of the machine to back up  
+- **Backup mode:**  
+  - `snapshot`  
+  - `suspend`  
+  - `stop`  
+- **Compression:**  
+  - `zstd`  
+  - `gzip`  
+  - `lzo`  
+  - `none`
+
+Backups created from Home Assistant are automatically named using: HA-{{vmid}}-{{guestname}}
+
+
+This ensures they are easy to identify while remaining **fully compatible with existing Proxmox backups**.
+
+<details>
+  <summary>📦 Single Backup Service</summary>
+  <p align="center">
+    <img src="img/pve/single_backup.png" alt="Single Backup Service" width="600">
+  </p>
+</details>
+
+---
+
+### 🟩 2. Massive Backup Service  
+Performs backups of **all VMs and/or CTs** on a selected node.
+
+**Service:** `proxmox_sensors.backup_all`
+
+**Options available:**
+
+- **Node** – Select the node to back up  
+- **Target Storage** – Any backup-capable storage  
+- **Backup mode:** snapshot / suspend / stop  
+- **Compression:** zstd / gzip / lzo / none  
+- **Maximum concurrent backups** – Control parallel execution  
+- **Delay between backups** – Seconds between each backup  
+- **Include VMs** – Toggle  
+- **Include CTs** – Toggle  
+
+This service is ideal for scheduled nightly backups or automated maintenance routines.
+
+<details>
+  <summary>📦 Massive Backup Service</summary>
+  <p align="center">
+    <img src="img/pve/massive_backup.png" alt="Massive Backup Service" width="600">
+  </p>
+</details>
+
+
+---
+
+### 🟧 PBS Compatibility & Deduplication
+
+Backups created through these services:
+
+- Are stored exactly like backups created from Proxmox VE  
+- Use the same naming and metadata structure  
+- Support **PBS deduplication** automatically  
+- Integrate seamlessly with existing backup chains  
+- Appear in the PBS datastore with full compatibility  
+
+No special configuration is required — PBS handles deduplication and indexing exactly as if the backup were created from the Proxmox GUI or CLI.
+
+---
+
+<details>
+  <summary>📦 Container Controls & Sensors</summary>
+  <p align="center">
+    <img src="img/pve/ct_control.png" alt="CT Control" width="600">
+  </p>
+</details>
+
 
 ---
 
