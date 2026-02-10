@@ -1,69 +1,69 @@
 # 🔐 Paso 2: Configuración de Usuarios y Permisos
-**Para que Home Assistant se comunique con Proxmox de forma segura, es recomendable no utilizar el usuario root. En esta guía crearemos un acceso con permisos de "solo lectura".**
+
+**Para que Home Assistant se comunique con Proxmox de forma segura, es recomendable no utilizar el usuario root. Crearemos un usuario dedicado y le asignaremos los permisos necesarios para que la integración funcione al 100%.**
+
+> ⚠️ **IMPORTANTE:**  
+> Debido a las funciones avanzadas de la integración (control de VMs/CTs, backups individuales y masivos, acciones de PBS…), es necesario asignar **permisos de administrador** tanto en PVE como en PBS.
+
+---
 
 ## 1. Diferencia entre PVE y PBS
-Antes de empezar, debes tener en cuenta:
 
-* **Proxmox VE (PVE): Puedes usar un Usuario/Contraseña convencional o un API Token.**
+### **Proxmox VE (PVE)**
+- Puedes usar **Usuario/Contraseña** o **API Token**.  
+- El usuario debe tener el rol **PVEAdmin**.
 
-* **Proxmox Backup Server (PBS): Es imprescindible usar un API Token. Los métodos de login tradicionales a menudo fallan por restricciones de seguridad o permisos en el Datastore.**
-
----
-
-## 2. Creación del Rol (Permisos)
-**Un "Rol" define qué puede hacer la integración.**
-
-1. Ve a Datacenter > Permissions > Roles.
-
-2. Haz clic en Create y ponle de nombre HA-Monitor.
+### **Proxmox Backup Server (PBS)**
+- Es **obligatorio** usar **API Token**.  
+- El usuario debe tener el rol **Administrator** (PBS no dispone de un rol intermedio válido).
 
 ---
 
-## 3. Creación del Rol (Permisos)
-Un "Rol" define qué puede hacer la integración.
-1. Ve a **Datacenter > Permissions > Roles**.
-2. Haz clic en **Create** y ponle de nombre `HA-Monitor`.
-3. Selecciona los siguientes privilegios (**Privileges**):
-    * `Sys.Audit`: Permite ver el estado del nodo (CPU, RAM).
-    * `VM.Audit`: Permite ver el estado de las VMs y contenedores.
-    * `Datastore.Audit`: Permite ver el espacio en disco.
+## 2. Creación del Usuario
 
----
-  
-## 4. Creación del Usuario
-1. **Ve a Datacenter > Permissions > Users.**
-
-2. **Haz clic en Add.**
-
-3. **Usuario: homeassistant (puedes dejar el realm como pve).**
-
-4. **Dale una contraseña segura si vas a usar este método para PVE.**
+1. Ve a **Datacenter → Permissions → Users**  
+2. Haz clic en **Add**  
+3. Configura:  
+   - **User:** `homeassistant`  
+   - **Realm:** `pve`  
+   - **Password:** solo si vas a usar login por contraseña en PVE  
+4. Guarda los cambios
 
 ---
 
-## 5. Asignación del Rol
-**Debes decirle a Proxmox que ese usuario tiene el rol que creamos:**
+## 3. Asignación del Rol Correcto
 
-1. Ve a **Datacenter > Permissions**.
-2. Haz clic en **Add > User Permission**.
+1. Ve a **Datacenter → Permissions**  
+2. Haz clic en **Add → User Permission**  
 3. Configura los siguientes campos:
-    * **Path:** `/` (Esto es muy importante para que la integración pueda ver todo el servidor).
-    * **User:** `homeassistant@pve` (o el usuario que hayas creado).
-    * **Role:** `HA-Monitor`.
+
+### ✔ Para PVE:
+- **Path:** `/`  
+- **User:** `homeassistant@pve`  
+- **Role:** `PVEAdmin`  
+
+### ✔ Para PBS:
+- **Path:** `/`  
+- **User:** `homeassistant@pve`  
+- **Role:** `Administrator`  
+
+> 💡 **Por qué `/` es necesario:**  
+> La integración necesita acceso global para leer nodos, VMs, CTs, discos, datastores y tareas.
 
 ---
 
-## 6. Generación del API Token (Obligatorio para PBS)
-**Si vas a monitorizar un PBS o prefieres no usar contraseñas en PVE, realiza estos pasos:**
+## 4. Generación del API Token (Obligatorio para PBS)
 
-1. Ve a **Datacenter > Permissions > API Tokens**.
-2. Haz clic en **Add** y rellena el formulario:
-    * **User:** Selecciona el usuario `homeassistant`.
-    * **Token ID:** `ha-token` (puedes elegir el nombre que quieras).
-    * **Privilege Separation:** ⚠️ **DESMARCA esta casilla**. Si la dejas marcada, el Token no heredará los permisos del usuario y la integración fallará.
-3. Al hacer clic en **Add**, se abrirá una ventana con dos datos clave:
-    * **Token ID:** (Ejemplo: `homeassistant@pve!ha-token`).
-    * **Secret:** (Una cadena larga de letras y números).
+1. Ve a **Datacenter → Permissions → API Tokens**  
+2. Haz clic en **Add**  
+3. Configura:  
+   - **User:** `homeassistant@pve`  
+   - **Token ID:** `ha-token`  
+   - **Privilege Separation:** **desmarcado**  
+   - **Expire:** **Never**  
+4. Al crear el token, Proxmox mostrará:  
+   - **Token ID**  
+   - **Secret** (solo se muestra una vez)
 
 > [!WARNING]
 > **Copia el "Secret" ahora y guárdalo en un lugar seguro.** Una vez cierres esta ventana, Proxmox no te lo volverá a mostrar nunca más por motivos de seguridad.
