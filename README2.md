@@ -214,16 +214,16 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 </details>
 
 <details>
-  <summary>🗄️ Task</summary>
+  <summary>🗄️ TASK</summary>
   <p align="center">
-    <img src="img/pbs/gc_status_attr.png" alt="GC Status" width="600">
+    <img src="img/pbs/task.png" alt="TASK" width="600">
   </p>
 </details>
 
 <details>
   <summary>🗄️ GC Status</summary>
   <p align="center">
-    <img src="img/pbs/task.png" alt="TASK" width="600">
+    <img src="img/pbs/gc_status_attr.png" alt="GC Status" width="600">
   </p>
 </details>
 
