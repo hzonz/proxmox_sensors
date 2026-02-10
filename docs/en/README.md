@@ -31,127 +31,449 @@ Common questions, known issues, and how to fix them.
 
 ---
 
-# 🚀 Proxmox Sensors Extended
+# 🚀 Proxmox Extended Sensors
 
-**The most comprehensive, efficient, and organized integration for monitoring Proxmox VE and PBS from Home Assistant.**
+## Introduction
 
-This integration has been designed for advanced users who require full control over their hardware without overloading their server. Unlike other solutions, Proxmox Sensors Extended focuses on energy efficiency, secure Token-based authentication, and impeccable visual organization.
+**Proxmox Extended Sensors is the most complete, efficient, and advanced integration for Home Assistant, designed to provide real control and deep monitoring of Proxmox VE and Proxmox Backup Server (PBS).**
+
+This integration goes far beyond simple data display: it delivers **full visibility** of your infrastructure and adds **real control capabilities**, allowing you to manage nodes, virtual machines, containers, disks, datastores, and PBS tasks directly from Home Assistant.
+
+Unlike other solutions, Proxmox Extended Sensors is built with a professional approach:
+
+- **Advanced monitoring** of hardware, VMs, CTs, disks, and PBS  
+- **Full control actions** (start, stop, shutdown, reboot, reset, pause, hibernate…)  
+- **Fully integrated backup services**, both single and massive backups  
+- **Complete PBS compatibility**, including deduplication and automatic naming  
+- **Secure Token‑based authentication**  
+- **Clean and organized entity/device structure**  
+- **Minimal resource usage** thanks to optimized polling  
+
+Backups created from Home Assistant integrate seamlessly with those created from Proxmox VE, using identifiable names such as: HA-{{vmid}}-{{guestname}} 
+and retain **all PBS advantages**, including deduplication and compatibility with existing backup chains.
+
+In short, this integration turns Home Assistant into a **complete control panel for Proxmox**, combining detailed monitoring, advanced automation, and full infrastructure control.
+
+---
+
+## 🧩 Supported Versions
+
+- Proxmox VE 7.x / 8.x / 9.x
+- Proxmox Backup Server 3.x / 4.x  
+- Home Assistant 2024.x or newer  
+
+---
+
+## 📑 Table of Contents
+
+- [Key Features](#-key-features-v200)
+- [Node Status & Performance](#-node-status--performance)
+- [Disks & SMART](#-disks--smart)
+- [Virtual Machines (QEMU)](#-virtual-machines-qemu)
+- [Containers (LXC)](#-containers-lxc)
+- [Backups Services](#-Backup-Services-VMs--CTs)
+- [Proxmox Backup Server (PBS)](#-proxmox-backup-server-pbs)
+- [Control Actions (PVE & PBS)](#-control-actions-pve--pbs)
+- [Installation](#-installation)
+- [Visual Setup Guide](#-visual-setup-guide)
+- [Contributing](#-contributing--community)
 
 
 
 ---
 
-
-
-## 🔥 Key Features
-
-### 🌡️ Deep Hardware Monitoring
-
-**Don't settle for just CPU usage. See what is actually happening "under the hood":**
-
-* **Real-time Temperatures: CPU Cores, VRM, and NVMe/SSD/HDD drives.**
-
-* **Mechanical Sensors: Fan speeds (RPM) and motherboard voltages.**
-
-* **Smart Sensors: Only entities that report valid data are created, keeping your system clutter-free.**
-
-**(Note: Requires installing lm-sensors on the Proxmox host).**
+<details>
+  <summary>🖼️ Dashboard Preview</summary>
+  <p align="center">
+  <img src="/img/Dashboard.png" alt="Login Proxmox" ">
+  </p>
+  *Example of a modern dashboard using **Card-Mod** (Dark Mode) and our structured sensors:*
+</details>
 
 ---
 
-### 🧠 Performance-Focused
+## 🔥 Key Features (v2.0.0)
 
-**Designed with resource-constrained hardware in mind:**
+### 🌡️ Advanced Hardware Monitoring (PVE & PBS)
 
-* **DataUpdateCoordinator: Minimizes calls to the Proxmox API to avoid saturating the server's processor.**
-
-* **Silent SSL: Automatic verification of SSL certificates (including self-signed) without spamming your error logs.**
-
----
-
-### 🗄️ Advanced Proxmox Backup Server (PBS)
-
-* **External Mode: Seamlessly connect to remote PBS servers using only the domain.**
-
-* **Task Monitoring: Detailed status of the last Backup, Garbage Collector, or Verify task.**
+- **Real‑time temperatures:** CPU cores, VRM, chipset, NVMe/SSD/HDD.
+- **Mechanical sensors:** Fan speeds (RPM), voltages and other board sensors.
+- **Smart filtering:** Only entities with valid data are created to keep your system clean.  
+  > Requires `lm-sensors` on the Proxmox host.
 
 ---
 
-### 🎨 Dynamic & Organized UI
+### 🧠 Node Status & Performance
 
-* **Smart Dashboard: Sensors are automatically grouped into devices: 1. Node, 2. Physical Disks, 3. VMs, 4. Containers.**
+- CPU usage, I/O wait, load average.
+- RAM total/used/free and percentage.
+- Uptime and kernel/PVE version.
+- Network RX/TX sensors for node, VMs and containers.
 
-* **Auto-Naming: Automatic prefixes (e.g., pv1-cpu-temp) so your dashboards stay logically ordered by themselves.**
+<details>
+  <summary>🔳 Node Attributes</summary>
+  <p align="center">
+    <img src="img/pve/node_attr.png" alt="Node Attributes" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>⭕ Node Controls</summary>
+  <p align="center">
+    <img src="img/pve/node_controls.png" alt="Node Controls" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🌡️ CPU Temperature</summary>
+  <p align="center">
+    <img src="img/pve/cpu_temp_attr.png" alt="CPU Temperature" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🌡️ Chipset Temperature</summary>
+  <p align="center">
+    <img src="img/pve/chipset_temp.png" alt="Chipset Temperature" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>⏳ CPU I/O Wait</summary>
+  <p align="center">
+    <img src="img/pve/cpu_wait.png" alt="CPU I/O Wait" width="600">
+  </p>
+</details>
 
 ---
-**Dashboard Example**
 
+### 💾 Disks & SMART
 
-<p align="center">
+- Physical disk sensors grouped as dedicated devices.
+- Total/used space, wear level (NVMe), and more.
+- SMART‑related attributes for HDD/SSD/NVMe (where available).
+- Dedicated temperature sensors per disk type (SATA, NVMe, etc.).
 
-  <img src="/img/Dashboard.png" alt="Proxmox Extended Sensors Dashboard" width="1000"/>
+<details>
+  <summary>💾 Disk Sensors</summary>
+  <p align="center">
+    <img src="img/pve/disks_sensors.png" alt="Disk Sensors" width="600">
+  </p>
+</details>
 
-</p>
----
+<details>
+  <summary>🩺 HDD/SSD SMART Attributes</summary>
+  <p align="center">
+    <img src="img/pve/disk_hd_smart_attr.png" alt="HDD SMART" width="600">
+  </p>
+</details>
 
-## Featured Sensors
+<details>
+  <summary>🩺 NVMe SMART Attributes</summary>
+  <p align="center">
+    <img src="img/pve/disk_nvme_smart_attr.png" alt="NVMe SMART" width="600">
+  </p>
+</details>
 
-## PVE
-
-### 🖥️ Hardware Sensors (PVE & PBS)
-
-CPU temperatures • VRM temperatures • NVMe/SSD/HDD temperatures  
-
-Fan speeds (RPM) • Voltages • Power sensors • `pvesensors` entities
-
-• Chipset temperature 
-
----
-
-### 🧠 Node Status
-
-CPU usage (%) • RAM usage (%) • RAM used/total  
-
-Uptime • Load average • CPU I/O Wait 
-
----
-
-### 💾 Disks
-
-Total capacity • Used space (GB and %)  
-
-Wear-level (NVMe) • SMART health (if available)
 
 ---
 
 ### 🖥️ Virtual Machines (QEMU)
 
-CPU usage (%) • RAM usage (%)  
+- Status, CPU usage, memory used/total, disk used/total.
+- Network RX/TX per VM.
+- Uptime and basic info sensors.
+- Clean device grouping per VM in Home Assistant.
 
-Status (running/stopped) • Auto/manual selection
+<details>
+  <summary>🖥️ VM Controls & Sensors</summary>
+  <p align="center">
+    <img src="img/pve/vm_control.png" alt="VM Control" width="600">
+  </p>
+</details>
 
 ---
 
 ### 📦 Containers (LXC)
 
-CPU usage (%) • RAM usage (%)  
+- Status, CPU usage, memory used/total, disk used/total.
+- Network RX/TX per container.
+- Uptime and basic info sensors.
+- Same clean device structure as VMs.
 
-Status • Auto/manual selection
+<details>
+  <summary>📦 Container Controls & Sensors</summary>
+  <p align="center">
+    <img src="img/pve/ct_control.png" alt="CT Control" width="600">
+  </p>
+</details>
 
 ---
 
+## 💾 Backup Services (VMs & CTs)
+
+The integration includes two powerful backup services that allow you to create **Proxmox backups directly from Home Assistant**, fully compatible with Proxmox VE and Proxmox Backup Server (PBS).
+
+---
+
+### 🟦 1. Single Backup Service  
+Creates a backup of a specific VM or CT.
+
+**Service:** `proxmox_sensors.create_vzdump_backup`
+
+**Options available:**
+
+- **Node** – Select the Proxmox node  
+- **Target Storage** – Any storage supporting backups (local, NFS, PBS, etc.)  
+- **VM/CT ID** – ID of the machine to back up  
+- **Backup mode:**  
+  - `snapshot`  
+  - `suspend`  
+  - `stop`  
+- **Compression:**  
+  - `zstd`  
+  - `gzip`  
+  - `lzo`  
+  - `none`
+
+Backups created from Home Assistant are automatically named using: HA-{{vmid}}-{{guestname}}
+
+
+This ensures they are easy to identify while remaining **fully compatible with existing Proxmox backups**.
+
+<details>
+  <summary>📦 Single Backup Service</summary>
+  <p align="center">
+    <img src="img/pve/single_backup.png" alt="Single Backup Service" width="600">
+  </p>
+</details>
+
+---
+
+### 🟩 2. Massive Backup Service  
+Performs backups of **all VMs and/or CTs** on a selected node.
+
+**Service:** `proxmox_sensors.backup_all`
+
+**Options available:**
+
+- **Node** – Select the node to back up  
+- **Target Storage** – Any backup-capable storage  
+- **Backup mode:** snapshot / suspend / stop  
+- **Compression:** zstd / gzip / lzo / none  
+- **Maximum concurrent backups** – Control parallel execution  
+- **Delay between backups** – Seconds between each backup  
+- **Include VMs** – Toggle  
+- **Include CTs** – Toggle  
+
+This service is ideal for scheduled nightly backups or automated maintenance routines.
+
+<details>
+  <summary>📦 Massive Backup Service</summary>
+  <p align="center">
+    <img src="img/pve/massive_backups.png" alt="Massive Backup Service" width="600">
+  </p>
+</details>
+
+
+---
+
+### 🟧 PBS Compatibility & Deduplication
+
+Backups created through these services:
+
+- Are stored exactly like backups created from Proxmox VE  
+- Use the same naming and metadata structure  
+- Support **PBS deduplication** automatically  
+- Integrate seamlessly with existing backup chains  
+- Appear in the PBS datastore with full compatibility  
+
+No special configuration is required — PBS handles deduplication and indexing exactly as if the backup were created from the Proxmox GUI or CLI.
+
+---
+
+
 ### 🗄️ Proxmox Backup Server (PBS)
 
-Datastore usage (GB and %) • Backup count  
+**Deep datastore and task monitoring:**
 
-Garbage Collector status • Last backup task status
+- Datastore usage (GB and %), total, used and free.
+- Deduplication ratio and backup count.
+- Last backup time, size and status.
+- Backup errors and backup summary.
+- Garbage Collector (GC) status and related sensors.
+- Last task: type, status, message and duration.
 
-• Complete Tasks Information and more 
+<details>
+  <summary>🗄️ Datastore Overview</summary>
+  <p align="center">
+    <img src="img/pbs/datastore.png" alt="Datastore" width="600">
+  </p>
+</details>
 
+<details>
+  <summary>🗄️ PBS Server</summary>
+  <p align="center">
+    <img src="img/pbs/pbs_server.png" alt="PBS Server" width="600">
+  </p>
+</details>
 
+<details>
+  <summary>🗄️ Task Details</summary>
+  <p align="center">
+    <img src="img/pbs/task.png" alt="PBS Task" width="600">
+  </p>
+</details>
 
+<details>
+  <summary>🗄️ Garbage Collector Status</summary>
+  <p align="center">
+    <img src="img/pbs/gc_status_attr.png" alt="GC Status" width="600">
+  </p>
+</details>
 
+<details>
+  <summary>🗄️ Datastore Maintenance</summary>
+  <p align="center">
+    <img src="img/pbs/datastore_maintenance.png" alt="Datastore Maintenance" width="600">
+  </p>
+</details>
 
+<details>
+  <summary>🗄️ Last Task Summary</summary>
+  <p align="center">
+    <img src="img/pbs/last_task_stat.png" alt="Last Task" width="600">
+  </p>
+</details>
 
+---
 
+##PBS control actions:
 
+- Run **Garbage Collector (GC)**.
+- Run **Prune**.
+- Run **Verify**.
+- Run **Sync**.
+
+<details>
+  <summary>🗄️ Dtatastore Maintenance</summary>
+  <p align="center">
+    <img src="img/pbs/datastore_maintenance.png" alt="Datastore Maintenance" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🗄️ Last Task</summary>
+  <p align="center">
+    <img src="img/pbs/last_task_stat.png" alt="Datastore Maintenance" width="600">
+  </p>
+</details>
+
+---
+
+### 🎛️ Control Actions (PVE & PBS)
+
+**Node controls:**
+
+- Shutdown node.
+- Reboot node.
+
+**VM controls (QEMU):**
+
+- Start, Stop, Shutdown, Reboot, Reset.
+- Pause, Resume, Hibernate.
+
+**Container controls (LXC):**
+
+- Start, Stop, Shutdown, Reboot.
+
+**PBS controls:**
+
+- GC, Prune, Verify, Sync (per datastore).
+
+---
+
+### 🎨 Visual Organization & Naming
+
+- Sensors automatically grouped into logical devices:
+  1. Node  
+  2. Physical disks  
+  3. Virtual machines  
+  4. Containers  
+  5. Storages / Datastores  
+  6. PBS server and tasks
+- Consistent, clean naming for entities and devices to keep dashboards readable and scalable.
+
+---
+
+## 🧩 Installation
+
+### 🔹 Via HACS (recommended)
+
+1. Open **HACS → Integrations**.
+2. Click the three dots (⋮) → **Custom repositories**.
+3. Add this repository:
+   - URL: `https://github.com/Javisen/proxmox_sensors`
+   - Category: **Integration**
+4. Search for **“Proxmox Extended Sensors”** in HACS and install it.
+5. Restart Home Assistant.
+6. Go to **Settings → Devices & Services → Add Integration** and search for **Proxmox Extended Sensors**.
+
+### 🔹 Manual installation
+
+1. Copy the folder `custom_components/proxmox_sensors` into:
+   - `/config/custom_components/proxmox_sensors`
+2. Restart Home Assistant.
+3. Add the integration from **Settings → Devices & Services**.
+
+---
+
+## 🧭 Visual Setup Guide
+
+Below you can find a complete visual walkthrough of the setup process, including login methods, resource selection, and configuration steps.
+
+<details>
+  <summary>🪪 Captura: Server Connection</summary>
+  <p align="center">
+    <img src="img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
+  </p>
+  > No se usa "http://" ni "https://". Ya lo hacemos por tí.
+</details>
+
+<details>
+  <summary>🪪 Captura: Loguin mediante User y Password (solo PVE)</summary>
+  <p align="center">
+    <img src="img/install/access_passw.png" alt="Login Proxmox" width="600">
+  </p>
+  > Asegúrate de usar el reino `pam` o `pve` según tu configuración de usuario.
+</details>
+
+<details> 
+  <summary>🪪 Captura: Loguin mediante User y Token (PVE y PBS)</summary>
+  <p align="center">
+    <img src="img/install/access_token.png" alt="Login Proxmox" width="600">
+  </p>
+  **En el campo Token_id solo se debe poner el nombre del token**
+</details>
+
+<details>
+  <summary>⚙️ Captura: Resources Selection</summary>
+  <p align="center">
+    <img src="img/install/resources_select.png" alt="Login Proxmox" width="600">
+  </p>
+  *Nota: Selecciona los CTs, VMs y Storages que quieres añadir así como las opciones*
+</details>
+
+---
+
+**If you enjoy this integration or find it useful, please consider giving the project a ⭐ on GitHub.**  
+**It helps visibility, motivates development, and supports future features.**
+
+## 🤝 Contributing & Community
+
+Contributions are welcome! Feel free to open issues or pull requests.  
+**[Visit GitHub Repository](https://github.com/Javisen/proxmox_sensors)**
+
+---
+
+<p align="center"><i>Maintained by Javisen - MIT License</i></p>
