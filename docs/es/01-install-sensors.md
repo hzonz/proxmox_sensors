@@ -5,18 +5,21 @@
 
 ## 1. Instalación de dependencias
 
-* **Primero, instalamos las herramientas necesarias para leer los sensores integrados en la placa base y la CPU:**
+*Para que la integración pueda leer todos los sensores de hardware y los atributos SMART de los discos, es necesario instalar las siguientes herramientas en Proxmox:*
+
+- **lm-sensors** → Sensores de CPU, placa base, chipset, VRM, ventiladores…**
+- **smartmontools** → Información SMART de HDD, SSD y NVMe**
 
 
 ```bash
 
-apt update && apt install lm-sensors -y
+apt update && apt install lm-sensors smartmontools -y
 
 ```
 
 ## 2. Detección de hardware
 
-* **Para que el sistema identifique qué controladores (drivers) necesita, ejecutamos el asistente de detección:**
+* **Ejecuta el asistente de detección para identificar los módulos necesarios:**
 
 
 ```bash
@@ -61,7 +64,7 @@ sensors
 ```
 
 ## 🚀 Paso 5: Instalación del Servidor de Sensores (API Bridge)
-**Dado que la API oficial de Proxmox no expone todos los datos de hardware, es necesario instalar este pequeño script "puente" en el host de Proxmox.**
+**La API oficial de Proxmox no expone todos los sensores de hardware, por lo que es necesario instalar un pequeño script que actúa como puente entre Proxmox y Home Assistant.**
 
 1. **Descarga e instalación del script**
 Ejecuta estos comandos en la terminal de tu servidor Proxmox:
@@ -73,7 +76,7 @@ wget https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/scripts/pve-
 chmod +x /usr/local/bin/pve-sensors-api.py
 ```
 2. **Configuración como servicio del sistema**
-Para que el script se inicie automáticamente con el servidor, crea el archivo de servicio:
+Crea el archivo de servicio:
 ```bash
 cat <<EOF > /etc/systemd/system/pve-sensors.service
 [Unit]
@@ -90,16 +93,20 @@ EOF
 ```
 
 3. **Activación inmediata**
-Activa y arranca el servicio con estos comandos:
+
 ```bash
 systemctl daemon-reload
 systemctl enable --now pve-sensors
 ````
 
 4. **Verificación final**
-Puedes comprobar que el servidor está funcionando abriendo esta dirección en tu navegador (sustituyendo por la IP de tu Proxmox): `http://TU_IP_PROXMOX:9000/sensors`
+Abre en tu navegador:
+```
+http://TU_IP_PROXMOX:9000/sensors
+```
 
-Si ves un texto en formato JSON con las temperaturas, la integración ya podrá leer los datos correctamente.
+Si aparece un JSON con temperaturas y sensores, el servidor está funcionando correctamente.
 
+## ✔ Conclusión
 
-**¡Listo! Una vez que el comando `sensors` devuelva datos en la terminal, tu integración de Home Assistant podrá leerlos automáticamente a través de la API de Proxmox.**
+**Una vez que el comando sensors devuelve lecturas y el servicio pve-sensors está activo, Home Assistant podrá obtener todos los datos de hardware sin necesidad de configuraciones adicionalesx.**
