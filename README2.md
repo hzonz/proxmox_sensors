@@ -30,13 +30,13 @@ Unlike other solutions, **Proxmox Extended Sensors** focuses on:
 
 ---
 
-## 🖼️ Dashboard Preview
-
-*Example of a modern dashboard using **Card‑Mod** (Dark Mode) and the structured sensors provided by the integration:*
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/img/Dashboard.png" alt="Proxmox Extended Sensors Dashboard" width="1000"/>
-</p>
+<details>
+  <summary>🖼️ Dashboard Preview</summary>
+  <p align="center">
+  <img src="/img/Dashboard.png" alt="Login Proxmox" width="600">
+  </p>
+  *Example of a modern dashboard using **Card-Mod** (Dark Mode) and our structured sensors:*
+</details>
 
 ---
 
