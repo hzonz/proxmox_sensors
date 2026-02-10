@@ -433,35 +433,35 @@ No special configuration is required — PBS handles deduplication and indexing 
 Below you can find a complete visual walkthrough of the setup process, including login methods, resource selection, and configuration steps.
 
 <details>
-  <summary>🪪 Captura: Server Connection</summary>
+  <summary>🪪 Server Connection</summary>
   <p align="center">
     <img src="img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
   </p>
-  > No se usa "http://" ni "https://". Ya lo hacemos por tí.
+  > We don't use "http://" or "https://". We already do it for you..
 </details>
 
 <details>
-  <summary>🪪 Captura: Loguin mediante User y Password (solo PVE)</summary>
+  <summary>🪪 Login using Username and Password (PVE only)</summary>
   <p align="center">
     <img src="img/install/access_passw.png" alt="Login Proxmox" width="600">
   </p>
-  > Asegúrate de usar el reino `pam` o `pve` según tu configuración de usuario.
+  > Make sure to use the `pam` or `pve` realm according to your user settings.
 </details>
 
 <details> 
-  <summary>🪪 Captura: Loguin mediante User y Token (PVE y PBS)</summary>
+  <summary>🪪 Login using User and Token (PVE and PBS)</summary>
   <p align="center">
     <img src="img/install/access_token.png" alt="Login Proxmox" width="600">
   </p>
-  **En el campo Token_id solo se debe poner el nombre del token**
+  **In the Token_id field, you should only enter the token name.**
 </details>
 
 <details>
-  <summary>⚙️ Captura: Resources Selection</summary>
+  <summary>⚙️ Resources Selection</summary>
   <p align="center">
     <img src="img/install/resources_select.png" alt="Login Proxmox" width="600">
   </p>
-  *Nota: Selecciona los CTs, VMs y Storages que quieres añadir así como las opciones*
+  *Note: Select the CTs, VMs, and Storages you want to add, as well as the options.*
 </details>
 
 ---
