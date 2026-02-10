@@ -4,14 +4,29 @@
 
 # 🚀 Proxmox Extended Sensors
 
-**The most comprehensive, efficient, and organized integration for monitoring and controlling Proxmox VE and Proxmox Backup Server (PBS) from Home Assistant.**
+## 🚀 Introduction
 
-This integration is built for users who need **full visibility and control** over their Proxmox infrastructure without overloading the server.  
-Unlike other solutions, **Proxmox Extended Sensors** focuses on:
+**Proxmox Extended Sensors is the most complete, efficient, and advanced integration for Home Assistant, designed to provide real control and deep monitoring of Proxmox VE and Proxmox Backup Server (PBS).**
 
-- Energy‑efficient polling  
-- Secure Token‑based authentication  
-- Clean, logical and visually organized entities and devices  
+This integration goes far beyond simple data display: it delivers **full visibility** of your infrastructure and adds **real control capabilities**, allowing you to manage nodes, virtual machines, containers, disks, datastores, and PBS tasks directly from Home Assistant.
+
+Unlike other solutions, Proxmox Extended Sensors is built with a professional approach:
+
+- **Advanced monitoring** of hardware, VMs, CTs, disks, and PBS  
+- **Full control actions** (start, stop, shutdown, reboot, reset, pause, hibernate…)  
+- **Fully integrated backup services**, both single and massive backups  
+- **Complete PBS compatibility**, including deduplication and automatic naming  
+- **Secure Token‑based authentication**  
+- **Clean and organized entity/device structure**  
+- **Minimal resource usage** thanks to optimized polling  
+
+Backups created from Home Assistant integrate seamlessly with those created from Proxmox VE, using identifiable names such as: HA-{{vmid}}-{{guestname}} 
+and retain **all PBS advantages**, including deduplication and compatibility with existing backup chains.
+
+In short, this integration turns Home Assistant into a **complete control panel for Proxmox**, combining detailed monitoring, advanced automation, and full infrastructure control.
+
+
+  
 
 ---
 
