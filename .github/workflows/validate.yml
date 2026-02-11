@@ -8,6 +8,10 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    name: Integration Validation
     steps:
-      - uses: actions/checkout@v4
-      - uses: home-assistant/actions/integration@main
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Integration validation
+        uses: home-assistant/actions/ci@master
