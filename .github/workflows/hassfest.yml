@@ -9,6 +9,10 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    name: Hassfest Validation
     steps:
-      - uses: actions/checkout@v4
-      - uses: home-assistant/actions/hassfest@main
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Hassfest validation
+        uses: home-assistant/actions/hassfest@master
