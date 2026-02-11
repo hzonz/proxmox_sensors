@@ -10,5 +10,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate integration
-        uses: home-assistant/integration-action@main
+      - uses: home-assistant/actions/integration@main
