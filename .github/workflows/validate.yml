@@ -11,6 +11,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate integration
-        uses: home-assistant/actions@master
-        with:
-          path: '.'
+        uses: home-assistant/integration-action@main
