@@ -1,3 +1,5 @@
+"""Sensors for Proxmox PBS."""
+
 from datetime import datetime
 import logging
 
@@ -12,6 +14,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class ProxmoxPBSVersionSensor(ProxmoxPbsBaseSensor):
+    """Sensor for PBS version."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -24,8 +28,12 @@ class ProxmoxPBSVersionSensor(ProxmoxPbsBaseSensor):
     def _get_value(self):
         return self.coordinator.data.get("pbs_version", "Unknown")
 
+    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
+
 
 class ProxmoxPBSReleaseSensor(ProxmoxPbsBaseSensor):
+    """Sensor for PBS release."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -38,8 +46,12 @@ class ProxmoxPBSReleaseSensor(ProxmoxPbsBaseSensor):
     def _get_value(self):
         return self.coordinator.data.get("pbs_release", "Unknown")
 
+    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
+
 
 class ProxmoxPBSAuthStatusSensor(ProxmoxPbsBaseSensor):
+    """Sensor for PBS auth status."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -52,8 +64,12 @@ class ProxmoxPBSAuthStatusSensor(ProxmoxPbsBaseSensor):
     def _get_value(self):
         return self.coordinator.data.get("pbs_auth_status", "UNKNOWN")
 
+    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
+
 
 class ProxmoxPBSCpuSensor(ProxmoxPbsBaseSensor):
+    """Sensor for CPU usage."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(coordinator, server_id, "node_cpu", "CPU Usage", "%")
         self._attr_icon = "mdi:cpu-64-bit"
@@ -63,8 +79,12 @@ class ProxmoxPBSCpuSensor(ProxmoxPbsBaseSensor):
         cpu = status.get("cpu")
         return round(cpu * 100, 2) if cpu is not None else 0
 
+    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
+
 
 class ProxmoxPBSRamSensor(ProxmoxPbsBaseSensor):
+    """Sensor for RAM usage percentage."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(coordinator, server_id, "node_ram", "RAM Usage", "%")
         self._attr_icon = "mdi:memory"
@@ -88,80 +108,75 @@ class ProxmoxPBSRamSensor(ProxmoxPbsBaseSensor):
             "free_gb": round(memory.get("free", 0) / (1024**3), 2),
         }
 
+    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
 
-class ProxmoxPBSRamTotalSensor(CoordinatorEntity, SensorEntity):
+
+class ProxmoxPBSRamTotalSensor(ProxmoxPbsBaseSensor):
+    """Sensor for total RAM."""
+
     def __init__(self, coordinator, server_id):
-        super().__init__(coordinator)
-        self._server_id = server_id
-        self._attr_name = "RAM Total"
-        self._attr_unique_id = f"pbs_{server_id}_ram_total"
+        super().__init__(
+            coordinator=coordinator,
+            server_id=server_id,
+            sensor_id="ram_total",
+            name="RAM Total",
+            unit="GB",
+        )
         self._attr_icon = "mdi:memory"
         self._attr_native_unit_of_measurement = "GB"
 
-    @property
-    def native_value(self):
+    def _get_value(self):
         ram = self.coordinator.data.get("pbs_node_status", {}).get("memory", {})
         return round(ram.get("total", 0) / (1024**3), 2)
 
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"pbs_server_{self._server_id}")},
-            "name": f"PBS Server {self._server_id.upper()}",
-            "manufacturer": "Proxmox",
-            "model": "Backup Server",
-        }
+    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
 
 
-class ProxmoxPBSRamUsedSensor(CoordinatorEntity, SensorEntity):
+class ProxmoxPBSRamUsedSensor(ProxmoxPbsBaseSensor):
+    """Sensor for used RAM."""
+
     def __init__(self, coordinator, server_id):
-        super().__init__(coordinator)
-        self._server_id = server_id
-        self._attr_name = "RAM Used"
-        self._attr_unique_id = f"pbs_{server_id}_ram_used"
+        super().__init__(
+            coordinator=coordinator,
+            server_id=server_id,
+            sensor_id="ram_used",
+            name="RAM Used",
+            unit="GB",
+        )
         self._attr_icon = "mdi:memory"
         self._attr_native_unit_of_measurement = "GB"
 
-    @property
-    def native_value(self):
+    def _get_value(self):
         ram = self.coordinator.data.get("pbs_node_status", {}).get("memory", {})
         return round(ram.get("used", 0) / (1024**3), 2)
 
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"pbs_server_{self._server_id}")},
-            "name": f"PBS Server {self._server_id.upper()}",
-            "manufacturer": "Proxmox",
-            "model": "Backup Server",
-        }
+    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
 
 
-class ProxmoxPBSRamFreeSensor(CoordinatorEntity, SensorEntity):
+class ProxmoxPBSRamFreeSensor(ProxmoxPbsBaseSensor):
+    """Sensor for free RAM."""
+
     def __init__(self, coordinator, server_id):
-        super().__init__(coordinator)
-        self._server_id = server_id
-        self._attr_name = "RAM Free"
-        self._attr_unique_id = f"pbs_{server_id}_ram_free"
+        super().__init__(
+            coordinator=coordinator,
+            server_id=server_id,
+            sensor_id="ram_free",
+            name="RAM Free",
+            unit="GB",
+        )
         self._attr_icon = "mdi:memory"
         self._attr_native_unit_of_measurement = "GB"
 
-    @property
-    def native_value(self):
+    def _get_value(self):
         ram = self.coordinator.data.get("pbs_node_status", {}).get("memory", {})
         return round(ram.get("free", 0) / (1024**3), 2)
 
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"pbs_server_{self._server_id}")},
-            "name": f"PBS Server {self._server_id.upper()}",
-            "manufacturer": "Proxmox",
-            "model": "Backup Server",
-        }
+    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
 
 
 class ProxmoxPBSTaskSensor(ProxmoxPbsBaseSensor):
+    """Sensor for last task summary."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -183,6 +198,7 @@ class ProxmoxPBSTaskSensor(ProxmoxPbsBaseSensor):
 
     @property
     def device_info(self):
+        """Return device info for tasks."""
         return {
             "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
             "name": f"Tasks - {self._server_id.upper()}",
@@ -192,6 +208,8 @@ class ProxmoxPBSTaskSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSTaskTypeSensor(ProxmoxPbsBaseSensor):
+    """Sensor for last task type."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -210,6 +228,7 @@ class ProxmoxPBSTaskTypeSensor(ProxmoxPbsBaseSensor):
 
     @property
     def device_info(self):
+        """Return device info for tasks."""
         return {
             "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
             "name": f"Tasks - {self._server_id.upper()}",
@@ -219,6 +238,8 @@ class ProxmoxPBSTaskTypeSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSTaskStatusSensor(ProxmoxPbsBaseSensor):
+    """Sensor for last task status."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -270,6 +291,7 @@ class ProxmoxPBSTaskStatusSensor(ProxmoxPbsBaseSensor):
 
     @property
     def device_info(self):
+        """Return device info for tasks."""
         return {
             "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
             "name": f"Tasks - {self._server_id.upper()}",
@@ -279,6 +301,8 @@ class ProxmoxPBSTaskStatusSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSTaskMessageSensor(ProxmoxPbsBaseSensor):
+    """Sensor for last task message."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -298,6 +322,7 @@ class ProxmoxPBSTaskMessageSensor(ProxmoxPbsBaseSensor):
 
     @property
     def device_info(self):
+        """Return device info for tasks."""
         return {
             "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
             "name": f"Tasks - {self._server_id.upper()}",
@@ -307,6 +332,8 @@ class ProxmoxPBSTaskMessageSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSTaskDurationSensor(ProxmoxPbsBaseSensor):
+    """Sensor for last task duration."""
+
     def __init__(self, coordinator, server_id):
         super().__init__(
             coordinator=coordinator,
@@ -338,6 +365,7 @@ class ProxmoxPBSTaskDurationSensor(ProxmoxPbsBaseSensor):
 
     @property
     def device_info(self):
+        """Return device info for tasks."""
         return {
             "identifiers": {(DOMAIN, f"pbs_tasks_{self._server_id}")},
             "name": f"Tasks - {self._server_id.upper()}",
@@ -347,6 +375,8 @@ class ProxmoxPBSTaskDurationSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSDatastoreUsageSensor(ProxmoxPbsBaseSensor):
+    """Sensor for datastore usage percentage."""
+
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
@@ -375,6 +405,8 @@ class ProxmoxPBSDatastoreUsageSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSDatastoreSizeSensor(ProxmoxPbsBaseSensor):
+    """Sensor for datastore size (total/used/free)."""
+
     def __init__(self, coordinator, server_id, store, key, label, icon=None):
         super().__init__(
             coordinator=coordinator,
@@ -411,6 +443,8 @@ class ProxmoxPBSDatastoreSizeSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSDedupSensor(ProxmoxPbsBaseSensor):
+    """Sensor for datastore deduplication ratio."""
+
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
@@ -439,6 +473,8 @@ class ProxmoxPBSDedupSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSBackupCountSensor(ProxmoxPbsBaseSensor):
+    """Sensor for total backup count."""
+
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
@@ -464,6 +500,8 @@ class ProxmoxPBSBackupCountSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSLastBackupTimeSensor(ProxmoxPbsBaseSensor):
+    """Sensor for last backup timestamp."""
+
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
@@ -495,6 +533,8 @@ class ProxmoxPBSLastBackupTimeSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSLastBackupSizeSensor(ProxmoxPbsBaseSensor):
+    """Sensor for last backup size."""
+
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
@@ -523,6 +563,8 @@ class ProxmoxPBSLastBackupSizeSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSLastBackupStatusSensor(ProxmoxPbsBaseSensor):
+    """Sensor for last backup verification status."""
+
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
@@ -573,6 +615,8 @@ class ProxmoxPBSLastBackupStatusSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSBackupErrorsSensor(ProxmoxPbsBaseSensor):
+    """Sensor for backup error count."""
+
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
@@ -598,6 +642,8 @@ class ProxmoxPBSBackupErrorsSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSBackupsListSensor(ProxmoxPbsBaseSensor):
+    """Sensor for backup summary."""
+
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
@@ -651,6 +697,8 @@ class ProxmoxPBSBackupsListSensor(ProxmoxPbsBaseSensor):
 
 
 class ProxmoxPBSMaintenanceSensor(ProxmoxPbsBaseSensor):
+    """Sensor for garbage collection maintenance status."""
+
     def __init__(self, coordinator, server_id, store):
         super().__init__(
             coordinator=coordinator,
