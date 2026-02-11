@@ -28,7 +28,6 @@ class ProxmoxPBSVersionSensor(ProxmoxPbsBaseSensor):
     def _get_value(self):
         return self.coordinator.data.get("pbs_version", "Unknown")
 
-    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
 
 
 class ProxmoxPBSReleaseSensor(ProxmoxPbsBaseSensor):
@@ -46,8 +45,6 @@ class ProxmoxPBSReleaseSensor(ProxmoxPbsBaseSensor):
     def _get_value(self):
         return self.coordinator.data.get("pbs_release", "Unknown")
 
-    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
-
 
 class ProxmoxPBSAuthStatusSensor(ProxmoxPbsBaseSensor):
     """Sensor for PBS auth status."""
@@ -64,8 +61,6 @@ class ProxmoxPBSAuthStatusSensor(ProxmoxPbsBaseSensor):
     def _get_value(self):
         return self.coordinator.data.get("pbs_auth_status", "UNKNOWN")
 
-    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
-
 
 class ProxmoxPBSCpuSensor(ProxmoxPbsBaseSensor):
     """Sensor for CPU usage."""
@@ -78,8 +73,6 @@ class ProxmoxPBSCpuSensor(ProxmoxPbsBaseSensor):
         status = self.coordinator.data.get("pbs_node_status", {})
         cpu = status.get("cpu")
         return round(cpu * 100, 2) if cpu is not None else 0
-
-    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
 
 
 class ProxmoxPBSRamSensor(ProxmoxPbsBaseSensor):
@@ -108,8 +101,6 @@ class ProxmoxPBSRamSensor(ProxmoxPbsBaseSensor):
             "free_gb": round(memory.get("free", 0) / (1024**3), 2),
         }
 
-    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
-
 
 class ProxmoxPBSRamTotalSensor(ProxmoxPbsBaseSensor):
     """Sensor for total RAM."""
@@ -128,8 +119,6 @@ class ProxmoxPBSRamTotalSensor(ProxmoxPbsBaseSensor):
     def _get_value(self):
         ram = self.coordinator.data.get("pbs_node_status", {}).get("memory", {})
         return round(ram.get("total", 0) / (1024**3), 2)
-
-    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
 
 
 class ProxmoxPBSRamUsedSensor(ProxmoxPbsBaseSensor):
@@ -150,8 +139,6 @@ class ProxmoxPBSRamUsedSensor(ProxmoxPbsBaseSensor):
         ram = self.coordinator.data.get("pbs_node_status", {}).get("memory", {})
         return round(ram.get("used", 0) / (1024**3), 2)
 
-    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
-
 
 class ProxmoxPBSRamFreeSensor(ProxmoxPbsBaseSensor):
     """Sensor for free RAM."""
@@ -170,8 +157,6 @@ class ProxmoxPBSRamFreeSensor(ProxmoxPbsBaseSensor):
     def _get_value(self):
         ram = self.coordinator.data.get("pbs_node_status", {}).get("memory", {})
         return round(ram.get("free", 0) / (1024**3), 2)
-
-    # ✅ HEREDA device_info DE base.py - NO SOBRESCRIBIR
 
 
 class ProxmoxPBSTaskSensor(ProxmoxPbsBaseSensor):
@@ -761,3 +746,4 @@ class ProxmoxPBSMaintenanceSensor(ProxmoxPbsBaseSensor):
             "manufacturer": "Proxmox",
             "model": "Backup Server Maintenance",
         }
+
