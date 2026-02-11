@@ -2,12 +2,11 @@
   "domain": "proxmox_sensors",
   "name": "Proxmox Extended Sensors",
   "version": "2.0.0",
-  "description": "Complete Proxmox VE & Backup Server integration with monitoring, control, and backup management",
   "documentation": "https://github.com/Javisen/proxmox_sensors",
   "issue_tracker": "https://github.com/Javisen/proxmox_sensors/issues",
   "requirements": [
     "aiohttp>=3.9.0",
-    "proxmoxer>=2.0.0" 
+    "proxmoxer>=2.0.0"
   ],
   "dependencies": [],
   "codeowners": [
@@ -16,11 +15,5 @@
   "iot_class": "local_polling",
   "integration_type": "hub",
   "config_flow": true,
-  "translations": "translations",
-  "brand": {
-    "logo": "https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/img/logo.png",
-    "icon": "https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/img/icon.png",
-    "dark_logo": "https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/img/logo-dark.png",
-    "dark_icon": "https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/img/icon-dark.png"
-  }
+  "translations": {}
 }
