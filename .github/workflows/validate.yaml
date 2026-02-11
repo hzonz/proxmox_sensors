@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: home-assistant/actions/hassfest@v1.6.0
+      - uses: home-assistant/actions/hassfest@83c4d95e79e3aa1a4fc85ceb11df9c5e53447b18
 
   validate-hacs:
     name: HACS
