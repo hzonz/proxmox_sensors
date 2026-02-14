@@ -29,7 +29,6 @@ class ProxmoxPBSVersionSensor(ProxmoxPbsBaseSensor):
         return self.coordinator.data.get("pbs_version", "Unknown")
 
 
-
 class ProxmoxPBSReleaseSensor(ProxmoxPbsBaseSensor):
     """Sensor for PBS release."""
 
@@ -746,4 +745,3 @@ class ProxmoxPBSMaintenanceSensor(ProxmoxPbsBaseSensor):
             "manufacturer": "Proxmox",
             "model": "Backup Server Maintenance",
         }
-

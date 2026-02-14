@@ -153,7 +153,17 @@
       "datastore_last_backup_status": { "name": "Last Backup Status" },
       "datastore_backup_errors": { "name": "Backup Errors" },
       "datastore_backups_summary": { "name": "Backups Summary" },
-      "datastore_gc_status": { "name": "GC Status" }
+      "datastore_gc_status": { "name": "GC Status" },
+      "proxmox_dimm": {
+        "name": "RAM Module (DIMM)",
+        "state_attributes": {
+          "speed": { "name": "Speed" },
+          "configured_speed": { "name": "Configured speed" },
+          "type": { "name": "Memory type" },
+          "manufacturer": { "name": "Manufacturer" },
+          "locator": { "name": "Locator (Slot)" }
+        }
+      }
     }
   }
 }

@@ -153,7 +153,17 @@
       "datastore_last_backup_status": { "name": "Estado del último backup" },
       "datastore_backup_errors": { "name": "Errores de backup" },
       "datastore_backups_summary": { "name": "Resumen de backups" },
-      "datastore_gc_status": { "name": "Estado de GC" }
+      "datastore_gc_status": { "name": "Estado de GC" },
+      "proxmox_dimm": {
+        "name": "Módulo de RAM (DIMM)",
+        "state_attributes": {
+          "speed": { "name": "Velocidad" },
+          "configured_speed": { "name": "Velocidad configurada" },
+          "type": { "name": "Tipo de memoria" },
+          "manufacturer": { "name": "Fabricante" },
+          "locator": { "name": "Ranura (Slot)" }
+        }
+      }
     }
   }
 }

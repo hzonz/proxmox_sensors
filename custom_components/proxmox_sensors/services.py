@@ -16,44 +16,76 @@ def register_services(hass: HomeAssistant, entry):
     node = entry.data.get("node", "Proxmox")
     entry_id = entry.entry_id
 
-    # ======INDIVIDUAL BACKUP==========
-
+    # ====== SIMPLE / MULTI BACKUP SERVICE ==========
     async def handle_create_vzdump_backup(call: ServiceCall):
         node = call.data.get("node")
-        vmid = call.data.get("vmid")
+        guests = call.data.get("guests") or call.data.get("vmid")
         storage = call.data.get("storage")
         mode = call.data.get("mode", "snapshot")
         compress = call.data.get("compress", "zstd")
 
+        # Opcionales (si quieres exponerlos también en este servicio)
+        max_concurrent = call.data.get("max_concurrent", 1)
+        delay_between = call.data.get("delay_between", 0)
+
         if not node:
             raise ValueError("Node is required")
 
-        if not vmid:
-            raise ValueError("VMID is required")
+        if not guests:
+            raise ValueError("Guests list is required")
 
         if not storage:
             raise ValueError("Storage is required")
 
         storage = str(storage).strip().replace("\n", "").replace("\r", "")
 
+        # Normalizar guests → lista
+        if isinstance(guests, str):
+            guests = [g.strip() for g in guests.split(",") if g.strip()]
+        elif isinstance(guests, int):
+            guests = [guests]
+        elif not isinstance(guests, list):
+            raise ValueError("Guests must be int, list or comma-separated string")
+
+        targets = [int(g) for g in guests]
+
         _LOGGER.info(
-            f"Individual backup requested for VM/CT {vmid} on node {node} "
+            f"Backup requested for guests {targets} on node {node} "
             f"with mode={mode}, compress={compress}"
         )
 
-        try:
-            result = await client.start_vzdump(
-                hass,
-                node=node,
-                vmid=vmid,
-                storage=storage,
-                mode=mode,
-                compress=compress,
-                notes="HA-{{vmid}}, {{guestname}}",
-            )
-            _LOGGER.info(f"Backup started successfully for {vmid}: {result}")
-        except Exception as e:
-            _LOGGER.error(f"Error in backup for {vmid}: {e}")
+        success_count = 0
+        error_count = 0
+
+        for idx, vmid in enumerate(targets):
+            try:
+                _LOGGER.info(f"Starting backup of {vmid}...")
+
+                result = await client.start_vzdump(
+                    hass,
+                    node=node,
+                    vmid=vmid,
+                    storage=storage,
+                    mode=mode,
+                    compress=compress,
+                    notes="HA-{{vmid}}, {{guestname}}",
+                )
+
+                _LOGGER.info(f"Backup of {vmid} started successfully")
+                success_count += 1
+
+                if delay_between > 0 and idx < len(targets) - 1:
+                    _LOGGER.info(f"Waiting {delay_between}s before next backup...")
+                    await asyncio.sleep(delay_between)
+
+            except Exception as e:
+                error_count += 1
+                _LOGGER.error(f"Error in backup of {vmid}: {e}")
+
+        _LOGGER.info(
+            f"Simple/Multi backup completed. "
+            f"Success: {success_count} | Failures: {error_count} | Total: {len(targets)}"
+        )
 
     hass.services.async_register(
         DOMAIN, "create_vzdump_backup", handle_create_vzdump_backup

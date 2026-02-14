@@ -153,7 +153,17 @@
       "datastore_last_backup_status": { "name": "Статус последнего бэкапа" },
       "datastore_backup_errors": { "name": "Ошибки резервного копирования" },
       "datastore_backups_summary": { "name": "Сводка резервных копий" },
-      "datastore_gc_status": { "name": "Статус GC" }
+      "datastore_gc_status": { "name": "Статус GC" },
+      "proxmox_dimm": {
+        "name": "Модуль RAM (DIMM)",
+        "state_attributes": {
+          "speed": { "name": "Скорость" },
+          "configured_speed": { "name": "Настроенная скорость" },
+          "type": { "name": "Тип памяти" },
+          "manufacturer": { "name": "Производитель" },
+          "locator": { "name": "Разъем (Slot)" }
+        }
+      }
     }
   }
 }

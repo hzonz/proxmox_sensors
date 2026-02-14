@@ -1,28 +1,28 @@
 create_vzdump_backup:
   name: "Proxmox: Start Backup"
-  description: "Performs a backup of a VM or CT to the selected storage."
+  description: "Performs a backup of selected VMs and/or CTs to the chosen storage."
   fields:
     node:
       name: Node
-      description: "Node name (e.g., pve)"
+      description: "Node name (e.g., server)"
       required: true
       selector:
         text:
+
     storage:
       name: Target Storage
-      description: "Storage name (e.g., local, local-lvm, pbs)"
+      description: "Storage name (e.g., local, PBS_Local)"
       required: true
       selector:
         text:
-    vmid:
-      name: VM/CT ID
-      description: "Numeric ID of the machine (e.g., 100)"
+
+    guests:
+      name: Guests (VM/CT IDs)
+      description: "List of VM/CT numeric IDs (e.g. 100,101 or YAML list)"
       required: true
       selector:
-        number:
-          min: 1
-          max: 999999
-          mode: box
+        text:
+
     mode:
       name: Backup mode
       description: "snapshot, suspend or stop"
@@ -37,6 +37,7 @@ create_vzdump_backup:
               value: "suspend"
             - label: "Stop"
               value: "stop"
+
     compress:
       name: Compression
       description: "Compression method"
@@ -54,6 +55,29 @@ create_vzdump_backup:
             - label: "No compression"
               value: "none"
 
+    max_concurrent:
+      name: Maximum concurrent
+      description: "Maximum number of simultaneous backups (1 = sequential)"
+      required: false
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 10
+          step: 1
+          mode: box
+
+    delay_between:
+      name: Delay between backups
+      description: "Seconds to wait between backups"
+      required: false
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 300
+          step: 5
+          mode: box
 
 backup_all:
   name: "Proxmox: Massive Backup"

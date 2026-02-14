@@ -22,6 +22,10 @@ async def create_proxmox_coordinator(hass, entry, client):
     enable_lm_sensors = data.get("enable_lm_sensors", True)
     enable_pbs_tasks = data.get("enable_pbs_tasks", True)
     enable_smart_monitoring = data.get("enable_smart_monitoring", True)
+    enable_memory_monitoring = entry.options.get(
+        "enable_memory_monitoring",
+        entry.data.get("enable_memory_monitoring", True),
+    )
 
     async def async_update_data():
         result = {"server_type": server_type}
@@ -183,6 +187,48 @@ async def create_proxmox_coordinator(hass, entry, client):
                                 "Error fetching SMART data for node %s: %s", node, e
                             )
                             result["smart"][node] = {}
+
+                    result["memory"] = {}
+                    if enable_memory_monitoring:
+                        try:
+                            memory_data = await client.get_memory_http(hass, node)
+
+                            if isinstance(memory_data, dict):
+                                modules = memory_data.get("modules", [])
+
+                                result["memory"][node] = {
+                                    "modules": modules,
+                                    "total_modules": memory_data.get(
+                                        "total_modules", len(modules)
+                                    ),
+                                    "total_gb": memory_data.get("total_gb", 0),
+                                    "timestamp": memory_data.get("timestamp"),
+                                    "dimms": {
+                                        module["locator"]: module
+                                        for module in modules
+                                        if "locator" in module
+                                    },
+                                }
+                            else:
+                                result["memory"][node] = {
+                                    "modules": [],
+                                    "total_modules": 0,
+                                    "total_gb": 0,
+                                    "timestamp": None,
+                                    "dimms": {},
+                                }
+
+                        except Exception as e:
+                            _LOGGER.error(
+                                "Error fetching Memory data for node %s: %s", node, e
+                            )
+                            result["memory"][node] = {
+                                "modules": [],
+                                "total_modules": 0,
+                                "total_gb": 0,
+                                "timestamp": None,
+                                "dimms": {},
+                            }
 
                     resource_tasks = []
                     resource_keys = []

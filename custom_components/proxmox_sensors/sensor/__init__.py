@@ -9,6 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import device_registry as dr
 
+from .memory import ProxmoxDimmSensor
 from .sensor_last_action import PBSLastActionSensor
 from ..const import DOMAIN, CONF_NODE, CONF_PLATFORM_TYPE
 
@@ -263,6 +264,11 @@ async def async_setup_entry(
                 sensor = ProxmoxHardwareSensor(coordinator, sensor_id, node)
                 if sensor.is_valid():
                     entities.append(sensor)
+
+        memory_map = c_data.get("memory", {}).get(node, {}).get("dimms", {})
+
+        for dimm_id in memory_map:
+            entities.append(ProxmoxDimmSensor(coordinator, node, dimm_id))
 
         # Node & Cluster monitoring
         node_data = c_data.get("node", {})
