@@ -12,6 +12,8 @@ class Handler(BaseHTTPRequestHandler):
             self._handle_smart()
         elif self.path == "/smart-extended":
             self._handle_smart_extended()
+        elif self.path == "/memory":
+            self._handle_memory()
         elif self.path == "/health":
             self._handle_health()
         else:
@@ -41,6 +43,76 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json_response(json.dumps(smart_data))
         except Exception as e:
             self._send_error_response(f"Error: {e}")
+
+    def _handle_memory(self):
+        """Handle memory information from dmidecode."""
+        try:
+            # Ejecutar dmidecode y filtrar por memoria
+            cmd = ["dmidecode", "-t", "memory"]
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False
+            )
+            
+            if result.returncode != 0:
+                self._send_error_response(f"dmidecode failed: {result.stderr}")
+                return
+            
+            # Filtrar las líneas relevantes
+            memory_data = []
+            current_module = {}
+            
+            for line in result.stdout.split('\n'):
+                if "Memory Device" in line and "Array" not in line:
+                    if current_module:
+                        memory_data.append(current_module)
+                    current_module = {}
+                
+                if "Locator:" in line and "Bank" not in line:
+                    current_module["locator"] = line.split(":", 1)[1].strip()
+                elif "Size:" in line and "No Module Installed" not in line:
+                    current_module["size"] = line.split(":", 1)[1].strip()
+                elif "Type:" in line and "Unknown" not in line:
+                    current_module["type"] = line.split(":", 1)[1].strip()
+                elif "Speed:" in line and "Configured" not in line and "Unknown" not in line:
+                    current_module["speed"] = line.split(":", 1)[1].strip()
+                elif "Configured Memory Speed:" in line:
+                    current_module["configured_speed"] = line.split(":", 1)[1].strip()
+                elif "Manufacturer:" in line and "NO DIMM" not in line:
+                    current_module["manufacturer"] = line.split(":", 1)[1].strip()
+            
+            # Añadir el último módulo
+            if current_module:
+                memory_data.append(current_module)
+            
+            # Filtrar módulos vacíos o sin tamaño
+            memory_data = [m for m in memory_data if m.get("size") and "No Module Installed" not in m.get("size", "")]
+            
+            # Calcular total
+            total_gb = 0
+            for module in memory_data:
+                size_str = module.get("size", "0")
+                if "GB" in size_str:
+                    total_gb += int(size_str.replace("GB", "").strip())
+                elif "MB" in size_str:
+                    total_gb += int(size_str.replace("MB", "").strip()) / 1024
+            
+            result_data = {
+                "modules": memory_data,
+                "total_modules": len(memory_data),
+                "total_gb": round(total_gb, 1),
+                "timestamp": subprocess.check_output(["date", "+%s"]).decode().strip()
+            }
+            
+            self._send_json_response(json.dumps(result_data, indent=2))
+            
+        except subprocess.TimeoutExpired:
+            self._send_error_response("dmidecode timeout (10s)")
+        except Exception as e:
+            self._send_error_response(f"Error getting memory info: {e}")
 
     def _handle_health(self):
         """Return health status."""
@@ -105,10 +177,8 @@ class Handler(BaseHTTPRequestHandler):
                                     "path": device
                                 }
             
-            # 2. If there are no disks, check basic disks.
+            # 2. If there are no disks, check basics.
             if not smart_data:
-                _LOGGER.debug("No SMART-capable disks found via scan, checking basics")
-                
                 # Test only basic system disks
                 basic_checks = [
                     ("/dev/sda", "sat"),
@@ -124,7 +194,6 @@ class Handler(BaseHTTPRequestHandler):
             return smart_data
             
         except Exception as e:
-            _LOGGER.error("Error scanning disks: %s", e)
             return {"error": f"Scan failed: {str(e)}"}
 
     def _get_smart_data_extended(self):
@@ -179,7 +248,7 @@ class Handler(BaseHTTPRequestHandler):
                 if result_info.returncode == 0:
                     return self._parse_basic_info_text(result_info.stdout, result.returncode)
         
-        except (subprocess.TimeoutExpired, json.JSONDecodeError, Exception) as e:
+        except (subprocess.TimeoutExpired, json.JSONDecodeError, Exception):
             pass
         
         return None
@@ -230,7 +299,6 @@ class Handler(BaseHTTPRequestHandler):
         device_type = disk_info.get("device", {}).get("type", "").lower()
         
         # ========== NVMe ==========
-        
         if "nvme" in device_type:
             nvme_smart = disk_info.get("nvme_smart_health_information_log", {})
             if nvme_smart:
@@ -289,7 +357,6 @@ class Handler(BaseHTTPRequestHandler):
         
         else:
             # ========== PARA HDD/SSD SATA ==========
-            
             # Temperature
             temp = disk_info.get("temperature", {})
             if temp:
@@ -407,8 +474,9 @@ class Handler(BaseHTTPRequestHandler):
             elif "ata" in result_check.stdout.lower() or "sata" in result_check.stdout.lower():
                 device_type = "ata"
 
-            # =======NVMe EXTENDED PARSING==========
-
+            # ============================
+            # NVMe EXTENDED PARSING
+            # ============================
             if device_type == "nvme":
                 cmd = ["smartctl", "-x", device]
                 result = subprocess.run(
@@ -462,13 +530,11 @@ class Handler(BaseHTTPRequestHandler):
                             if match:
                                 detailed["host_read_commands"] = int(match.group(1).replace(",", ""))
 
-
                         # Host Write Commands
                         elif "Host Write Commands" in line:
                             match = re.search(r'Host\s+Write\s+Commands:\s+([\d,]+)', line)
                             if match:
                                 detailed["host_write_commands"] = int(match.group(1).replace(",", ""))
-
 
                         # Controller Busy Time
                         elif "Controller Busy Time:" in line:
@@ -512,15 +578,15 @@ class Handler(BaseHTTPRequestHandler):
                             if match:
                                 detailed["warning_temp_time"] = int(match.group(1))
 
-
                         # Critical Temp Time
                         elif "Critical Comp. Temperature Time" in line:
                             match = re.search(r'Time:\s+(\d+)', line)
                             if match:
                                 detailed["critical_temp_time"] = int(match.group(1))
 
-            # =======SATA / SAS PARSING======
-            
+            # ============================
+            # SATA / SAS PARSING
+            # ============================
             else:
                 cmd = ["smartctl", "-A", device]
                 result = subprocess.run(
@@ -553,7 +619,6 @@ class Handler(BaseHTTPRequestHandler):
             pass
 
         return detailed
-
 
     def _check_sensors(self):
         """Check if lm-sensors is working."""
@@ -631,6 +696,7 @@ def main():
     print(f"  GET /sensors         - lm-sensors data")
     print(f"  GET /smart           - Basic SMART data (fast)")
     print(f"  GET /smart-extended  - Extended SMART data")
+    print(f"  GET /memory          - Memory module information")
     print(f"  GET /health          - System health status")
     server.serve_forever()
 
