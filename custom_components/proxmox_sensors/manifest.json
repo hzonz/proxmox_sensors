@@ -1,6 +1,7 @@
 {
   "domain": "proxmox_sensors",
   "name": "Proxmox Extended Sensors",
+  "after_dependencies": [],
   "codeowners": [
     "@Javisen"
   ],
