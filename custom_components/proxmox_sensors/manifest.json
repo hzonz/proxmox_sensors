@@ -15,5 +15,6 @@
     "aiohttp>=3.9.0",
     "proxmoxer>=2.0.0"
   ],
-  "version": "2.1.0"
+  "version": "2.1.1"
 }
+
