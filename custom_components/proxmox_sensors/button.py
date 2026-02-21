@@ -67,9 +67,18 @@ async def async_setup_entry(hass, entry, async_add_entities):
         # LXC buttons
         if features.get("enable_cts", True):
             ct_map = c_data.get("cts", {})
-            for ct_id, ct_data in ct_map.items():
-                if str(ct_id) in selected_cts:
-                    label = ct_data.get("name", ct_id)
+            for ct_key, ct_data in ct_map.items():
+                # Extract real ID from composite key
+                parts = str(ct_key).split("_")
+                if len(parts) >= 2:
+                    actual_node = parts[0]
+                    actual_ctid = parts[1]
+                else:
+                    actual_node = node
+                    actual_ctid = ct_key
+
+                if str(actual_ctid) in selected_cts:
+                    label = ct_data.get("name", actual_ctid)
 
                     ct_commands = [
                         ("start", "mdi:play"),
@@ -81,16 +90,31 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     for cmd, icon in ct_commands:
                         entities.append(
                             ProxmoxContainerButton(
-                                coordinator, client, ct_id, node, label, cmd, icon
+                                coordinator,
+                                client,
+                                actual_ctid,
+                                actual_node,
+                                label,
+                                cmd,
+                                icon,
                             )
                         )
 
         # VM buttons
         if features.get("enable_vms", True):
             vm_map = c_data.get("vms", {})
-            for vm_id, vm_data in vm_map.items():
-                if str(vm_id) in selected_vms:
-                    label = vm_data.get("name", vm_id)
+            for vm_key, vm_data in vm_map.items():
+                # Extract real ID from composite key
+                parts = str(vm_key).split("_")
+                if len(parts) >= 2:
+                    actual_node = parts[0]
+                    actual_vmid = parts[1]
+                else:
+                    actual_node = node
+                    actual_vmid = vm_key
+
+                if str(actual_vmid) in selected_vms:
+                    label = vm_data.get("name", actual_vmid)
 
                     vm_commands = [
                         ("start", "mdi:play"),
@@ -106,7 +130,13 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     for cmd, icon in vm_commands:
                         entities.append(
                             ProxmoxVMButton(
-                                coordinator, client, vm_id, node, label, cmd, icon
+                                coordinator,
+                                client,
+                                actual_vmid,
+                                actual_node,
+                                label,
+                                cmd,
+                                icon,
                             )
                         )
 
@@ -129,6 +159,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 
 class PBSBaseButton(CoordinatorEntity, ButtonEntity):
+    """Base class for PBS maintenance buttons."""
+
     def __init__(self, coordinator, client, datastore, command_name, command_display):
         super().__init__(coordinator)
         self._client = client
@@ -156,6 +188,8 @@ class PBSBaseButton(CoordinatorEntity, ButtonEntity):
 
 
 class PBSGCButton(PBSBaseButton):
+    """Garbage Collection button for PBS datastore."""
+
     def __init__(self, coordinator, client, datastore):
         super().__init__(coordinator, client, datastore, "gc", "Garbage Collect")
         self._attr_icon = "mdi:recycle"
@@ -167,6 +201,8 @@ class PBSGCButton(PBSBaseButton):
 
 
 class PBSPruneButton(PBSBaseButton):
+    """Prune button for PBS datastore."""
+
     def __init__(self, coordinator, client, datastore):
         super().__init__(coordinator, client, datastore, "prune", "Prune")
         self._attr_icon = "mdi:delete-sweep"
@@ -178,6 +214,8 @@ class PBSPruneButton(PBSBaseButton):
 
 
 class PBSVerifyButton(PBSBaseButton):
+    """Verify button for PBS datastore."""
+
     def __init__(self, coordinator, client, datastore):
         super().__init__(coordinator, client, datastore, "verify", "Verify")
         self._attr_icon = "mdi:check-decagram"
@@ -189,6 +227,8 @@ class PBSVerifyButton(PBSBaseButton):
 
 
 class PBSSyncButton(PBSBaseButton):
+    """Sync button for PBS datastore."""
+
     def __init__(self, coordinator, client, datastore):
         super().__init__(coordinator, client, datastore, "sync", "Sync")
         self._attr_icon = "mdi:sync"
@@ -203,6 +243,8 @@ class PBSSyncButton(PBSBaseButton):
 
 
 class ProxmoxBaseButton(CoordinatorEntity, ButtonEntity):
+    """Base class for PVE VM/CT buttons."""
+
     def __init__(self, coordinator, client, vmid, node, label, command, icon):
         super().__init__(coordinator)
         self._client = client
@@ -216,31 +258,20 @@ class ProxmoxBaseButton(CoordinatorEntity, ButtonEntity):
         self._attr_icon = icon
 
     async def async_press(self):
+        """Execute the button command."""
         try:
             data = self.coordinator.data
-            is_vm = False
-            is_ct = False
+            # Use composite key for lookup
+            vm_key = f"{self._node}_{self._vmid}"
+            ct_key = f"{self._node}_{self._vmid}"
 
-            if "vms" in data:
-                vms_keys = [str(k) for k in data["vms"].keys()]
-                if str(self._vmid) in vms_keys:
-                    is_vm = True
-
-            if "cts" in data and not is_vm:
-                cts_keys = [str(k) for k in data["cts"].keys()]
-                if str(self._vmid) in cts_keys:
-                    is_ct = True
+            is_vm = vm_key in data.get("vms", {})
+            is_ct = ct_key in data.get("cts", {})
 
             if not is_vm and not is_ct:
-                _LOGGER.error(
-                    f"VM/CT {self._vmid} no encontrado en datos del coordinador"
-                )
-                _LOGGER.error(
-                    f"VMs disponibles: {[str(k) for k in data.get('vms', {}).keys()]}"
-                )
-                _LOGGER.error(
-                    f"CTs disponibles: {[str(k) for k in data.get('cts', {}).keys()]}"
-                )
+                _LOGGER.error("VM/CT %s on node %s not found", self._vmid, self._node)
+                _LOGGER.error("Available VMs: %s", list(data.get("vms", {}).keys()))
+                _LOGGER.error("Available CTs: %s", list(data.get("cts", {}).keys()))
                 return
 
             result = False
@@ -257,19 +288,34 @@ class ProxmoxBaseButton(CoordinatorEntity, ButtonEntity):
                 await asyncio.sleep(2)
                 await self.coordinator.async_request_refresh()
                 self.async_write_ha_state()
-                _LOGGER.info(f"Comando {self._command} completado para {self._vmid}")
+                _LOGGER.info(
+                    "Command %s completed for %s on node %s",
+                    self._command,
+                    self._vmid,
+                    self._node,
+                )
             else:
-                _LOGGER.error(f"Comando {self._command} falló para {self._vmid}")
+                _LOGGER.error(
+                    "Command %s failed for %s on node %s",
+                    self._command,
+                    self._vmid,
+                    self._node,
+                )
 
         except Exception as e:
-            _LOGGER.error(f"Error ejecutando comando en {self._vmid}: {e}")
+            _LOGGER.error(
+                "Error executing command on %s (%s): %s", self._vmid, self._node, e
+            )
 
 
 class ProxmoxVMButton(ProxmoxBaseButton):
+    """Button for VM actions."""
+
     @property
     def device_info(self):
+        """Return device info matching VM sensors."""
         return {
-            "identifiers": {(DOMAIN, f"proxmox_vm_{self._vmid}_v1")},
+            "identifiers": {(DOMAIN, f"proxmox_vm_{self._node}_{self._vmid}_v1")},
             "manufacturer": "Proxmox",
             "model": "Virtual Machine",
             "name": f"4. VM: {self._label}-({self._vmid})",
@@ -278,10 +324,13 @@ class ProxmoxVMButton(ProxmoxBaseButton):
 
 
 class ProxmoxContainerButton(ProxmoxBaseButton):
+    """Button for LXC container actions."""
+
     @property
     def device_info(self):
+        """Return device info matching CT sensors."""
         return {
-            "identifiers": {(DOMAIN, f"proxmox_ct_{self._vmid}_v1")},
+            "identifiers": {(DOMAIN, f"proxmox_ct_{self._node}_{self._vmid}_v1")},
             "manufacturer": "Proxmox",
             "model": "Container",
             "name": f"3. CT: {self._label}-({self._vmid})",
@@ -290,6 +339,8 @@ class ProxmoxContainerButton(ProxmoxBaseButton):
 
 
 class ProxmoxNodeButton(CoordinatorEntity, ButtonEntity):
+    """Button for node actions (reboot/shutdown)."""
+
     def __init__(self, coordinator, client, node, label, command, icon):
         super().__init__(coordinator)
         self._client = client
@@ -302,6 +353,7 @@ class ProxmoxNodeButton(CoordinatorEntity, ButtonEntity):
 
     @property
     def device_info(self):
+        """Return device info matching node sensors."""
         return {
             "identifiers": {(DOMAIN, f"proxmox_node_{self._node}")},
             "manufacturer": "Proxmox",
@@ -310,6 +362,7 @@ class ProxmoxNodeButton(CoordinatorEntity, ButtonEntity):
         }
 
     async def async_press(self):
+        """Execute node command."""
         try:
             if hasattr(self._client, "execute_node_command"):
                 result = await self._client.execute_node_command(
@@ -324,9 +377,11 @@ class ProxmoxNodeButton(CoordinatorEntity, ButtonEntity):
                 await asyncio.sleep(3)
                 await self.coordinator.async_request_refresh()
                 self.async_write_ha_state()
-                _LOGGER.info(f"Node command {self._command} executed successfully")
+                _LOGGER.info("Node command %s executed successfully", self._command)
             else:
-                _LOGGER.error(f"Node command {self._command} failed")
+                _LOGGER.error("Node command %s failed", self._command)
 
         except Exception as e:
-            _LOGGER.error(f"Error executing {self._command} on node {self._node}: {e}")
+            _LOGGER.error(
+                "Error executing %s on node %s: %s", self._command, self._node, e
+            )

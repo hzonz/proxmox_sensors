@@ -139,8 +139,7 @@ async def async_setup_entry(
         )
 
         # ========NODES LIST SENSOR (ONLY FOR PVE)========
-
-        if server_type == "PVE" and enable_nodes_list:
+        if enable_nodes_list:
             try:
                 nodes_sensor = ProxmoxNodesSensor(coordinator, entry.entry_id, node)
                 entities.append(nodes_sensor)
@@ -329,10 +328,24 @@ async def async_setup_entry(
 
         # Virtual Machines
         vm_map = c_data.get("vms", {})
-        for vm_id, vm_data in vm_map.items():
-            if str(vm_id) in selected_vms:
-                label = vm_data.get("name", vm_id)
-                entities.append(ProxmoxVMSensor(coordinator, vm_id, node, label))
+        for vm_key, vm_data in vm_map.items():
+            # Extract numeric ID from composite key
+            parts = vm_key.split("_")
+            if len(parts) >= 2:
+                actual_node = parts[0]
+                actual_vmid = parts[1]
+            else:
+                actual_node = node
+                actual_vmid = vm_key
+
+            if str(actual_vmid) in selected_vms:
+                label = vm_data.get("name", actual_vmid)
+                # Status sensor
+                entities.append(
+                    ProxmoxVMSensor(coordinator, actual_vmid, actual_node, label)
+                )
+
+                # Attribute sensors
                 for attr, unit, icon in [
                     ("cpu_usage", "%", "mdi:cpu-64-bit"),
                     ("memory_used", "GB", "mdi:memory"),
@@ -344,16 +357,36 @@ async def async_setup_entry(
                 ]:
                     entities.append(
                         ProxmoxVMAttributeSensor(
-                            coordinator, vm_id, node, label, attr, unit, icon
+                            coordinator,
+                            actual_vmid,
+                            actual_node,
+                            label,
+                            attr,
+                            unit,
+                            icon,
                         )
                     )
 
         # Containers (LXC)
         ct_map = c_data.get("cts", {})
-        for ct_id, ct_data in ct_map.items():
-            if str(ct_id) in selected_cts:
-                label = ct_data.get("name", ct_id)
-                entities.append(ProxmoxContainerSensor(coordinator, ct_id, node, label))
+        for ct_key, ct_data in ct_map.items():
+            # Extract numeric ID from composite key
+            parts = ct_key.split("_")
+            if len(parts) >= 2:
+                actual_node = parts[0]
+                actual_ctid = parts[1]
+            else:
+                actual_node = node
+                actual_ctid = ct_key
+
+            if str(actual_ctid) in selected_cts:
+                label = ct_data.get("name", actual_ctid)
+                # Status sensor
+                entities.append(
+                    ProxmoxContainerSensor(coordinator, actual_ctid, actual_node, label)
+                )
+
+                # Attribute sensors
                 for attr, unit, icon in [
                     ("cpu_usage", "%", "mdi:cpu-64-bit"),
                     ("memory_used", "GB", "mdi:memory"),
@@ -366,7 +399,13 @@ async def async_setup_entry(
                 ]:
                     entities.append(
                         ProxmoxContainerAttributeSensor(
-                            coordinator, ct_id, node, label, attr, unit, icon
+                            coordinator,
+                            actual_ctid,
+                            actual_node,
+                            label,
+                            attr,
+                            unit,
+                            icon,
                         )
                     )
 

@@ -11,6 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def create_proxmox_coordinator(hass, entry, client):
+    """Create a coordinator for Proxmox data updates."""
     data = entry.data
     node = data.get(CONF_NODE, "Proxmox")
     server_type = data.get(CONF_PLATFORM_TYPE, "PVE")
@@ -28,6 +29,7 @@ async def create_proxmox_coordinator(hass, entry, client):
     )
 
     async def async_update_data():
+        """Fetch data from Proxmox API."""
         result = {"server_type": server_type}
 
         try:
@@ -235,11 +237,11 @@ async def create_proxmox_coordinator(hass, entry, client):
 
                     cluster_nodes = result.get("cluster_nodes", [node])
 
-                    # --- cluster tasks (solo una vez)
+                    # --- Cluster tasks (only once)
                     resource_tasks.append(client.get_cluster_tasks(hass))
                     resource_keys.append(("cluster_tasks", node))
 
-                    # --- VMs / CTs / Storage por cada nodo del cluster
+                    # --- VMs / CTs / Storage per cluster node
                     for n in cluster_nodes:
                         resource_tasks.append(client.get_vms(hass, n))
                         resource_keys.append(("vms", n))
@@ -317,12 +319,12 @@ async def create_proxmox_coordinator(hass, entry, client):
                                                 if v is not None
                                             }
                                         )
-                                except Exception as e:
+                                except Exception as err:
                                     _LOGGER.error(
                                         "Error fetching VM status %s on %s: %s",
                                         vmid,
                                         src_node,
-                                        e,
+                                        err,
                                     )
 
                                 for field in [
@@ -338,7 +340,9 @@ async def create_proxmox_coordinator(hass, entry, client):
                                     base.setdefault(field, 0)
 
                                 base.setdefault("status", "unknown")
-                                result["vms"][vmid] = base
+                                # Composite key: node_vmid
+                                vm_key = f"{src_node}_{vmid}"
+                                result["vms"][vm_key] = base
 
                         elif key == "cts":
                             for ct in res or []:
@@ -371,12 +375,12 @@ async def create_proxmox_coordinator(hass, entry, client):
                                                 if v is not None
                                             }
                                         )
-                                except Exception as e:
+                                except Exception as err:
                                     _LOGGER.error(
                                         "Error fetching CT status %s on %s: %s",
                                         vmid,
                                         src_node,
-                                        e,
+                                        err,
                                     )
 
                                 for field in [
@@ -392,7 +396,9 @@ async def create_proxmox_coordinator(hass, entry, client):
                                     base.setdefault(field, 0)
 
                                 base.setdefault("status", "unknown")
-                                result["cts"][vmid] = base
+                                # Composite key: node_vmid
+                                ct_key = f"{src_node}_{vmid}"
+                                result["cts"][ct_key] = base
 
                         elif key == "storage":
                             storage_dict = {
@@ -410,6 +416,7 @@ async def create_proxmox_coordinator(hass, entry, client):
                             result["disks"].update(
                                 {f"{src_node}_{i}": d for i, d in enumerate(res or [])}
                             )
+
                     if "cluster_nodes" in result and "all_storages" in result:
                         other_nodes = [n for n in result["cluster_nodes"] if n != node]
                         if other_nodes and len(other_nodes) <= 3:

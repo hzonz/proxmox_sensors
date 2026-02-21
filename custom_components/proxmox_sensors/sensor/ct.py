@@ -9,6 +9,10 @@ class ProxmoxContainerSensor(ProxmoxBaseSensor):
 
     def __init__(self, coordinator, ct_id, node, label):
         self._label = label
+        self._ct_id = ct_id
+        self._node = node
+        # Composite key for coordinator data lookup
+        self._ct_key = f"{node}_{ct_id}"
         uid = f"proxmox_ct_{node}_{ct_id}_status_v1"
 
         super().__init__(
@@ -25,17 +29,19 @@ class ProxmoxContainerSensor(ProxmoxBaseSensor):
 
     @property
     def device_info(self):
+        """Return device info matching the CT device."""
         node_id = self._node.lower()
         return {
-            "identifiers": {(DOMAIN, f"proxmox_ct_{self._sensor_id}_v1")},
-            "name": f"3. CT: {self._label}-({self._sensor_id})",
+            "identifiers": {(DOMAIN, f"proxmox_ct_{self._node}_{self._ct_id}_v1")},
+            "name": f"3. CT: {self._label}-({self._ct_id})",
             "via_device": (DOMAIN, f"proxmox_node_{node_id}"),
             "manufacturer": "Proxmox",
             "model": "LXC Container",
         }
 
     def _get_value(self):
-        ct_data = self.coordinator.data.get("cts", {}).get(self._sensor_id, {})
+        """Get CT status value."""
+        ct_data = self.coordinator.data.get("cts", {}).get(self._ct_key, {})
         return str(ct_data.get("status", "unknown")).capitalize()
 
 
@@ -43,8 +49,12 @@ class ProxmoxContainerAttributeSensor(ProxmoxBaseSensor):
     """Attribute sensors for CTs (CPU, memory, disk, network, uptime)."""
 
     def __init__(self, coordinator, ct_id, node, label, attr_name, unit, icon):
+        self._ct_id = ct_id
+        self._node = node
         self._label = label
         self._attr_key = attr_name
+        # Composite key for coordinator data lookup
+        self._ct_key = f"{node}_{ct_id}"
 
         uid = f"proxmox_ct_{node}_{ct_id}_{attr_name}_v1"
 
@@ -63,17 +73,19 @@ class ProxmoxContainerAttributeSensor(ProxmoxBaseSensor):
 
     @property
     def device_info(self):
+        """Return device info matching the CT device."""
         node_id = self._node.lower()
         return {
-            "identifiers": {(DOMAIN, f"proxmox_ct_{self._sensor_id}_v1")},
-            "name": f"3. CT: {self._label}-({self._sensor_id})",
+            "identifiers": {(DOMAIN, f"proxmox_ct_{self._node}_{self._ct_id}_v1")},
+            "name": f"3. CT: {self._label}-({self._ct_id})",
             "via_device": (DOMAIN, f"proxmox_node_{node_id}"),
             "manufacturer": "Proxmox",
             "model": "LXC Container",
         }
 
     def _get_value(self):
-        ct_data = self.coordinator.data.get("cts", {}).get(self._sensor_id, {})
+        """Get CT attribute value."""
+        ct_data = self.coordinator.data.get("cts", {}).get(self._ct_key, {})
         if not ct_data:
             return None
 
