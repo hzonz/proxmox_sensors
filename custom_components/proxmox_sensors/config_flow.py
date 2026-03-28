@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 import logging
+import asyncio
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -26,25 +27,18 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-# --------SERVER TYPES AVAILABLE IN THE INTEGRATION---------
-
 SERVER_TYPES = {"PVE": "Proxmox VE", "PBS": "Proxmox Backup Server"}
 
 
-# ======MAIN CONFIG FLOW CLASS====================
-
-
 class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle the configuration flow for Proxmox Sensors."""
 
     VERSION = 1
 
     def __init__(self):
-        """Initialize temporary config storage."""
         self._config = {}
         self._use_token = False
 
-    # =======STEP 1 — USER INPUT (HOST + SERVER TYPE)======
+    # ===== STEP 1 — SERVER TYPE + HOST ======================
 
     async def async_step_user(self, user_input=None) -> FlowResult:
 
@@ -64,7 +58,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
         )
 
-    # ===STEP 2 — AUTH METHOD (PASSWORD OR TOKEN)==========
+    # ===== STEP 2 — AUTH METHOD ==============================
 
     async def async_step_auth_method(self, user_input=None) -> FlowResult:
 
@@ -77,7 +71,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({vol.Required("use_token", default=False): bool}),
         )
 
-    #  STEP 3 — CREDENTIALS (USER + TOKEN/PASSWORD)+ NODE SELECTION (ONLY PVE)
+    # ===== STEP 3 — CREDENTIALS ==============================
 
     async def async_step_credentials(self, user_input=None) -> FlowResult:
 
@@ -85,7 +79,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._config.update(user_input)
 
             if self._config[CONF_PLATFORM_TYPE] == "PVE":
-                return await self.async_step_select_resources()
+                return await self.async_step_select_node()
 
             return await self._finish()
 
@@ -97,9 +91,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         else:
             schema_dict[vol.Required(CONF_PASSWORD)] = str
 
-        if self._config[CONF_PLATFORM_TYPE] == "PVE":
-            schema_dict[vol.Required(CONF_NODE)] = str
-
+        schema_dict[vol.Optional("auto_detect_node", default=True)] = bool
         schema_dict[vol.Optional("enable_lm_sensors", default=True)] = bool
         schema_dict[vol.Optional(CONF_VERIFY_SSL, default=False)] = bool
 
@@ -107,7 +99,113 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="credentials", data_schema=vol.Schema(schema_dict)
         )
 
-    # =======STEP 4 — SELECT RESOURCES (ONLY FOR PVE)========
+    # ===== STEP 4 — SELECT NODE ==============================
+
+    async def async_step_select_node(self, user_input=None) -> FlowResult:
+
+        client = ProxmoxClient(
+            host=self._config[CONF_HOST],
+            user=self._config[CONF_USER],
+            password=self._config.get(CONF_PASSWORD),
+            token_id=self._config.get(CONF_TOKEN_ID),
+            token_secret=self._config.get(CONF_TOKEN_SECRET),
+            server_type=self._config[CONF_PLATFORM_TYPE],
+            verify_ssl=self._config.get(CONF_VERIFY_SSL, True),
+        )
+
+        try:
+
+            resources = await client.get_cluster_resources(self.hass)
+
+            nodes = [
+                r for r in resources if isinstance(r, dict) and r.get("type") == "node"
+            ]
+
+            auto = self._config.get("auto_detect_node", True)
+
+            # Auto mode with IP matching
+            if auto and nodes:
+
+                host_ip = self._config.get(CONF_HOST)
+
+                for n in nodes:
+                    node_name = n.get("node")
+
+                    try:
+                        ip = await client.get_node_ip(self.hass, node_name)
+
+                        if ip == host_ip:
+                            self._config[CONF_NODE] = node_name
+                            return await self.async_step_select_resources()
+
+                    except Exception:
+                        continue
+
+                # Fallback if no IP match
+                detected = nodes[0]["node"]
+                self._config[CONF_NODE] = detected
+
+                return await self.async_step_select_resources()
+
+            # Manual mode
+            node_options = {}
+
+            for n in nodes:
+
+                node_name = n.get("node")
+                ip = None
+
+                try:
+                    async with asyncio.timeout(5):
+                        net = await client.get_node_network(self.hass, node_name)
+
+                    for iface in net or []:
+
+                        if iface.get("type") != "bridge":
+                            continue
+
+                        addr = iface.get("address")
+
+                        if addr and not addr.startswith("127.") and ":" not in addr:
+                            ip = addr
+                            break
+
+                    if not ip:
+                        for iface in net or []:
+
+                            addr = iface.get("address")
+
+                            if addr and not addr.startswith("127.") and ":" not in addr:
+                                ip = addr
+                                break
+
+                except Exception:
+                    pass
+
+                if ip:
+                    node_options[node_name] = f"{node_name} ({ip})"
+                else:
+                    node_options[node_name] = node_name
+
+            # Auto-select if only one node
+            if len(node_options) == 1:
+                self._config[CONF_NODE] = list(node_options.keys())[0]
+                return await self.async_step_select_resources()
+
+            if user_input is not None:
+                self._config[CONF_NODE] = user_input[CONF_NODE]
+                return await self.async_step_select_resources()
+
+            return self.async_show_form(
+                step_id="select_node",
+                data_schema=vol.Schema({vol.Required(CONF_NODE): vol.In(node_options)}),
+            )
+
+        except Exception as e:
+            _LOGGER.error("Error fetching nodes: %s", e)
+            return await self.async_step_select_resources()
+
+    # ===== STEP 5 — SELECT RESOURCES =========================
 
     async def async_step_select_resources(self, user_input=None) -> FlowResult:
 
@@ -136,6 +234,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         node = self._config[CONF_NODE]
 
         try:
+
             vms_data = await client.get_vms(self.hass, node) or []
             cts_data = await client.get_containers(self.hass, node) or []
             storage_data = await client.get_storages(self.hass, node) or []
@@ -145,27 +244,59 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 for v in vms_data
                 if "vmid" in v
             }
+
             ct_options = {
                 str(c["vmid"]): f"{c['vmid']} ({c.get('name', 'CT')})"
                 for c in cts_data
                 if "vmid" in c
             }
-            st_options = {
-                str(s["storage"]): s["storage"] for s in storage_data if "storage" in s
-            }
+
+            st_options = {}
+
+            for s in storage_data or []:
+
+                st_name = s.get("storage")
+                if not st_name:
+                    continue
+
+                is_shared = s.get("shared", 0) == 1
+                storage_node = s.get("node")
+                storage_path = s.get("path", "")
+                total = s.get("total", 0) or 0
+                used = s.get("used", 0) or 0
+
+                # Shared storage (PBS, NFS, etc.)
+                if is_shared:
+                    st_options[st_name] = st_name
+                    continue
+
+                # Local storage
+                # Respect node
+                if storage_node and storage_node != self._config[CONF_NODE]:
+                    continue
+
+                # Mounted disks (USB)
+                if storage_path.startswith("/mnt") or storage_path.startswith("/media"):
+                    if total == 0 and used == 0:
+                        continue
+
+                st_options[st_name] = st_name
 
             return self.async_show_form(
                 step_id="select_resources",
                 data_schema=vol.Schema(
                     {
                         vol.Optional(
-                            "vms", default=list(vm_options.keys())
+                            "vms",
+                            default=list(vm_options.keys()),
                         ): cv.multi_select(vm_options),
                         vol.Optional(
-                            "cts", default=list(ct_options.keys())
+                            "cts",
+                            default=list(ct_options.keys()),
                         ): cv.multi_select(ct_options),
                         vol.Optional(
-                            "storage", default=list(st_options.keys())
+                            "storage",
+                            default=list(st_options.keys()),
                         ): cv.multi_select(st_options),
                         vol.Optional("enable_physical_disks", default=True): bool,
                         vol.Optional("enable_node_controls", default=False): bool,
@@ -177,7 +308,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.error("Error fetching resources: %s", e)
             return await self._finish()
 
-    # ======FINAL STEP — CREATE ENTRY==========
+    # ===== FINAL STEP =======================================
 
     async def _finish(self):
 
@@ -185,11 +316,14 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._config[CONF_NODE] = "Proxmox"
 
         if self._config.get(CONF_PLATFORM_TYPE) == "PBS":
+
             entries = self.hass.config_entries.async_entries(DOMAIN)
             pbs_entries = [
                 e for e in entries if e.data.get(CONF_PLATFORM_TYPE) == "PBS"
             ]
+
             self._config["server_id"] = f"pbs_{len(pbs_entries) + 1}"
+
         else:
             self._config["server_id"] = self._config[CONF_NODE]
 
@@ -201,12 +335,11 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data=self._config,
         )
 
-    # ======OPTIONS FLOW HANDLER==========
+    # ===== OPTIONS FLOW =====================================
 
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        """Return the options flow handler."""
         from .options_flow import ProxmoxOptionsFlow
 
         return ProxmoxOptionsFlow()

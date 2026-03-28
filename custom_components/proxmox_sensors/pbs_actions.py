@@ -19,25 +19,21 @@ async def run_prune(client, hass, datastore: str):
         _LOGGER.warning("PBS: There are no snapshots in %s", datastore)
         return None
 
-    grupos = set()
+    groups = set()
     for snap in snapshots:
         btype = snap.get("backup-type")
         bid = snap.get("backup-id")
         if btype and bid:
-            grupos.add((btype, bid))
+            groups.add((btype, bid))
 
-    resultados = []
-    for btype, bid in grupos:
+    results = []
+    for btype, bid in groups:
         endpoint = f"{BASE}/{datastore}/prune"
-        data = {
-            "backup-type": btype,
-            "backup-id": bid,
-            "keep-last": 1
-        }
+        data = {"backup-type": btype, "backup-id": bid, "keep-last": 1}
         res = await client.pbs_post(hass, endpoint, data)
-        resultados.append(res)
+        results.append(res)
 
-    return resultados
+    return results
 
 
 async def run_verify(client, hass, datastore: str):
@@ -48,25 +44,21 @@ async def run_verify(client, hass, datastore: str):
         _LOGGER.warning("PBS: There are no snapshots in %s", datastore)
         return None
 
-    grupos = set()
+    groups = set()
     for snap in snapshots:
         btype = snap.get("backup-type")
         bid = snap.get("backup-id")
         if btype and bid:
-            grupos.add((btype, bid))
+            groups.add((btype, bid))
 
-    resultados = []
-    for btype, bid in grupos:
+    results = []
+    for btype, bid in groups:
         endpoint = f"{BASE}/{datastore}/verify"
-        data = {
-            "backup-type": btype,
-            "backup-id": bid,
-            "backup-time": 0
-        }
+        data = {"backup-type": btype, "backup-id": bid, "backup-time": 0}
         res = await client.pbs_post(hass, endpoint, data)
-        resultados.append(res)
+        results.append(res)
 
-    return resultados
+    return results
 
 
 async def run_sync(client, hass, datastore: str):
@@ -77,7 +69,7 @@ async def run_sync(client, hass, datastore: str):
         _LOGGER.warning("PBS: No remotes are configured in PBS")
         return None
 
-    resultados = []
+    results = []
 
     for remote in remotes:
         name = remote.get("name")
@@ -85,11 +77,8 @@ async def run_sync(client, hass, datastore: str):
 
         for store in stores:
             endpoint = f"{BASE}/{datastore}/sync"
-            data = {
-                "remote": name,
-                "remote-store": store
-            }
+            data = {"remote": name, "remote-store": store}
             res = await client.pbs_post(hass, endpoint, data)
-            resultados.append(res)
+            results.append(res)
 
-    return resultados
+    return results

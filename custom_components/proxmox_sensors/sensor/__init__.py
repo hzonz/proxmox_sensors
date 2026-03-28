@@ -8,14 +8,19 @@ from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import device_registry as dr
+from .hardware import ProxmoxHardwareNVMeSensor
 
+from .zfs import ProxmoxZFSPoolSensor
 from .memory import ProxmoxDimmSensor
 from .sensor_last_action import PBSLastActionSensor
 from ..const import DOMAIN, CONF_NODE, CONF_PLATFORM_TYPE
 
+_LOGGER = logging.getLogger(__name__)
+
 # Node Sensors
 from .node import (
     ProxmoxNodeSensor,
+    ProxmoxNodeUpdatesSensor,
     ProxmoxCPUInfoSensor,
     ProxmoxKSMSensor,
     ProxmoxMemorySensor,
@@ -24,6 +29,9 @@ from .node import (
     ProxmoxClusterTasksSensor,
     PVEBackupProgressSensor,
     ProxmoxNodesSensor,
+    ProxmoxNodeIOWaitSensor,
+    ProxmoxNodeLoadAverageSensor,
+    ProxmoxNodeScoreSensor,
     ProxmoxStoragesSensor,
 )
 
@@ -67,6 +75,8 @@ from .pbs import (
     ProxmoxPBSAuthStatusSensor,
     ProxmoxPBSVersionSensor,
     ProxmoxPBSReleaseSensor,
+    ProxmoxPBSVerifySensor,
+    ProxmoxPBSPruneSensor,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -126,10 +136,18 @@ async def async_setup_entry(
         _LOGGER.warning("No data found in coordinator for %s", node)
         return
 
+    if enable_storage_list and server_type == "PVE":
+        try:
+            storage_sensor = ProxmoxStoragesSensor(coordinator, entry.entry_id, node)
+            entities.append(storage_sensor)
+        except Exception as e:
+            _LOGGER.error("Error creating storage summary sensor: %s", e)
+
     # =================PVE SECTION===================
     if server_type == "PVE":
-        # (fixes via_device)
         device_registry = dr.async_get(hass)
+
+        # Create BOTH devices BEFORE entities
         device_registry.async_get_or_create(
             config_entry_id=entry.entry_id,
             identifiers={(DOMAIN, f"proxmox_node_{node}")},
@@ -138,75 +156,29 @@ async def async_setup_entry(
             name=f"Node: {node}",
         )
 
+        device_registry.async_get_or_create(
+            config_entry_id=entry.entry_id,
+            identifiers={(DOMAIN, f"pve_{node}_node_{node}")},
+            manufacturer="Proxmox",
+            model="Proxmox Node",
+            name=f"Node: {node}",
+        )
+
         # ========NODES LIST SENSOR (ONLY FOR PVE)========
-        if enable_nodes_list:
+        if server_type == "PVE" and enable_nodes_list:
             try:
                 nodes_sensor = ProxmoxNodesSensor(coordinator, entry.entry_id, node)
                 entities.append(nodes_sensor)
             except Exception as e:
                 _LOGGER.error("Error creating nodes list sensor: %s", e)
 
-        # =======BACKUP PROGRESS SENSORS PER NODE=========
+        # =======BACKUP PROGRESS SENSOR=========
         if enable_backup_progress:
             try:
-                # Find all available nodes
-                nodes_available = []
-
-                # Look for nodes in VM data
-                if "vms" in c_data:
-                    for vm_data in c_data["vms"].values():
-                        if "node" in vm_data and vm_data["node"] not in nodes_available:
-                            nodes_available.append(vm_data["node"])
-
-                # Look for nodes in CT data
-                if "cts" in c_data:
-                    for ct_data in c_data["cts"].values():
-                        if "node" in ct_data and ct_data["node"] not in nodes_available:
-                            nodes_available.append(ct_data["node"])
-
-                # If no nodes found, use the configured node
-                if not nodes_available:
-                    nodes_available = [node]
-
-                # Create progress sensor for each node
-                for node_name in nodes_available:
-                    progress_sensor = PVEBackupProgressSensor(
-                        coordinator, node_name, entry.entry_id
-                    )
-                    entities.append(progress_sensor)
-                    _LOGGER.debug(
-                        "Added backup progress sensor for node: %s", node_name
-                    )
-
+                sensor = PVEBackupProgressSensor(coordinator, node, entry.entry_id)
+                entities.append(sensor)
             except Exception as e:
-                _LOGGER.error("Error creating backup progress sensors: %s", e)
-
-        # =========STORAGE LIST SENSORS PER NODE===========
-        if enable_storage_list:
-            try:
-                if "storage" in c_data:
-                    storage_sensor = ProxmoxStoragesSensor(
-                        coordinator, entry.entry_id, node
-                    )
-                    entities.append(storage_sensor)
-                    _LOGGER.debug("Added storage list sensor for node: %s", node)
-                elif "all_storages" in c_data and node in c_data["all_storages"]:
-                    # Multi-node setup with all_storages data
-                    storage_sensor = ProxmoxStoragesSensor(
-                        coordinator, entry.entry_id, node
-                    )
-                    entities.append(storage_sensor)
-                    _LOGGER.debug("Added storage list sensor for node: %s", node)
-                else:
-                    # Create basic storage sensor
-                    storage_sensor = ProxmoxStoragesSensor(
-                        coordinator, entry.entry_id, node
-                    )
-                    entities.append(storage_sensor)
-                    _LOGGER.debug("Added basic storage list sensor for node: %s", node)
-
-            except Exception as e:
-                _LOGGER.error("Error creating storage list sensors: %s", e)
+                _LOGGER.error("Error creating backup progress sensor: %s", e)
 
         # Hardware monitoring (lm-sensors)
         if enable_lm_sensors:
@@ -218,10 +190,14 @@ async def async_setup_entry(
             sata_sensors = []
             other_sensors = []
 
-            for sensor_id in hardware_data:
-                sid = sensor_id.lower()
+            cpu_created = False
+            chipset_created = False
 
-                # CPU: (Intel + AMD + Generics)
+            # First: Classify all sensors
+            for key in hardware_data:
+                sid = key.lower()
+
+                # CPU
                 if any(
                     x in sid
                     for x in [
@@ -235,35 +211,80 @@ async def async_setup_entry(
                         "tccd",
                     ]
                 ):
-                    cpu_sensors.append(sensor_id)
+                    cpu_sensors.append(key)
 
-                # Chipset / Motherboard
+                # Chipset / motherboard
                 elif any(x in sid for x in ["pch", "acpitz", "it87", "nct67"]):
-                    pch_sensors.append(sensor_id)
+                    pch_sensors.append(key)
 
-                # NVMe:
+                # NVMe
                 elif any(x in sid for x in ["nvme", "composite"]):
-                    nvme_sensors.append(sensor_id)
+                    nvme_sensors.append(key)
 
-                # Disks SATA / SSD
-                elif any(
-                    x in sid
-                    for x in ["drivetemp", "scsi", "sda", "sdb", "sdc", "sdd", "sde"]
-                ):
-                    sata_sensors.append(sensor_id)
+                # SATA
+                elif any(x in sid for x in ["drivetemp", "scsi", "sd", "ata"]):
+                    sata_sensors.append(key)
 
                 else:
-                    other_sensors.append(sensor_id)
+                    other_sensors.append(key)
 
-            ordered_sensors = (
-                cpu_sensors + pch_sensors + nvme_sensors + sata_sensors + other_sensors
-            )
+            # Second: Group NVMe by device
+            nvme_devices = {}
+            for key in nvme_sensors:
+                if key.startswith("nvme-pci-"):
+                    parts = key.split("_")
+                    device_prefix = parts[0]
+                    nvme_devices[device_prefix] = True
 
-            for sensor_id in ordered_sensors:
-                sensor = ProxmoxHardwareSensor(coordinator, sensor_id, node)
+            for device_prefix in nvme_devices.keys():
+                sensor = ProxmoxHardwareNVMeSensor(coordinator, device_prefix, node)
                 if sensor.is_valid():
                     entities.append(sensor)
 
+            # Third: Order sensors
+            ordered = cpu_sensors + pch_sensors + sata_sensors + other_sensors
+
+            for key in ordered:
+                sid = key.lower()
+
+                # Skip adapters/pwm
+                if any(x in sid for x in ["adapter", "pwm"]):
+                    continue
+
+                # ---------------- CPU (only one) ----------------
+                if any(x in sid for x in ["coretemp", "k10temp", "tctl", "tdie"]):
+                    if "package" not in sid and "tctl" not in sid and "tdie" not in sid:
+                        continue
+                    if cpu_created:
+                        continue
+                    cpu_created = True
+
+                # ---------------- CHIPSET (only one clean) ----------------
+                if any(x in sid for x in ["pch"]):
+                    if chipset_created:
+                        continue
+
+                    sensor = ProxmoxHardwareSensor(coordinator, key, node)
+
+                    # Mark as primary
+                    sensor._attr_translation_key = "chipset_temp"
+                    sensor._attr_name = f"Chipset Temp ({node})"
+
+                    if sensor.is_valid():
+                        entities.append(sensor)
+                        chipset_created = True
+                    continue
+
+                # Do not create sensor for acpitz (will be an attribute)
+                if "acpitz" in sid:
+                    continue
+
+                # ---------------- REMAINING ----------------
+                sensor = ProxmoxHardwareSensor(coordinator, key, node)
+                if sensor.is_valid():
+                    entities.append(sensor)
+
+        # -------- Memory --------
         memory_map = c_data.get("memory", {}).get(node, {}).get("dimms", {})
 
         for dimm_id in memory_map:
@@ -273,7 +294,11 @@ async def async_setup_entry(
         node_data = c_data.get("node", {})
         if node_data:
             entities.append(ProxmoxClusterTasksSensor(coordinator, node))
-            # NOTE: PVEBackupProgressSensor already added above
+            entities.append(ProxmoxNodeUpdatesSensor(coordinator, node))
+
+            entities.append(ProxmoxNodeIOWaitSensor(coordinator, node))
+            entities.append(ProxmoxNodeLoadAverageSensor(coordinator, node))
+            entities.append(ProxmoxNodeScoreSensor(coordinator, node))
 
             mapping = {
                 "cpuinfo": ProxmoxCPUInfoSensor,
@@ -306,46 +331,84 @@ async def async_setup_entry(
                         )
                     )
                     # NOTE: SMART data is already included as attributes in ProxmoxDiskSensor
-                    # We don't need to create separate SMART sensors
 
         # Storage pools
         storage_map = c_data.get("storage", {})
+        created_storages = set()
+
         for st_name, st in storage_map.items():
-            if st_name in selected_storage:
-                entities.append(ProxmoxStorageSensor(coordinator, st_name, st, node))
-                for label, key in [
-                    ("Used Space", "used"),
-                    ("Free Space", "avail"),
-                    ("Total Capacity", "total"),
-                    ("Type", "type"),
-                    ("Path", "path"),
-                ]:
-                    entities.append(
-                        ProxmoxStorageAttributeSensor(
-                            coordinator, st_name, st, label, key, node
-                        )
+
+            # Skip storages without name
+            if not st_name:
+                continue
+
+            # Avoid duplicates
+            if st_name in created_storages:
+                continue
+
+            # Skip offline storages
+            if st.get("active") != 1:
+                continue
+
+            # -------- INTELLIGENT FILTER --------
+            is_shared = st.get("shared", 0) == 1
+            storage_node = st.get("node")
+            storage_path = st.get("path", "")
+            storage_type = st.get("type", "")
+
+            # ---- SHARED (PBS, NFS, CIFS...) ----
+            if is_shared:
+                pass
+
+            # ---- NON-SHARED (local storages) ----
+            else:
+                # Respect node if defined
+                if storage_node and storage_node != node:
+                    continue
+
+                # Detect mounted disks (USB / bind mounts)
+                if storage_path.startswith("/mnt") or storage_path.startswith("/media"):
+
+                    total = st.get("total", 0) or 0
+                    used = st.get("used", 0) or 0
+
+                    # If no size, it's not mounted on this node
+                    if total == 0 and used == 0:
+                        continue
+
+            # Respect user selection
+            if st_name not in selected_storage:
+                continue
+
+            created_storages.add(st_name)
+
+            entities.append(ProxmoxStorageSensor(coordinator, st_name, st, node))
+
+            for label, key in [
+                ("Used Space", "used"),
+                ("Free Space", "avail"),
+                ("Total Capacity", "total"),
+                ("Type", "type"),
+                ("Path", "path"),
+            ]:
+                entities.append(
+                    ProxmoxStorageAttributeSensor(
+                        coordinator, st_name, st, label, key, node
                     )
+                )
+
+        # -------- ZFS POOLS --------
+        zfs_data = c_data.get("zfs_pools", {})
+
+        for pool_name in zfs_data:
+            entities.append(ProxmoxZFSPoolSensor(coordinator, node, pool_name))
 
         # Virtual Machines
         vm_map = c_data.get("vms", {})
-        for vm_key, vm_data in vm_map.items():
-            # Extract numeric ID from composite key
-            parts = vm_key.split("_")
-            if len(parts) >= 2:
-                actual_node = parts[0]
-                actual_vmid = parts[1]
-            else:
-                actual_node = node
-                actual_vmid = vm_key
-
-            if str(actual_vmid) in selected_vms:
-                label = vm_data.get("name", actual_vmid)
-                # Status sensor
-                entities.append(
-                    ProxmoxVMSensor(coordinator, actual_vmid, actual_node, label)
-                )
-
-                # Attribute sensors
+        for vm_id, vm_data in vm_map.items():
+            if str(vm_id) in selected_vms:
+                label = vm_data.get("name", vm_id)
+                entities.append(ProxmoxVMSensor(coordinator, vm_id, node, label))
                 for attr, unit, icon in [
                     ("cpu_usage", "%", "mdi:cpu-64-bit"),
                     ("memory_used", "GB", "mdi:memory"),
@@ -357,36 +420,16 @@ async def async_setup_entry(
                 ]:
                     entities.append(
                         ProxmoxVMAttributeSensor(
-                            coordinator,
-                            actual_vmid,
-                            actual_node,
-                            label,
-                            attr,
-                            unit,
-                            icon,
+                            coordinator, vm_id, node, label, attr, unit, icon
                         )
                     )
 
         # Containers (LXC)
         ct_map = c_data.get("cts", {})
-        for ct_key, ct_data in ct_map.items():
-            # Extract numeric ID from composite key
-            parts = ct_key.split("_")
-            if len(parts) >= 2:
-                actual_node = parts[0]
-                actual_ctid = parts[1]
-            else:
-                actual_node = node
-                actual_ctid = ct_key
-
-            if str(actual_ctid) in selected_cts:
-                label = ct_data.get("name", actual_ctid)
-                # Status sensor
-                entities.append(
-                    ProxmoxContainerSensor(coordinator, actual_ctid, actual_node, label)
-                )
-
-                # Attribute sensors
+        for ct_id, ct_data in ct_map.items():
+            if str(ct_id) in selected_cts:
+                label = ct_data.get("name", ct_id)
+                entities.append(ProxmoxContainerSensor(coordinator, ct_id, node, label))
                 for attr, unit, icon in [
                     ("cpu_usage", "%", "mdi:cpu-64-bit"),
                     ("memory_used", "GB", "mdi:memory"),
@@ -399,19 +442,12 @@ async def async_setup_entry(
                 ]:
                     entities.append(
                         ProxmoxContainerAttributeSensor(
-                            coordinator,
-                            actual_ctid,
-                            actual_node,
-                            label,
-                            attr,
-                            unit,
-                            icon,
+                            coordinator, ct_id, node, label, attr, unit, icon
                         )
                     )
 
     # ==============PBS SECTION====================
     elif server_type == "PBS":
-
         server_id = entry.data["server_id"]
 
         # Node Hardware Status
@@ -447,6 +483,8 @@ async def async_setup_entry(
             entities.append(
                 ProxmoxPBSMaintenanceSensor(coordinator, server_id, store_id)
             )
+            entities.append(ProxmoxPBSVerifySensor(coordinator, server_id, store_id))
+            entities.append(ProxmoxPBSPruneSensor(coordinator, server_id, store_id))
             entities.append(
                 ProxmoxPBSBackupCountSensor(coordinator, server_id, store_id)
             )
@@ -479,7 +517,7 @@ async def async_setup_entry(
     # =========ENTITY AND DEVICE CLEANUP============
     ent_reg = er.async_get(hass)
     existing_entries = er.async_entries_for_config_entry(ent_reg, entry.entry_id)
-    new_unique_ids = {entity.unique_id for entity in entities}
+    new_unique_ids = {getattr(entity, "_attr_unique_id", None) for entity in entities}
 
     for entity_entry in existing_entries:
         if entity_entry.unique_id not in new_unique_ids:

@@ -1,4 +1,4 @@
-# ====== COORDINATOR — PROXMOX SENSORS EXTENDED ======
+# ====== COORDINATOR — PROXMOX EXTENDED SENSORS ======
 
 import logging
 import asyncio
@@ -11,7 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def create_proxmox_coordinator(hass, entry, client):
-    """Create a coordinator for Proxmox data updates."""
+
     data = entry.data
     node = data.get(CONF_NODE, "Proxmox")
     server_type = data.get(CONF_PLATFORM_TYPE, "PVE")
@@ -19,34 +19,42 @@ async def create_proxmox_coordinator(hass, entry, client):
     selected_vms = data.get("selected_vms", [])
     selected_cts = data.get("selected_cts", [])
     selected_storage = data.get("selected_storage", [])
+
     enable_physical_disks = data.get("enable_physical_disks", True)
     enable_lm_sensors = data.get("enable_lm_sensors", True)
     enable_pbs_tasks = data.get("enable_pbs_tasks", True)
     enable_smart_monitoring = data.get("enable_smart_monitoring", True)
+
     enable_memory_monitoring = entry.options.get(
         "enable_memory_monitoring",
         entry.data.get("enable_memory_monitoring", True),
     )
 
     async def async_update_data():
-        """Fetch data from Proxmox API."""
+
         result = {"server_type": server_type}
 
         try:
+
             async with asyncio.timeout(30):
-                # ======= PBS ======
+
+                # ========PBS==========
+
                 if server_type == "PBS":
+
                     result["pbs_datastores"] = {}
                     result["pbs_snapshots"] = {}
                     result["pbs_gc"] = {}
 
                     selected = data.get("selected_storage")
+
                     if not selected:
                         actual_stores = await client.get_pbs_datastores(hass)
                     else:
                         actual_stores = selected
 
                     for store in actual_stores or []:
+
                         status = (
                             await client.get_pbs_datastore_status(hass, store) or {}
                         )
@@ -66,23 +74,17 @@ async def create_proxmox_coordinator(hass, entry, client):
                         ]
 
                         try:
-                            gc_info = await client.get_pbs_gc(hass, store) or {}
-                            result["pbs_gc"][store] = gc_info
-                        except Exception as e:
-                            _LOGGER.error(
-                                "Error fetching PBS GC info for %s: %s", store, e
+                            result["pbs_gc"][store] = (
+                                await client.get_pbs_gc(hass, store) or {}
                             )
+                        except Exception:
                             result["pbs_gc"][store] = {}
 
                         try:
-                            snapshots = (
+                            result["pbs_snapshots"][store] = (
                                 await client.get_pbs_snapshots(hass, store) or []
                             )
-                            result["pbs_snapshots"][store] = snapshots
-                        except Exception as e:
-                            _LOGGER.error(
-                                "Error fetching PBS snapshots for %s: %s", store, e
-                            )
+                        except Exception:
                             result["pbs_snapshots"][store] = []
 
                         result["pbs_datastores"][store] = {
@@ -110,120 +112,330 @@ async def create_proxmox_coordinator(hass, entry, client):
                     else:
                         result["pbs_tasks"] = []
 
+                    from datetime import datetime
+
+                    result["last_update"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
                     return result
 
-                # ======= PVE ======
-                elif server_type == "PVE":
+                # ==========PVE================
+
+                if server_type == "PVE":
+
+                    # -------- Cluster nodes --------
                     try:
                         cluster_resources = await client.get_cluster_resources(hass)
-                        if isinstance(cluster_resources, list):
-                            all_nodes = set()
-                            for resource in cluster_resources:
-                                if (
-                                    isinstance(resource, dict)
-                                    and resource.get("type") == "node"
-                                ):
-                                    node_name = resource.get("node")
-                                    if node_name:
-                                        all_nodes.add(node_name)
 
-                            result["cluster_nodes"] = sorted(list(all_nodes))
-                        else:
-                            result["cluster_nodes"] = [node]
-                    except Exception as e:
-                        _LOGGER.warning("Could not get cluster nodes: %s", e)
+                        nodes = set()
+                        node_status_map = {}
+
+                        for r in cluster_resources or []:
+                            if not isinstance(r, dict):
+                                continue
+
+                            if r.get("type") == "node":
+                                node_name = r.get("node")
+                                status = r.get("status", "unknown")
+
+                                if node_name:
+                                    nodes.add(node_name)
+                                    node_status_map[node_name] = status
+
+                        result["cluster_nodes"] = sorted(nodes) if nodes else [node]
+                        result["node_status_map"] = node_status_map
+
+                    except Exception:
                         result["cluster_nodes"] = [node]
+                        result["node_status_map"] = {node: "unknown"}
 
-                    node_status = await client.get_node_status(hass, node)
+                    # -------- Parallel node calls --------
+
+                    tasks = [
+                        client.get_node_status(hass, node),
+                        client.get_node_updates(hass, node),
+                        client.get_node_network(hass, node),
+                        client.get_cluster_tasks(hass),
+                        client.get_vms(hass, node),
+                        client.get_containers(hass, node),
+                        client.get_storages(hass, node),
+                        client.get_zfs_pools(hass, node),
+                    ]
+
+                    if enable_physical_disks:
+                        tasks.append(client.get_disks(hass, node))
+
+                    if enable_lm_sensors:
+                        tasks.append(client.get_lm_sensors_http(hass, node))
+
+                    if enable_smart_monitoring:
+                        tasks.append(client.get_smart_data_http(hass, node))
+
+                    if enable_memory_monitoring:
+                        tasks.append(client.get_memory_http(hass, node))
+
+                    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                    idx = 0
+
+                    # -------- Node status --------
+
+                    node_status = results[idx]
+                    idx += 1
+
                     normalized = {}
 
                     if isinstance(node_status, dict):
-                        if "data" in node_status and isinstance(
-                            node_status["data"], dict
-                        ):
+
+                        if "data" in node_status:
                             normalized = node_status["data"]
+
                         else:
                             normalized = node_status
-                    elif isinstance(node_status, list) and node_status:
-                        normalized = node_status[0]
 
-                    if "status" not in normalized:
-                        if isinstance(node_status, dict) and "status" in node_status:
-                            normalized["status"] = node_status["status"]
+                    result["node"] = normalized or {"status": "unknown"}
 
-                    if "status" not in normalized:
-                        normalized["status"] = "online" if normalized else "unknown"
+                    # -------- Node updates --------
 
-                    result["node"] = normalized
+                    updates = results[idx]
+                    idx += 1
 
-                    try:
-                        interfaces = await client.get_node_network(hass, node)
-                        if isinstance(interfaces, list):
-                            rx = sum(i.get("rx_bytes", 0) for i in interfaces)
-                            tx = sum(i.get("tx_bytes", 0) for i in interfaces)
-                            result["node"]["network_rx"] = rx
-                            result["node"]["network_tx"] = tx
-                    except Exception as e:
-                        _LOGGER.error("Error fetching node network traffic: %s", e)
+                    if isinstance(updates, Exception):
+                        result["node_updates"] = {
+                            "available": False,
+                            "count": 0,
+                            "packages": [],
+                            "error": True,
+                        }
+
+                    elif not isinstance(updates, list):
+                        result["node_updates"] = {
+                            "available": False,
+                            "count": 0,
+                            "packages": [],
+                            "error": True,
+                        }
+
+                    else:
+                        result["node_updates"] = {
+                            "available": len(updates) > 0,
+                            "count": len(updates),
+                            "packages": updates,
+                            "error": False,
+                        }
+
+                    # -------- Network --------
+
+                    interfaces = results[idx]
+                    idx += 1
+
+                    if isinstance(interfaces, list):
+
+                        rx = sum(i.get("rx_bytes", 0) for i in interfaces)
+                        tx = sum(i.get("tx_bytes", 0) for i in interfaces)
+
+                        result["node"]["network_rx"] = rx
+                        result["node"]["network_tx"] = tx
+
+                    # -------- Tasks --------
+
+                    cluster_tasks = results[idx]
+                    idx += 1
+
+                    result["tasks"] = (
+                        cluster_tasks if isinstance(cluster_tasks, list) else []
+                    )
+
+                    if result["tasks"]:
+                        last = result["tasks"][0]
+                        result["node"]["last_task"] = {
+                            "status": last.get("status", "running"),
+                            "type": last.get("type", "unknown"),
+                            "user": last.get("user", "unknown"),
+                            "id": last.get("id", "node"),
+                            "endtime": last.get("endtime"),
+                        }
+
+                    # -------- VMS --------
+
+                    vms = results[idx]
+                    idx += 1
+
+                    vms_dict = {}
+
+                    for vm in vms or []:
+
+                        vmid = vm.get("vmid")
+
+                        if vmid is None:
+                            continue
+
+                        if selected_vms and str(vmid) not in selected_vms:
+                            continue
+
+                        base = dict(vm)
+                        base["node"] = node
+
+                        for field in [
+                            "cpu",
+                            "mem",
+                            "maxmem",
+                            "disk",
+                            "maxdisk",
+                            "uptime",
+                            "netin",
+                            "netout",
+                        ]:
+                            base.setdefault(field, 0)
+
+                        base.setdefault("status", "unknown")
+
+                        vms_dict[vmid] = base
+
+                    result["vms"] = vms_dict
+
+                    # -------- Containers --------
+
+                    cts = results[idx]
+                    idx += 1
+
+                    cts_dict = {}
+
+                    for ct in cts or []:
+
+                        vmid = ct.get("vmid")
+
+                        if vmid is None:
+                            continue
+
+                        if selected_cts and str(vmid) not in selected_cts:
+                            continue
+
+                        base = dict(ct)
+                        base["node"] = node
+
+                        for field in [
+                            "cpu",
+                            "mem",
+                            "maxmem",
+                            "disk",
+                            "maxdisk",
+                            "uptime",
+                            "netin",
+                            "netout",
+                        ]:
+                            base.setdefault(field, 0)
+
+                        base.setdefault("status", "unknown")
+
+                        cts_dict[vmid] = base
+
+                    result["cts"] = cts_dict
+
+                    # -------- Storage --------
+
+                    storages = results[idx]
+                    idx += 1
+
+                    storage_dict = {
+                        st["storage"]: st
+                        for st in storages or []
+                        if isinstance(st, dict)
+                        and "storage" in st
+                        and (not selected_storage or st["storage"] in selected_storage)
+                    }
+
+                    result["storage"] = storage_dict
+
+                    # -------- ZFS --------
+
+                    zfs_data = results[idx]
+                    idx += 1
+
+                    if isinstance(zfs_data, list) and zfs_data:
+                        result["zfs_pools"] = {
+                            pool.get("name"): pool
+                            for pool in zfs_data
+                            if isinstance(pool, dict) and pool.get("name")
+                        }
+                    else:
+                        result["zfs_pools"] = {}
+
+                    # -------- Disks --------
+
+                    if enable_physical_disks:
+
+                        disks = results[idx]
+                        idx += 1
+
+                        result["disks"] = {
+                            d.get("devpath", f"disk_{i}"): d
+                            for i, d in enumerate(disks or [])
+                        }
+
+                    # -------- LM Sensors --------
 
                     result["hardware"] = {}
 
                     if enable_lm_sensors:
-                        lm = await client.get_lm_sensors_http(hass, node)
+
+                        lm = results[idx]
+                        idx += 1
+
                         if isinstance(lm, dict):
+
                             for chip, values in lm.items():
+
                                 if isinstance(values, dict):
+
                                     for k, v in values.items():
+
                                         result["hardware"][f"{chip}_{k}".lower()] = v
 
+                    # -------- SMART --------
+
                     result["smart"] = {}
+
                     if enable_smart_monitoring:
-                        try:
-                            smart_data = await client.get_smart_data_http(hass, node)
-                            if isinstance(smart_data, dict):
-                                result["smart"][node] = smart_data
-                            else:
-                                result["smart"][node] = {}
-                        except Exception as e:
-                            _LOGGER.error(
-                                "Error fetching SMART data for node %s: %s", node, e
-                            )
+
+                        smart_data = results[idx]
+                        idx += 1
+
+                        if isinstance(smart_data, dict):
+
+                            result["smart"][node] = smart_data
+
+                        else:
+
                             result["smart"][node] = {}
 
+                    # -------- Memory --------
+
                     result["memory"] = {}
+
                     if enable_memory_monitoring:
-                        try:
-                            memory_data = await client.get_memory_http(hass, node)
 
-                            if isinstance(memory_data, dict):
-                                modules = memory_data.get("modules", [])
+                        memory_data = results[idx]
 
-                                result["memory"][node] = {
-                                    "modules": modules,
-                                    "total_modules": memory_data.get(
-                                        "total_modules", len(modules)
-                                    ),
-                                    "total_gb": memory_data.get("total_gb", 0),
-                                    "timestamp": memory_data.get("timestamp"),
-                                    "dimms": {
-                                        module["locator"]: module
-                                        for module in modules
-                                        if "locator" in module
-                                    },
-                                }
-                            else:
-                                result["memory"][node] = {
-                                    "modules": [],
-                                    "total_modules": 0,
-                                    "total_gb": 0,
-                                    "timestamp": None,
-                                    "dimms": {},
-                                }
+                        if isinstance(memory_data, dict):
 
-                        except Exception as e:
-                            _LOGGER.error(
-                                "Error fetching Memory data for node %s: %s", node, e
-                            )
+                            modules = memory_data.get("modules", [])
+
+                            result["memory"][node] = {
+                                "modules": modules,
+                                "total_modules": memory_data.get(
+                                    "total_modules", len(modules)
+                                ),
+                                "total_gb": memory_data.get("total_gb", 0),
+                                "timestamp": memory_data.get("timestamp"),
+                                "dimms": {
+                                    module["locator"]: module
+                                    for module in modules
+                                    if "locator" in module
+                                },
+                            }
+
+                        else:
+
                             result["memory"][node] = {
                                 "modules": [],
                                 "total_modules": 0,
@@ -232,217 +444,15 @@ async def create_proxmox_coordinator(hass, entry, client):
                                 "dimms": {},
                             }
 
-                    resource_tasks = []
-                    resource_keys = []
-
-                    cluster_nodes = result.get("cluster_nodes", [node])
-
-                    # --- Cluster tasks (only once)
-                    resource_tasks.append(client.get_cluster_tasks(hass))
-                    resource_keys.append(("cluster_tasks", node))
-
-                    # --- VMs / CTs / Storage per cluster node
-                    for n in cluster_nodes:
-                        resource_tasks.append(client.get_vms(hass, n))
-                        resource_keys.append(("vms", n))
-
-                        resource_tasks.append(client.get_containers(hass, n))
-                        resource_keys.append(("cts", n))
-
-                        resource_tasks.append(client.get_storages(hass, n))
-                        resource_keys.append(("storage", n))
-
-                        if enable_physical_disks:
-                            resource_tasks.append(client.get_disks(hass, n))
-                            resource_keys.append(("disks", n))
-
-                    result["vms"] = {}
-                    result["cts"] = {}
-                    result["storage"] = {}
-                    result["disks"] = {}
-                    result["all_storages"] = {}
-
-                    results = await asyncio.gather(
-                        *resource_tasks, return_exceptions=True
-                    )
-
-                    for (key, src_node), res in zip(resource_keys, results):
-                        if isinstance(res, Exception):
-                            _LOGGER.error(
-                                "Error fetching %s from %s: %s", key, src_node, res
-                            )
-                            continue
-
-                        if key == "cluster_tasks":
-                            result["tasks"] = res if isinstance(res, list) else []
-                            if isinstance(res, list) and len(res) > 0:
-                                last = res[0]
-                                result["node"]["last_task"] = {
-                                    "status": last.get("status") or "running",
-                                    "type": last.get("type", "unknown"),
-                                    "user": last.get("user", "unknown"),
-                                    "id": last.get("id", "node"),
-                                    "endtime": last.get("endtime"),
-                                }
-                            else:
-                                result["node"]["last_task"] = None
-
-                        elif key == "vms":
-                            for vm in res or []:
-                                vmid = vm.get("vmid")
-                                if vmid is None or str(vmid) not in selected_vms:
-                                    continue
-
-                                base = dict(vm)
-                                base["node"] = src_node
-
-                                try:
-                                    status_raw = await client.get_vm_status(
-                                        hass, src_node, vmid
-                                    )
-                                    detailed = None
-
-                                    if isinstance(status_raw, list) and status_raw:
-                                        detailed = status_raw[0]
-                                    elif isinstance(status_raw, dict):
-                                        detailed = (
-                                            status_raw.get("data")
-                                            if isinstance(status_raw.get("data"), dict)
-                                            else status_raw
-                                        )
-
-                                    if isinstance(detailed, dict):
-                                        base.update(
-                                            {
-                                                k: v
-                                                for k, v in detailed.items()
-                                                if v is not None
-                                            }
-                                        )
-                                except Exception as err:
-                                    _LOGGER.error(
-                                        "Error fetching VM status %s on %s: %s",
-                                        vmid,
-                                        src_node,
-                                        err,
-                                    )
-
-                                for field in [
-                                    "cpu",
-                                    "mem",
-                                    "maxmem",
-                                    "disk",
-                                    "maxdisk",
-                                    "uptime",
-                                    "netin",
-                                    "netout",
-                                ]:
-                                    base.setdefault(field, 0)
-
-                                base.setdefault("status", "unknown")
-                                # Composite key: node_vmid
-                                vm_key = f"{src_node}_{vmid}"
-                                result["vms"][vm_key] = base
-
-                        elif key == "cts":
-                            for ct in res or []:
-                                vmid = ct.get("vmid")
-                                if vmid is None or str(vmid) not in selected_cts:
-                                    continue
-
-                                base = dict(ct)
-                                base["node"] = src_node
-
-                                try:
-                                    status_raw = await client.get_container_status(
-                                        hass, src_node, vmid
-                                    )
-                                    detailed = None
-                                    if isinstance(status_raw, list) and status_raw:
-                                        detailed = status_raw[0]
-                                    elif isinstance(status_raw, dict):
-                                        detailed = (
-                                            status_raw.get("data")
-                                            if isinstance(status_raw.get("data"), dict)
-                                            else status_raw
-                                        )
-
-                                    if isinstance(detailed, dict):
-                                        base.update(
-                                            {
-                                                k: v
-                                                for k, v in detailed.items()
-                                                if v is not None
-                                            }
-                                        )
-                                except Exception as err:
-                                    _LOGGER.error(
-                                        "Error fetching CT status %s on %s: %s",
-                                        vmid,
-                                        src_node,
-                                        err,
-                                    )
-
-                                for field in [
-                                    "cpu",
-                                    "mem",
-                                    "maxmem",
-                                    "disk",
-                                    "maxdisk",
-                                    "uptime",
-                                    "netin",
-                                    "netout",
-                                ]:
-                                    base.setdefault(field, 0)
-
-                                base.setdefault("status", "unknown")
-                                # Composite key: node_vmid
-                                ct_key = f"{src_node}_{vmid}"
-                                result["cts"][ct_key] = base
-
-                        elif key == "storage":
-                            storage_dict = {
-                                st["storage"]: st
-                                for st in res
-                                if isinstance(st, dict)
-                                and "storage" in st
-                                and st["storage"] in selected_storage
-                            }
-
-                            result["storage"].update(storage_dict)
-                            result["all_storages"][src_node] = list(storage_dict.keys())
-
-                        elif key == "disks":
-                            result["disks"].update(
-                                {f"{src_node}_{i}": d for i, d in enumerate(res or [])}
-                            )
-
-                    if "cluster_nodes" in result and "all_storages" in result:
-                        other_nodes = [n for n in result["cluster_nodes"] if n != node]
-                        if other_nodes and len(other_nodes) <= 3:
-                            for other_node in other_nodes:
-                                try:
-                                    async with asyncio.timeout(5):
-                                        node_storages = await client.get_storages(
-                                            hass, other_node
-                                        )
-                                        if isinstance(node_storages, list):
-                                            storage_names = []
-                                            for st in node_storages:
-                                                if (
-                                                    isinstance(st, dict)
-                                                    and "storage" in st
-                                                ):
-                                                    storage_names.append(st["storage"])
-                                            result["all_storages"][
-                                                other_node
-                                            ] = storage_names
-                                except (asyncio.TimeoutError, Exception) as e:
-                                    result["all_storages"][other_node] = []
-
         except Exception as err:
+
             _LOGGER.exception("Coordinator update failure")
+
             raise UpdateFailed(f"Update error: {err}")
+
+        from datetime import datetime
+
+        result["last_update"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         return result
 
@@ -456,4 +466,5 @@ async def create_proxmox_coordinator(hass, entry, client):
 
     coordinator.client = client
     coordinator.api = client
+
     return coordinator

@@ -109,8 +109,28 @@ class ProxmoxClient:
     async def get_cluster_tasks(self, hass):
         return await self.get(hass, "cluster/tasks") or []
 
+    async def get_nodes(self, hass):
+        """Return nodes in cluster."""
+        data = await self.get(hass, "nodes")
+        return data or []
+
+    async def get_node_ip(self, hass, node):
+        """Get primary IPv4 of a node"""
+        net = await self.get_node_network(hass, node)
+
+        for iface in net or []:
+            addr = iface.get("address")
+
+            if addr and not addr.startswith("127.") and ":" not in addr:
+                return addr
+
+        return None
+
     async def get_node_status(self, hass, node: str):
         return await self.get(hass, f"nodes/{node}/status")
+
+    async def get_node_updates(self, hass, node: str):
+        return await self.get(hass, f"nodes/{node}/apt/update")
 
     async def get_node_network(self, hass, node: str):
         return await self.get(hass, f"nodes/{node}/network") or []
@@ -160,8 +180,6 @@ class ProxmoxClient:
         return await self.get(hass, f"nodes/{node}/disks/list") or []
 
     async def control_vm(self, hass, node: str, vmid: str, command: str):
-        LOGGER.info(f"Sending {command} command to VM {vmid} on node {node}")
-
         valid_vm_commands = [
             "start",
             "stop",
@@ -188,11 +206,6 @@ class ProxmoxClient:
 
         result = await self.post(hass, path, data)
 
-        if result:
-            LOGGER.info(f"VM command {command} sent successfully to VM {vmid}")
-        else:
-            LOGGER.error(f"Error sending VM command {command} to VM {vmid}")
-
         return result
 
     async def execute_vm_command(self, hass, node: str, vmid: str, command: str):
@@ -211,8 +224,6 @@ class ProxmoxClient:
             return False
 
     async def control_container(self, hass, node: str, vmid: str, command: str):
-        LOGGER.info(f"Sending {command} command to CT {vmid} on node {node}")
-
         valid_ct_commands = ["start", "stop", "shutdown", "reboot"]
         if command not in valid_ct_commands:
             LOGGER.error(
@@ -228,21 +239,14 @@ class ProxmoxClient:
 
         result = await self.post(hass, path, data)
 
-        if result:
-            LOGGER.info(f"CT command {command} sent successfully to CT {vmid}")
-        else:
-            LOGGER.error(f"Error sending CT command {command} to CT {vmid}")
-
         return result
 
     async def shutdown_node(self, hass, node: str):
-        LOGGER.info(f"Sending shutdown command to node {node}")
         path = f"nodes/{node}/status"
         data = {"command": "shutdown"}
         return await self.post(hass, path, data)
 
     async def reboot_node(self, hass, node: str):
-        LOGGER.info(f"Sending reboot command to node {node}")
         path = f"nodes/{node}/status"
         data = {"command": "reboot"}
         return await self.post(hass, path, data)
@@ -268,8 +272,7 @@ class ProxmoxClient:
                 r = requests.get(url, timeout=15)
                 r.raise_for_status()
                 return r.json()
-            except Exception as e:
-                LOGGER.error(f"Error fetching SMART data from {url}: {e}")
+            except Exception:
                 return {}
 
         return await hass.async_add_executor_job(_fetch)
@@ -282,11 +285,13 @@ class ProxmoxClient:
                 r = requests.get(url, timeout=15)
                 r.raise_for_status()
                 return r.json()
-            except Exception as e:
-                LOGGER.error(f"Error fetching MEMORY data from {url}: {e}")
+            except Exception:
                 return {}
 
         return await hass.async_add_executor_job(_fetch)
+
+    async def get_zfs_pools(self, hass, node):
+        return await self.get(hass, f"nodes/{node}/disks/zfs") or []
 
     async def start_vzdump(
         self,
@@ -328,13 +333,6 @@ class ProxmoxClient:
             data["notes-template"] = notes
 
         result = await self.post(hass, path, data)
-
-        if result:
-            LOGGER.info(
-                f"vzdump started successfully for {vmid} (mode={mode}, compress={compress})"
-            )
-        else:
-            LOGGER.warning(f"vzdump returned no response for {vmid}")
 
         return result
 
@@ -430,3 +428,15 @@ class ProxmoxClient:
 
     async def get_pbs_snapshots(self, hass, store: str):
         return await self.pbs_get(hass, f"admin/datastore/{store}/snapshots") or []
+
+    async def execute_pbs_node_command(self, hass, node, command):
+        """Execute a command on PBS node (shutdown/reboot)."""
+        try:
+            path = f"nodes/{node}/status"
+            data = {"command": command}
+
+            result = await self.pbs_post(hass, path, data)
+            return result is not None
+        except Exception as e:
+            LOGGER.error("Error executing PBS node command %s: %s", command, e)
+            return False

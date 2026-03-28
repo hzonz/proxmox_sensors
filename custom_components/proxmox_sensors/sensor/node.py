@@ -17,66 +17,55 @@ class ProxmoxNodeSensor(ProxmoxBaseSensor):
         unit = None
         icon = "mdi:information-outline"
         state_class = None
+        name = sensor_id.replace("_", " ").title()
 
         if sensor_id == "cpu":
-            self._attr_translation_key = "cpu_usage"
+            name = "CPU Usage"
             unit = "%"
             icon = "mdi:cpu-64-bit"
             state_class = "measurement"
 
         elif sensor_id == "wait":
-            self._attr_translation_key = "cpu_wait"
+            name = "CPU Wait"
             unit = "%"
             icon = "mdi:timer-sand"
             state_class = "measurement"
 
         elif sensor_id == "uptime":
-            self._attr_translation_key = "uptime"
+            name = "Uptime"
             icon = "mdi:clock-outline"
 
         elif sensor_id == "kversion":
-            self._attr_translation_key = "kernel_version"
+            name = "Kernel Version"
             icon = "mdi:linux"
 
         elif sensor_id == "pveversion":
-            self._attr_translation_key = "pve_version"
+            name = "PVE Version"
             icon = "mdi:numeric"
 
         elif sensor_id == "loadavg":
-            self._attr_translation_key = "load_average"
+            name = "Load Average"
             icon = "mdi:chart-line"
 
         elif sensor_id == "network_rx":
-            self._attr_translation_key = "network_rx"
+            name = "Network RX"
             unit = "bytes"
             icon = "mdi:download-network"
             state_class = "measurement"
 
         elif sensor_id == "network_tx":
-            self._attr_translation_key = "network_tx"
+            name = "Network TX"
             unit = "bytes"
             icon = "mdi:upload-network"
             state_class = "measurement"
 
-        else:
-            self._attr_translation_key = sensor_id.lower()
+        name = f"{name} ({node})"
 
         unique_id = f"proxmox_node_{node}_{sensor_id}"
-        super().__init__(
-            coordinator, sensor_id, self._attr_translation_key, unit, unique_id, node
-        )
+        super().__init__(coordinator, sensor_id, name, unit, unique_id, node)
 
         self._attr_icon = icon
         self._attr_state_class = state_class
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"proxmox_node_{self._node}")},
-            "name": f"1. Node: {self._node}",
-            "manufacturer": "Proxmox",
-            "model": "Proxmox Node",
-        }
 
     def _get_value(self):
         value = self.coordinator.data.get("node", {}).get(self._sensor_id)
@@ -105,20 +94,36 @@ class ProxmoxNodeSensor(ProxmoxBaseSensor):
 
         return value
 
+    @property
+    def extra_state_attributes(self):
+        # Apply only to CPU sensor
+        if self._sensor_id != "cpu":
+            return {}
+
+        node_data = self.coordinator.data.get("node", {})
+
+        cpu = node_data.get("cpu")
+        cpuinfo = node_data.get("cpuinfo", {})
+        cores = cpuinfo.get("cores")
+
+        attrs = {}
+
+        if cores:
+            attrs["cpu_cores"] = cores
+
+            if cpu is not None:
+                try:
+                    attrs["cpu_average_per_core"] = round((cpu * 100) / cores, 2)
+                except (ValueError, TypeError, ZeroDivisionError):
+                    pass
+
+        return attrs
+
 
 class ProxmoxClusterTasksSensor(ProxmoxBaseSensor):
     def __init__(self, coordinator, node):
         uid = f"proxmox_{node}_cluster_tasks"
         super().__init__(coordinator, "last_task", "Last Task", None, uid, node)
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"proxmox_node_{self._node}")},
-            "name": f"1. Node: {self._node}",
-            "manufacturer": "Proxmox",
-            "model": "Proxmox Node",
-        }
 
     def _get_value(self):
         task = self.coordinator.data.get("node", {}).get("last_task")
@@ -151,15 +156,6 @@ class ProxmoxCPUInfoSensor(ProxmoxBaseSensor):
         )
         self._attr_icon = "mdi:cpu-64-bit"
 
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"proxmox_node_{self._node}")},
-            "name": f"1. Node: {self._node}",
-            "manufacturer": "Proxmox",
-            "model": "Proxmox Node",
-        }
-
     def _get_value(self):
         info = self.coordinator.data.get("node", {}).get("cpuinfo", {})
         return info.get("model") or f"{info.get('cores', '?')} cores"
@@ -172,15 +168,6 @@ class ProxmoxKSMSensor(ProxmoxBaseSensor):
         )
         self._attr_icon = "mdi:memory-arrow-down"
 
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"proxmox_node_{self._node}")},
-            "name": f"1. Node: {self._node}",
-            "manufacturer": "Proxmox",
-            "model": "Proxmox Node",
-        }
-
     def _get_value(self):
         val = self.coordinator.data.get("node", {}).get("ksm", {}).get("shared", 0)
         return round(val / (1024**3), 2)
@@ -192,15 +179,6 @@ class ProxmoxMemorySensor(ProxmoxBaseSensor):
             coordinator, "memory", "Memory Usage", "%", f"p_node_mem_{node}", node
         )
         self._attr_icon = "mdi:memory"
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"proxmox_node_{self._node}")},
-            "name": f"1. Node: {self._node}",
-            "manufacturer": "Proxmox",
-            "model": "Proxmox Node",
-        }
 
     def _get_value(self):
         data = self.coordinator.data.get("node", {}).get("memory", {})
@@ -215,15 +193,6 @@ class ProxmoxSwapSensor(ProxmoxBaseSensor):
             coordinator, "swap", "Swap Usage", "%", f"p_node_swap_{node}", node
         )
         self._attr_icon = "mdi:swap-horizontal"
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"proxmox_node_{self._node}")},
-            "name": f"1. Node: {self._node}",
-            "manufacturer": "Proxmox",
-            "model": "Proxmox Node",
-        }
 
     def _get_value(self):
         data = self.coordinator.data.get("node", {}).get("swap", {})
@@ -245,19 +214,67 @@ class ProxmoxRootFSSensor(ProxmoxBaseSensor):
         )
         self._attr_icon = "mdi:folder"
 
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"proxmox_node_{self._node}")},
-            "name": f"1. Node: {self._node}",
-            "manufacturer": "Proxmox",
-            "model": "Proxmox Node",
-        }
-
     def _get_value(self):
         data = self.coordinator.data.get("node", {}).get("rootfs", {})
         total = data.get("total", 1)
         return round((data.get("used", 0) / total) * 100, 2)
+
+
+class ProxmoxNodeUpdatesSensor(ProxmoxBaseSensor):
+    """Sensor for node updates."""
+
+    def __init__(self, coordinator, node):
+        super().__init__(
+            coordinator,
+            "node_updates",
+            "Node Updates",
+            None,
+            f"p_node_updates_{node}",
+            node,
+        )
+        self._attr_state_class = SensorStateClass.MEASUREMENT
+
+    def _get_value(self):
+        data = self.coordinator.data.get("node_updates", {})
+
+        if data.get("error"):
+            return None
+
+        return data.get("count", 0)
+
+    @property
+    def extra_state_attributes(self):
+        data = self.coordinator.data.get("node_updates", {})
+
+        if data.get("error"):
+            return {
+                "error": True,
+                "message": "Failed to fetch updates",
+            }
+
+        packages = data.get("packages", [])
+
+        return {
+            "available": data.get("available", False),
+            "count": data.get("count", 0),
+            "packages": [
+                f"{p.get('Package')} ({p.get('OldVersion')} → {p.get('Version')})"
+                for p in packages
+                if isinstance(p, dict) and p.get("Package")
+            ],
+        }
+
+    @property
+    def icon(self):
+        data = self.coordinator.data.get("node_updates", {})
+
+        if data.get("error"):
+            return "mdi:alert-circle"
+
+        if data.get("count", 0) > 0:
+            return "mdi:package-up"
+
+        return "mdi:package-check"
 
 
 class ProxmoxNodesSensor(CoordinatorEntity, SensorEntity):
@@ -280,7 +297,48 @@ class ProxmoxNodesSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self):
-        return self._node
+        data = self.coordinator.data
+
+        node_status = data.get("node_status_map", {}).get(self._node, "unknown")
+
+        if node_status != "online":
+            return "offline"
+
+        node_data = data.get("node", {})
+
+        cpu = node_data.get("cpu", 0)
+        memory = node_data.get("memory", {})
+        wait = node_data.get("wait", 0)
+        load = node_data.get("loadavg", [])
+        cores = node_data.get("cpuinfo", {}).get("cores", 1)
+
+        cpu_p = cpu * 100 if isinstance(cpu, (int, float)) else 0
+        ram_p = (
+            (memory.get("used", 0) / memory.get("total", 1)) * 100
+            if memory.get("total")
+            else 0
+        )
+        io = wait * 100 if isinstance(wait, (int, float)) else 0
+
+        try:
+            load1 = float(load[0]) if len(load) > 0 else 0
+        except (ValueError, TypeError):
+            load1 = 0
+
+        load_ratio = load1 / cores if cores else 0
+
+        score = cpu_p * 0.4 + ram_p * 0.3 + (load_ratio * 100) * 0.2 + io * 0.1
+
+        if score < 20:
+            return "Excellent"
+        elif score < 40:
+            return "Good"
+        elif score < 60:
+            return "Moderate"
+        elif score < 80:
+            return "High"
+        else:
+            return "Critical"
 
     @property
     def extra_state_attributes(self):
@@ -304,27 +362,42 @@ class ProxmoxNodesSensor(CoordinatorEntity, SensorEntity):
         storage_details = []
 
         if "storage" in data:
-            storage_count = len(data["storage"])
             for storage_name, storage_info in data["storage"].items():
-                if isinstance(storage_info, dict):
-                    storage_details.append(
-                        {
-                            "name": storage_name,
-                            "type": storage_info.get("type", "unknown"),
-                            "total_gb": round(
-                                storage_info.get("total", 0) / (1024**3), 2
-                            ),
-                            "used_gb": round(
-                                storage_info.get("used", 0) / (1024**3), 2
-                            ),
-                            "free_gb": round(
-                                storage_info.get("avail", 0) / (1024**3), 2
-                            ),
-                            "percentage": storage_info.get("percentage", 0),
-                        }
-                    )
+                if not isinstance(storage_info, dict):
+                    continue
 
-        node_status = node_data.get("status", "unknown")
+                total_bytes = storage_info.get("total", 0) or 0
+                used_bytes = storage_info.get("used", 0) or 0
+
+                if total_bytes == 0 and used_bytes == 0:
+                    continue
+
+                free_bytes = max(total_bytes - used_bytes, 0)
+
+                total_gb = round(total_bytes / (1024**3), 2)
+                used_gb = round(used_bytes / (1024**3), 2)
+                free_gb = round(free_bytes / (1024**3), 2)
+
+                percentage = (
+                    round(min((used_bytes / total_bytes) * 100, 100), 1)
+                    if total_bytes > 0
+                    else 0
+                )
+
+                storage_details.append(
+                    {
+                        "name": storage_name,
+                        "type": storage_info.get("type", "unknown"),
+                        "total_gb": total_gb,
+                        "used_gb": used_gb,
+                        "free_gb": free_gb,
+                        "percentage": percentage,
+                    }
+                )
+
+            storage_count = len(storage_details)
+
+        node_status = data.get("node_status_map", {}).get(self._node, "unknown")
         cpu_usage = node_data.get("cpu", 0)
         if isinstance(cpu_usage, (int, float)):
             cpu_usage = round(cpu_usage * 100, 2)
@@ -343,10 +416,16 @@ class ProxmoxNodesSensor(CoordinatorEntity, SensorEntity):
                     if task.get("status") not in ["OK", "stopped"]:
                         active_tasks += 1
 
+        # Calculate CPU per core
+        cpu_per_core = None
+        if cpu_usage and node_data.get("cpuinfo", {}).get("cores"):
+            cores = node_data.get("cpuinfo", {}).get("cores")
+            cpu_per_core = round(cpu_usage / cores, 2)
+
         return {
             "node_name": self._node,
             "status": node_status,
-            "cpu_usage_percent": cpu_usage,
+            "cpu_average_per_core": cpu_per_core,
             "memory_usage_percent": memory_percentage,
             "vm_count": vm_count,
             "ct_count": ct_count,
@@ -371,12 +450,23 @@ class ProxmoxStoragesSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{entry_id}_storages_{node}"
         self._attr_icon = "mdi:database"
 
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, f"proxmox_node_{self._node}")},
-            "manufacturer": "Proxmox",
-            "model": "Proxmox Node",
-            "name": f"1. Node: {self._node}",
-        }
+    def _get_storage_data(self):
+        """Get storage data from coordinator, checking multiple possible structures."""
+        data = self.coordinator.data
+
+        if "storages_by_node" in data:
+            node_storages = data["storages_by_node"].get(self._node, {})
+            if node_storages:
+                return node_storages
+
+        if "storage" in data and data["storage"]:
+            return data["storage"]
+
+        if "all_storages" in data and self._node in data["all_storages"]:
+            if "storage" in data:
+                return data["storage"]
+
+        return {}
 
     def _format_size(self, bytes_size):
         if bytes_size == 0:
@@ -404,16 +494,14 @@ class ProxmoxStoragesSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self):
-        data = self.coordinator.data
-        if "storage" in data:
-            return len(data["storage"])
-        return 0
+        storage_data = self._get_storage_data()
+        return len(storage_data)
 
     @property
     def extra_state_attributes(self):
-        data = self.coordinator.data
+        storage_data = self._get_storage_data()
 
-        if "storage" not in data:
+        if not storage_data:
             return {
                 "node": self._node,
                 "storages": [],
@@ -424,15 +512,20 @@ class ProxmoxStoragesSensor(CoordinatorEntity, SensorEntity):
         storages_list = []
         total_capacity_bytes = 0
         total_used_bytes = 0
-        total_free_bytes = 0
         type_accumulators = {}
 
-        for storage_name, storage_info in data["storage"].items():
+        for storage_name, storage_info in storage_data.items():
             if isinstance(storage_info, dict):
-                total_bytes = storage_info.get("total", 0)
-                used_bytes = storage_info.get("used", 0)
-                free_bytes = storage_info.get("avail", 0)
-                percentage = storage_info.get("percentage", 0)
+                total_bytes = storage_info.get("total", 0) or 0
+                used_bytes = storage_info.get("used", 0) or 0
+                avail_bytes = storage_info.get("avail", 0) or 0
+
+                if avail_bytes == 0 and total_bytes > 0:
+                    avail_bytes = max(total_bytes - used_bytes, 0)
+
+                percentage = (
+                    round((used_bytes / total_bytes * 100), 1) if total_bytes > 0 else 0
+                )
                 storage_type = storage_info.get("type", "unknown")
 
                 if storage_type not in type_accumulators:
@@ -442,7 +535,7 @@ class ProxmoxStoragesSensor(CoordinatorEntity, SensorEntity):
 
                 total_gb = self._bytes_to_gb(total_bytes)
                 used_gb = self._bytes_to_gb(used_bytes)
-                free_gb = self._bytes_to_gb(free_bytes)
+                free_gb = self._bytes_to_gb(avail_bytes)
 
                 storages_list.append(
                     {
@@ -452,7 +545,7 @@ class ProxmoxStoragesSensor(CoordinatorEntity, SensorEntity):
                         "content": storage_info.get("content", ""),
                         "total": self._format_size(total_bytes),
                         "used": self._format_size(used_bytes),
-                        "free": self._format_size(free_bytes),
+                        "free": self._format_size(avail_bytes),
                         "total_gb": total_gb,
                         "used_gb": used_gb,
                         "free_gb": free_gb,
@@ -464,8 +557,8 @@ class ProxmoxStoragesSensor(CoordinatorEntity, SensorEntity):
 
                 total_capacity_bytes += total_bytes
                 total_used_bytes += used_bytes
-                total_free_bytes += free_bytes
 
+        total_free_bytes = max(total_capacity_bytes - total_used_bytes, 0)
         total_capacity_gb = self._bytes_to_gb(total_capacity_bytes)
         total_used_gb = self._bytes_to_gb(total_used_bytes)
         total_free_gb = self._bytes_to_gb(total_free_bytes)
@@ -498,29 +591,200 @@ class ProxmoxStoragesSensor(CoordinatorEntity, SensorEntity):
             "total_free_gb": total_free_gb,
             "total_percentage": total_percentage,
             "by_type": by_type,
-            "last_update": data.get("last_update", "unknown"),
+            "last_update": self.coordinator.data.get("last_update", "unknown"),
             "summary": f"{len(storages_list)} storages, {self._format_size(total_capacity_bytes)} total, {total_percentage}% used",
         }
 
+    @property
+    def device_info(self):
+        node_id = self._node.lower()
+        display_node = self._node.capitalize()
 
-class PVEBackupProgressSensor(CoordinatorEntity, SensorEntity):
+        return {
+            "identifiers": {(DOMAIN, f"proxmox_node_{node_id}")},
+            "name": f"1. Node: {display_node}",
+            "manufacturer": "Proxmox",
+            "model": "Proxmox Node",
+        }
+
+
+class ProxmoxNodeIOWaitSensor(ProxmoxBaseSensor):
+    """Sensor for node IO wait (disk pressure)."""
+
+    def __init__(self, coordinator, node):
+        super().__init__(
+            coordinator,
+            "wait",
+            "IO Wait",
+            "%",
+            f"p_node_iowait_{node}",
+            node,
+        )
+        self._attr_icon = "mdi:harddisk"
+        self._attr_state_class = "measurement"
+
+    def _get_value(self):
+        value = self.coordinator.data.get("node", {}).get("wait", 0)
+
+        if isinstance(value, (int, float)):
+            return round(value * 100, 2)
+
+        return 0
+
+    @property
+    def extra_state_attributes(self):
+        value = self.coordinator.data.get("node", {}).get("wait", 0)
+
+        percent = round(value * 100, 2) if isinstance(value, (int, float)) else 0
+
+        if percent < 2:
+            level = "Low"
+        elif percent < 5:
+            level = "Moderate"
+        elif percent < 10:
+            level = "High"
+        else:
+            level = "Critical"
+
+        return {
+            "raw": value,
+            "level": level,
+        }
+
+
+class ProxmoxNodeLoadAverageSensor(ProxmoxBaseSensor):
+    """Sensor for node load average (1 min)."""
+
+    def __init__(self, coordinator, node):
+        super().__init__(
+            coordinator,
+            "loadavg_1m",
+            "Load Average (1m)",
+            None,
+            f"p_node_load1_{node}",
+            node,
+        )
+        self._attr_icon = "mdi:chart-line"
+
+    def _get_value(self):
+        load = self.coordinator.data.get("node", {}).get("loadavg", [])
+
+        if isinstance(load, list) and len(load) >= 1:
+            try:
+                return round(float(load[0]), 2)
+            except (ValueError, TypeError):
+                return None
+
+        return None
+
+    @property
+    def extra_state_attributes(self):
+        node_data = self.coordinator.data.get("node", {})
+        load = node_data.get("loadavg", [])
+        cpuinfo = node_data.get("cpuinfo", {})
+
+        cores = cpuinfo.get("cores")
+
+        load1 = float(load[0]) if len(load) > 0 else 0
+        load5 = float(load[1]) if len(load) > 1 else 0
+        load15 = float(load[2]) if len(load) > 2 else 0
+
+        status = "OK"
+        if cores:
+            if load1 > cores:
+                status = "Overloaded"
+            elif load1 > cores * 0.7:
+                status = "High"
+
+        return {
+            "load_1m": load1,
+            "load_5m": load5,
+            "load_15m": load15,
+            "cores": cores,
+            "status": status,
+        }
+
+
+class ProxmoxNodeScoreSensor(ProxmoxBaseSensor):
+    """Overall node performance score (lower is better)."""
+
+    def __init__(self, coordinator, node):
+        super().__init__(
+            coordinator,
+            "node_score",
+            "Node Score",
+            None,
+            f"p_node_score_{node}",
+            node,
+        )
+        self._attr_icon = "mdi:speedometer"
+
+    def _get_value(self):
+        data = self.coordinator.data.get("node", {})
+
+        cpu = data.get("cpu", 0)
+        memory = data.get("memory", {})
+        wait = data.get("wait", 0)
+        load = data.get("loadavg", [])
+        cores = data.get("cpuinfo", {}).get("cores", 1)
+
+        cpu_p = cpu * 100 if isinstance(cpu, (int, float)) else 0
+        ram_p = (
+            (memory.get("used", 0) / memory.get("total", 1)) * 100
+            if memory.get("total")
+            else 0
+        )
+        io = wait * 100 if isinstance(wait, (int, float)) else 0
+
+        try:
+            load1 = float(load[0]) if len(load) > 0 else 0
+        except (ValueError, TypeError):
+            load1 = 0
+
+        load_ratio = load1 / cores if cores else 0
+
+        score = cpu_p * 0.4 + ram_p * 0.3 + (load_ratio * 100) * 0.2 + io * 0.1
+
+        return round(score, 2)
+
+    @property
+    def extra_state_attributes(self):
+        score = self.native_value or 0
+
+        if score < 20:
+            state = "Excellent"
+        elif score < 40:
+            state = "Good"
+        elif score < 60:
+            state = "Moderate"
+        elif score < 80:
+            state = "High"
+        else:
+            state = "Critical"
+
+        return {
+            "interpretation": "Lower is better",
+            "state": state,
+        }
+
+
+class PVEBackupProgressSensor(ProxmoxBaseSensor):
     """Sensor for backup progress in PVE using available tasks data."""
 
     def __init__(self, coordinator, node, entry_id):
-        super().__init__(coordinator)
-        self._node = node
-        self._entry_id = entry_id
-        self._attr_name = f"PVE Backup Progress ({node})"
-        self._attr_unique_id = f"{entry_id}_backup_progress_{node}"
-        self._attr_icon = "mdi:backup-restore"
-        self._attr_native_unit_of_measurement = "%"
+        name = "Backup Progress"
+        uid = f"proxmox_backup_progress_{node}"
 
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, f"proxmox_node_{self._node}")},
-            "manufacturer": "Proxmox",
-            "model": "Proxmox Node",
-            "name": f"1. Node: {self._node}",
-        }
+        super().__init__(
+            coordinator,
+            node,
+            name,
+            None,
+            uid,
+            node,
+        )
+
+        self._attr_icon = "mdi:backup-restore"
 
     def _get_backup_tasks(self):
         data = self.coordinator.data
@@ -529,13 +793,14 @@ class PVEBackupProgressSensor(CoordinatorEntity, SensorEntity):
         if "tasks" in data:
             for task in data["tasks"]:
                 if (
-                    task.get("type") in ["vzdump", "backup"]
-                    and task.get("node") == self._node
-                ):
+                    "vzdump" in str(task.get("type", "")).lower()
+                    or "backup" in str(task.get("id", "")).lower()
+                    or "vzdump" in str(task.get("upid", "")).lower()
+                ) and task.get("node") == self._node:
                     backup_tasks.append(
                         {
                             "id": task.get("id", task.get("upid", "unknown")),
-                            "vmid": task.get("id", "unknown"),
+                            "vmid": self._extract_vmid(task),
                             "type": task.get("type", "unknown"),
                             "status": task.get("status", "unknown"),
                             "upid": task.get("upid", ""),
@@ -546,15 +811,27 @@ class PVEBackupProgressSensor(CoordinatorEntity, SensorEntity):
                             "node": task.get("node", "unknown"),
                         }
                     )
-
         return backup_tasks
+
+    def _extract_vmid(self, task):
+        upid = str(task.get("upid", ""))
+
+        try:
+            if "vm/" in upid:
+                return upid.split("vm/")[1].split(":")[0]
+            if "ct/" in upid:
+                return upid.split("ct/")[1].split(":")[0]
+        except Exception:
+            pass
+
+        return "unknown"
 
     @property
     def native_value(self):
         backup_tasks = self._get_backup_tasks()
 
         if not backup_tasks:
-            return 0
+            return "idle"
 
         from time import time
 
@@ -564,12 +841,20 @@ class PVEBackupProgressSensor(CoordinatorEntity, SensorEntity):
         ]
 
         if not recent_tasks:
-            return 0
+            return "idle"
 
-        completed = len([t for t in recent_tasks if t.get("status") == "OK"])
-        total = len(recent_tasks)
+        running = [t for t in recent_tasks if t.get("status") == "running"]
+        failed = [t for t in recent_tasks if t.get("status") in ["error", "failed"]]
+        completed = [t for t in recent_tasks if t.get("status") == "OK"]
 
-        return round((completed / total) * 100, 1) if total > 0 else 0
+        if running:
+            return "running"
+        elif failed:
+            return "error"
+        elif completed:
+            return "ok"
+        else:
+            return "idle"
 
     @property
     def extra_state_attributes(self):
@@ -628,35 +913,43 @@ class PVEBackupProgressSensor(CoordinatorEntity, SensorEntity):
 
         current_task = running_tasks[0] if running_tasks else None
 
+        total = len(recent_tasks)
+        completed = len([t for t in recent_tasks if t.get("status") == "OK"])
+
+        percentage = round((completed / total) * 100, 1) if total > 0 else 0
+
         return {
             "node": self._node,
             "total_backups_last_24h": len(recent_tasks),
             "running": len(running_tasks),
             "completed": len(completed_tasks),
+            "percentage": percentage,
             "failed": len(failed_tasks),
             "other": len(other_tasks),
-            "percentage": self.native_value,
             "last_update": self.coordinator.data.get("last_update", "unknown"),
             "current_task": (
                 {
-                    "vmid": current_task.get("vmid") if current_task else None,
-                    "user": current_task.get("user") if current_task else None,
-                    "starttime": (
-                        current_task.get("starttime") if current_task else None
-                    ),
-                    "upid": current_task.get("upid") if current_task else None,
+                    "vmid": self._extract_vmid(current_task),
+                    "user": current_task.get("user"),
+                    "starttime": current_task.get("starttime"),
+                    "upid": current_task.get("upid"),
                 }
                 if current_task
-                else None
+                else "idle"
             ),
             "recent_backups": recent_backups_list,
             "all_backups_count": len(backup_tasks),
         }
 
     @property
-    def state_class(self):
-        return SensorStateClass.MEASUREMENT
+    def icon(self):
+        state = self.native_value
 
-    @property
-    def suggested_display_precision(self):
-        return 1
+        if state == "running":
+            return "mdi:backup-restore"
+        elif state == "error":
+            return "mdi:alert"
+        elif state == "ok":
+            return "mdi:check-circle"
+        else:
+            return "mdi:sleep"

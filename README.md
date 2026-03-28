@@ -1,32 +1,67 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/img/logo_int.png" alt="Proxmox Extended Sensors Logo" width="600"/>
+  <img src="https://raw.githubusercontent.com/Javisen/proxmox_sensors/main/img/logo_int_v3.png" alt="Proxmox Extended Sensors Logo" width="600"/>
 </p>
+
+> Advanced monitoring and control for Proxmox VE & PBS in Home Assistant
 
 # 🚀 Proxmox Extended Sensors
 
-## Introduction
+## 🚀 Introduction
 
-**Proxmox Extended Sensors is the most complete, efficient, and advanced integration for Home Assistant, designed to provide real control and deep monitoring of Proxmox VE and Proxmox Backup Server (PBS).**
+**Proxmox Extended Sensors is a Home Assistant integration designed to provide deep monitoring and control of Proxmox VE and Proxmox Backup Server (PBS).**
 
-This integration goes far beyond simple data display: it delivers **full visibility** of your infrastructure and adds **real control capabilities**, allowing you to manage nodes, virtual machines, containers, disks, datastores, and PBS tasks directly from Home Assistant.
+It goes beyond basic metrics by delivering **real insight into system state**, combining resource monitoring, task tracking, and infrastructure control in a single, clean integration.
 
-Unlike other solutions, Proxmox Extended Sensors is built with a professional approach:
+With V3, the focus shifts from raw data to **meaningful information**, allowing you to understand not only what is happening, but also how your system is behaving.
 
-- **Advanced monitoring** of hardware, VMs, CTs, disks, and PBS  
-- **Full control actions** (start, stop, shutdown, reboot, reset, pause, hibernate…)  
-- **Fully integrated backup services**, both single and massive backups  
-- **Complete PBS compatibility**, including deduplication and automatic naming  
-- **Secure Token‑based authentication**  
-- **Clean and organized entity/device structure**  
-- **Minimal resource usage** thanks to optimized polling  
+---
 
-Backups created from Home Assistant integrate seamlessly with those created from Proxmox VE, using identifiable names such as: HA-{{vmid}}-{{guestname}} 
-and retain **all PBS advantages**, including deduplication and compatibility with existing backup chains.
+## 🔍 Key Capabilities
 
-In short, this integration turns Home Assistant into a **complete control panel for Proxmox**, combining detailed monitoring, advanced automation, and full infrastructure control.
+* **Comprehensive monitoring of nodes**, VMs, CTs, storage, and PBS
+* **System insight sensors** such as:
+  * **Node Score** (overall load evaluation)
+  * **Load Average**
+  * **IO Wait** (disk pressure)
+  * **Stress and overload detection**
+* **Control actions** for VMs and containers (start, stop, reboot, etc.)
+* **Integrated backup services** with flexible configuration
+* **PBS support**, including datastore awareness and task tracking
+* **Token-based authentication** for secure access
+* **Clean and consistent entity structure**
+* **Efficient data handling** with optimized updates
 
+---
 
-  
+## 🧠 Why this integration
+Instead of exposing only raw values, Proxmox Extended Sensors provides interpreted data that helps you:
+
+* Detect system bottlenecks (CPU, disk, load)
+* Understand real node usage
+* Build smarter automations
+* Make better decisions when managing workloads
+
+---
+
+## 🔗 Backup Integration
+
+Backups triggered from Home Assistant are fully compatible with Proxmox VE and PBS, using identifiable naming such as:
+```
+HA-{{vmid}}-{{guestname}}
+```
+
+All PBS features remain intact, including deduplication and existing backup chains.
+
+---
+
+## 🎯 Summary
+
+This integration turns Home Assistant into a centralized control and monitoring panel for Proxmox, combining:
+
+* Real system visibility
+* Smart sensors
+* Infrastructure control
+* Automation-ready data
 
 ---
 
@@ -42,6 +77,7 @@ In short, this integration turns Home Assistant into a **complete control panel 
 [![Nederlands](https://img.shields.io/badge/NEDERLANDS-orange?style=for-the-badge&logo=translate&logoColor=white)](docs/nl/README.md)
 [![Português](https://img.shields.io/badge/PORTUGU%C3%8AS-green?style=for-the-badge&logo=translate&logoColor=white)](docs/pt/README.md)
 [![Русский](https://img.shields.io/badge/%D0%A0%D0%A3%D0%A1%D0%A1%D0%9A%D0%98%D0%99-lightgrey?style=for-the-badge&logo=translate&logoColor=white)](docs/ru/README.md)
+[![Українська](https://img.shields.io/badge/%D0%A3%D0%9A%D0%A0%D0%90%D0%87%D0%9D%D0%A1%D0%AC%D0%9A%D0%90-yellow?style=for-the-badge&logo=translate&logoColor=white)](docs/uk/README.md)
 
 ---
 
@@ -49,55 +85,62 @@ In short, this integration turns Home Assistant into a **complete control panel 
 
 - Proxmox VE 7.x / 8.x / 9.x
 - Proxmox Backup Server 3.x / 4.x  
-- Home Assistant 2024.x or newer  
+- Home Assistant 2024.x+ (2026.3+ recommended for full UI features)  
 
 ---
 
 ## 📑 Table of Contents
 
-- [Key Features](#-key-features-v200)
+- [Key Features](#-key-features-v300)
 - [Node Status & Performance](#-node-status--performance)
 - [Disks & SMART](#-disks--smart)
 - [Virtual Machines (QEMU)](#-virtual-machines-qemu)
 - [Containers (LXC)](#-containers-lxc)
-- [Backups Services](#-Backup-Services-VMs--CTs)
+- [Backup Services](#-backup-services-vms--cts)
 - [Proxmox Backup Server (PBS)](#-proxmox-backup-server-pbs)
 - [Control Actions (PVE & PBS)](#-control-actions-pve--pbs)
 - [Installation](#-installation)
 - [Visual Setup Guide](#-visual-setup-guide)
 - [Contributing](#-contributing--community)
 
-
-
 ---
 
-<details>
-  <summary>🖼️ Dashboard Preview</summary>
-  <p align="center">
-  <img src="/img/Dashboard.png" alt="Login Proxmox" ">
-  </p>
-  *Example of a modern dashboard using **Card-Mod** (Dark Mode) and our structured sensors:*
-</details>
+## 🔥 Key Features (v3.0.0)
+
+### 🧠 System Insight (NEW in V3)
+
+***Move from raw metrics to real system understanding.***
+
+* Node Score (overall node performance evaluation)
+* Load Average (1m, 5m, 15m)
+* IO Wait (disk pressure detection)
+* Node Stress detection
+* Disk overload detection
+* CPU cores + per-core usage (Node / VM / CT)
+
+## ⚙️ Improved Setup Experience (NEW in V3)
+
+- Automatic node discovery  
+- Optional manual node selection from detected nodes  
+- No need to manually enter node names  
 
 ---
-
-## 🔥 Key Features (v2.0.0)
 
 ### 🌡️ Advanced Hardware Monitoring (PVE & PBS)
 
 - **Real‑time temperatures:** CPU cores, VRM, chipset, NVMe/SSD/HDD.
 - **Mechanical sensors:** Fan speeds (RPM), voltages and other board sensors.
-- **Smart filtering:** Only entities with valid data are created to keep your system clean.  
+- **Smart filtering:** Only entities with valid data are created to keep your system clean.
+- **Unified temperature sensors (CPU + NVMe)**
   > Requires `lm-sensors` on the Proxmox host.
 
 ---
 
 ### 🧠 Node Status & Performance
 
-- CPU usage, I/O wait, load average.
-- RAM total/used/free and percentage.
-- Uptime and kernel/PVE version.
-- Network RX/TX sensors for node, VMs and containers.
+- CPU, RAM, uptime, kernel & PVE version  
+- Network monitoring (RX/TX)  
+- Tasks and system status
 
 <details>
   <summary>🔳 Node Attributes</summary>
@@ -110,6 +153,27 @@ In short, this integration turns Home Assistant into a **complete control panel 
   <summary>⭕ Node Controls</summary>
   <p align="center">
     <img src="img/pve/node_controls.png" alt="Node Controls" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🟢 Node Score</summary>
+  <p align="center">
+    <img src="img/pve/node_score_attr.png" alt="Node Score" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>💾 Node Storage</summary>
+  <p align="center">
+    <img src="img/pve/node_storage_attr.png" alt="Node Storage" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🔄 Node Updates</summary>
+  <p align="center">
+    <img src="img/pve/node_update_attr.png" alt="Node Updates" width="600">
   </p>
 </details>
 
@@ -133,6 +197,21 @@ In short, this integration turns Home Assistant into a **complete control panel 
     <img src="img/pve/cpu_wait.png" alt="CPU I/O Wait" width="600">
   </p>
 </details>
+
+<details>
+  <summary>⏳ CPU Usage</summary>
+  <p align="center">
+    <img src="img/pve/cpu_usage_attr.png" alt="CPU Usage" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>⏳ Load Average</summary>
+  <p align="center">
+    <img src="img/pve/load_average_attr.png" alt="Load Average" width="600">
+  </p>
+</details>
+
 
 ---
 
@@ -164,7 +243,6 @@ In short, this integration turns Home Assistant into a **complete control panel 
   </p>
 </details>
 
-
 ---
 
 ### 🖥️ Virtual Machines (QEMU)
@@ -173,11 +251,19 @@ In short, this integration turns Home Assistant into a **complete control panel 
 - Network RX/TX per VM.
 - Uptime and basic info sensors.
 - Clean device grouping per VM in Home Assistant.
+- CPU cores and per-core usage
 
 <details>
   <summary>🖥️ VM Controls & Sensors</summary>
   <p align="center">
     <img src="img/pve/vm_control.png" alt="VM Control" width="600">
+  </p>
+</details>
+
+<details>
+  <summary>🖥️ VM CPU Usage</summary>
+  <p align="center">
+    <img src="img/pve/vm_cpu_usage_attr.png" alt="VM CPU Usage" width="600">
   </p>
 </details>
 
@@ -189,6 +275,7 @@ In short, this integration turns Home Assistant into a **complete control panel 
 - Network RX/TX per container.
 - Uptime and basic info sensors.
 - Same clean device structure as VMs.
+- CPU cores and per-core usage
 
 <details>
   <summary>📦 Container Controls & Sensors</summary>
@@ -205,8 +292,10 @@ The integration includes two powerful backup services that allow you to create *
 
 ---
 
-### 🟦 1. Single Backup Service  
-Creates a backup of a specific VM or CT.
+### 🟦 Single Backup   
+Creates a backup of one or multiple VMs or CTs.
+
+💡 Supports batch backups using comma-separated VM/CT IDs
 
 **Service:** `proxmox_sensors.create_vzdump_backup`
 
@@ -214,7 +303,8 @@ Creates a backup of a specific VM or CT.
 
 - **Node** – Select the Proxmox node  
 - **Target Storage** – Any storage supporting backups (local, NFS, PBS, etc.)  
-- **VM/CT ID** – ID of the machine to back up  
+- **VM/CT ID** – One or multiple IDs (comma-separated)  
+  - Example: `100,114,118,125`  
 - **Backup mode:**  
   - `snapshot`  
   - `suspend`  
@@ -239,7 +329,7 @@ This ensures they are easy to identify while remaining **fully compatible with e
 
 ---
 
-### 🟩 2. Massive Backup Service  
+### 🟩 Massive Backup  
 Performs backups of **all VMs and/or CTs** on a selected node.
 
 **Service:** `proxmox_sensors.backup_all`
@@ -264,7 +354,6 @@ This service is ideal for scheduled nightly backups or automated maintenance rou
   </p>
 </details>
 
-
 ---
 
 ### 🟧 PBS Compatibility & Deduplication
@@ -281,11 +370,11 @@ No special configuration is required — PBS handles deduplication and indexing 
 
 ---
 
-
 ### 🗄️ Proxmox Backup Server (PBS)
 
 **Deep datastore and task monitoring:**
 
+- Improved task analysis and filtering
 - Datastore usage (GB and %), total, used and free.
 - Deduplication ratio and backup count.
 - Last backup time, size and status.
@@ -324,7 +413,7 @@ No special configuration is required — PBS handles deduplication and indexing 
 <details>
   <summary>🗄️ Datastore Maintenance</summary>
   <p align="center">
-    <img src="img/pbs/datastore_maintenance.png" alt="Datastore Maintenance" width="600">
+    <img src="img/pbs/maintenance.png" alt="Datastore Maintenance" width="600">
   </p>
 </details>
 
@@ -337,7 +426,7 @@ No special configuration is required — PBS handles deduplication and indexing 
 
 ---
 
-##PBS control actions:
+### 🗄️ PBS Control Actions
 
 - Run **Garbage Collector (GC)**.
 - Run **Prune**.
@@ -345,9 +434,9 @@ No special configuration is required — PBS handles deduplication and indexing 
 - Run **Sync**.
 
 <details>
-  <summary>🗄️ Dtatastore Maintenance</summary>
+  <summary>🗄️ Datastore Maintenance</summary>
   <p align="center">
-    <img src="img/pbs/datastore_maintenance.png" alt="Datastore Maintenance" width="600">
+    <img src="img/pbs/maintenance.png" alt="Datastore Maintenance" width="600">
   </p>
 </details>
 
@@ -366,6 +455,7 @@ No special configuration is required — PBS handles deduplication and indexing 
 
 - Shutdown node.
 - Reboot node.
+- Wake-on-LAN (WOL)
 
 **VM controls (QEMU):**
 
@@ -419,38 +509,46 @@ No special configuration is required — PBS handles deduplication and indexing 
 
 ## 🧭 Visual Setup Guide
 
-Below you can find a complete visual walkthrough of the setup process, including login methods, resource selection, and configuration steps.
+Below is a complete visual walkthrough of the setup process, including login methods, resource selection, and configuration steps.
 
 <details>
-  <summary>🪪 Captura: Server Connection</summary>
+  <summary>🪪 Screenshot: Server Connection</summary>
   <p align="center">
-    <img src="img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
+    <img src="img/install/setup_pve_1.png" alt="Proxmox Login" width="600">
   </p>
-  > No se usa "http://" ni "https://". Ya lo hacemos por tí.
+  > Do not include "http://" or "https://". This is handled automatically.
 </details>
 
 <details>
-  <summary>🪪 Captura: Loguin mediante User y Password (solo PVE)</summary>
+  <summary>🪪 Screenshot: Login with Username and Password (PVE only)</summary>
   <p align="center">
-    <img src="img/install/access_passw.png" alt="Login Proxmox" width="600">
+    <img src="img/install/access_passw.png" alt="Proxmox Login" width="600">
   </p>
-  > Asegúrate de usar el reino `pam` o `pve` según tu configuración de usuario.
+  > Make sure to use the correct realm (`pam` or `pve`) depending on your user configuration.
 </details>
 
 <details> 
-  <summary>🪪 Captura: Loguin mediante User y Token (PVE y PBS)</summary>
+  <summary>🪪 Screenshot: Login with Username and Token (PVE & PBS)</summary>
   <p align="center">
-    <img src="img/install/access_token.png" alt="Login Proxmox" width="600">
+    <img src="img/install/access_token.png" alt="Proxmox Token Login" width="600">
   </p>
-  **En el campo Token_id solo se debe poner el nombre del token**
+  > In the `Token_id` field, only the token name should be entered.
 </details>
 
 <details>
-  <summary>⚙️ Captura: Resources Selection</summary>
+  <summary>🧠 Screenshot: Node Selection (V3)</summary>
   <p align="center">
-    <img src="img/install/resources_select.png" alt="Login Proxmox" width="600">
+    <img src="../../img/install/node_select.png" alt="Node selection" width="600">
   </p>
-  *Nota: Selecciona los CTs, VMs y Storages que quieres añadir así como las opciones*
+  <p align="center"><i>Select automatically detected nodes or manually define which ones to include.</i></p>
+</details>
+
+<details>
+  <summary>⚙️ Screenshot: Resource Selection</summary>
+  <p align="center">
+    <img src="img/install/resources_select.png" alt="Resource Selection" width="600">
+  </p>
+  > Select the CTs, VMs, and storages you want to include, along with the desired options.
 </details>
 
 ---
@@ -466,3 +564,4 @@ Contributions are welcome! Feel free to open issues or pull requests.
 ---
 
 <p align="center"><i>Maintained by Javisen - MIT License</i></p>
+

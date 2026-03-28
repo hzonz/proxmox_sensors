@@ -2,48 +2,48 @@
   "config": {
     "step": {
       "user": {
-        "title": "1. Connessione al Server",
-        "description": "Inserisci l'indirizzo del tuo server Proxmox. La porta è gestita automaticamente (8006 per PVE / 8007 per PBS).",
+        "title": "1. Connessione al server",
+        "description": "Inserisci l'indirizzo del tuo server Proxmox (senza http:// o https://). La porta viene selezionata automaticamente (8006 per PVE / 8007 per PBS).",
         "data": {
-          "host": "Indirizzo del Server (IP o FQDN)",
-          "platform_type": "Tipo di Server"
+          "host": "Indirizzo del server (IP o dominio)",
+          "platform_type": "Tipo di server"
         }
       },
       "auth_method": {
-        "title": "2. Metodo di Autenticazione",
-        "description": "Seleziona se vuoi usare un Token API sicuro. Obbligatorio per PBS",
+        "title": "2. Metodo di autenticazione",
+        "description": "Scegli se utilizzare un token API sicuro. Obbligatorio per PBS.",
         "data": {
-          "use_token": "Usa Token API (Raccomandato)"
+          "use_token": "Usa token API (consigliato)"
         }
       },
       "credentials": {
-        "title": "3. Credenziali di Accesso",
-        "description": "Inserisci le informazioni necessarie per connettersi al server.",
+        "title": "3. Credenziali di accesso",
+        "description": "Inserisci le credenziali necessarie per connetterti al server.",
         "data": {
           "user": "Nome utente (es: root@pam o admin@pve)",
           "password": "Password",
-          "token_id": "ID Token (senza utente@pve!)",
-          "token_secret": "Segreto del Token",
-          "node": "Nome Nodo Proxmox (solo PVE)",
+          "token_id": "ID del token (senza user@pve!)",
+          "token_secret": "Secret del token",
+          "node": "Nome del nodo Proxmox (solo PVE)",
           "enable_lm_sensors": "Monitora temperature (lm-sensors)",
-          "verify_ssl": "Verifica Certificato SSL"
+          "verify_ssl": "Verifica certificato SSL"
         }
       },
       "select_resources": {
-        "title": "4. Selezione delle Risorse",
-        "description": "Seleziona quali elementi vuoi monitorare. Solo gli elementi selezionati creeranno entità in Home Assistant.",
+        "title": "4. Selezione risorse",
+        "description": "Seleziona quali elementi monitorare. Solo quelli selezionati creeranno entità in Home Assistant.",
         "data": {
-          "vms": "Macchine Virtuali (VM)",
-          "cts": "Contenitori (LXC)",
-          "storage": "Archiviazione",
-          "enable_physical_disks": "Monitora Dischi Fisici",
-          "enable_node_controls": "Abilita azioni di controllo del nodo (spegnimento/riavvio)"
+          "vms": "Macchine virtuali (VM)",
+          "cts": "Container (LXC)",
+          "storage": "Storage",
+          "enable_physical_disks": "Monitora dischi fisici",
+          "enable_node_controls": "Abilita azioni sul nodo (arresto/riavvio)"
         }
       }
     },
     "error": {
-      "cannot_connect": "Errore di connessione. Controlla l'indirizzo del server.",
-      "invalid_auth": "Autenticazione fallita. Controlla credenziali o permessi del Token.",
+      "cannot_connect": "Impossibile connettersi al server. Controlla l'indirizzo.",
+      "invalid_auth": "Autenticazione fallita. Controlla credenziali o permessi del token.",
       "unknown": "Errore imprevisto. Controlla i log di Home Assistant."
     },
     "abort": {
@@ -57,20 +57,20 @@
     },
     "step": {
       "init": {
-        "title": "Opzioni di Proxmox Sensors",
-        "description": "Seleziona quali risorse vuoi continuare a monitorare su questo nodo.",
+        "title": "Opzioni Proxmox Sensors",
+        "description": "Seleziona quali risorse continuare a monitorare su questo nodo.",
         "data": {
-          "vms": "Seleziona Macchine Virtuali (VM)",
-          "cts": "Seleziona Contenitori (LXC)",
-          "storage": "Seleziona Archiviazione",
+          "vms": "Seleziona macchine virtuali (VM)",
+          "cts": "Seleziona container (LXC)",
+          "storage": "Seleziona storage",
           "enable_lm_sensors": "Abilita sensori hardware (lm-sensors)",
           "enable_physical_disks": "Abilita sensori dischi fisici",
           "enable_smart_monitoring": "Abilita monitoraggio SMART",
-          "enable_node_controls": "Abilita azioni di controllo del nodo",
-          "enable_backup_progress": "Abilita sensore progresso backup",
-          "enable_storage_list": "Abilita sensore lista archiviazione",
-          "enable_nodes_list": "Abilita sensore lista nodi",
-          "verify_ssl": "Verifica Certificato SSL"
+          "enable_node_controls": "Abilita azioni sul nodo",
+          "enable_backup_progress": "Abilita sensore avanzamento backup",
+          "enable_storage_list": "Abilita sensore elenco storage",
+          "enable_nodes_list": "Abilita sensore elenco nodi",
+          "verify_ssl": "Verifica certificato SSL"
         }
       }
     }
@@ -78,10 +78,10 @@
 
   "entity": {
     "sensor": {
-      "cpu_usage": { "name": "Utilizzo CPU" },
-      "cpu_wait": { "name": "Attesa CPU (I/O)" },
+      "cpu_usage": { "name": "Uso CPU" },
+      "cpu_wait": { "name": "Attesa I/O CPU" },
       "uptime": { "name": "Tempo di attività" },
-      "kernel_version": { "name": "Versione Kernel" },
+      "kernel_version": { "name": "Versione kernel" },
       "pve_version": { "name": "Versione PVE" },
       "load_average": { "name": "Carico medio" },
       "network_rx": { "name": "Rete RX" },
@@ -90,38 +90,38 @@
       "last_task": { "name": "Ultima attività" },
       "no_tasks": { "name": "Nessuna attività" },
 
-      "cpu_info": { "name": "Informazioni CPU" },
-      "ksm_shared": { "name": "Memoria Condivisa KSM" },
-      "memory_usage": { "name": "Utilizzo Memoria" },
-      "swap_usage": { "name": "Utilizzo Swap" },
-      "rootfs_usage": { "name": "Utilizzo File System Radice" },
+      "cpu_info": { "name": "Info CPU" },
+      "ksm_shared": { "name": "Memoria condivisa KSM" },
+      "memory_usage": { "name": "Uso memoria" },
+      "swap_usage": { "name": "Uso swap" },
+      "rootfs_usage": { "name": "Uso filesystem root" },
 
       "node_info": { "name": "Nodo Proxmox" },
       "storages": { "name": "Storage Proxmox" },
-      "backup_progress": { "name": "Progresso Backup" },
+      "backup_progress": { "name": "Avanzamento backup" },
 
       "vm_status": { "name": "Stato" },
-      "vm_cpu_usage": { "name": "Utilizzo CPU" },
+      "vm_cpu_usage": { "name": "Uso CPU" },
       "vm_network_rx": { "name": "Rete RX" },
       "vm_network_tx": { "name": "Rete TX" },
-      "vm_memory_used": { "name": "Memoria Utilizzata" },
-      "vm_memory_total": { "name": "Memoria Totale" },
-      "vm_disk_used": { "name": "Disco Utilizzato" },
-      "vm_disk_total": { "name": "Disco Totale" },
+      "vm_memory_used": { "name": "Memoria usata" },
+      "vm_memory_total": { "name": "Memoria totale" },
+      "vm_disk_used": { "name": "Disco usato" },
+      "vm_disk_total": { "name": "Disco totale" },
       "vm_uptime": { "name": "Tempo di attività" },
 
       "ct_status": { "name": "Stato" },
-      "ct_cpu_usage": { "name": "Utilizzo CPU" },
-      "ct_memory_used": { "name": "Memoria Utilizzata" },
-      "ct_memory_total": { "name": "Memoria Totale" },
-      "ct_disk_used": { "name": "Disco Utilizzato" },
-      "ct_disk_total": { "name": "Disco Totale" },
+      "ct_cpu_usage": { "name": "Uso CPU" },
+      "ct_memory_used": { "name": "Memoria usata" },
+      "ct_memory_total": { "name": "Memoria totale" },
+      "ct_disk_used": { "name": "Disco usato" },
+      "ct_disk_total": { "name": "Disco totale" },
       "ct_network_rx": { "name": "Rete RX" },
       "ct_network_tx": { "name": "Rete TX" },
       "ct_uptime": { "name": "Tempo di attività" },
 
-      "storage_usage": { "name": "Utilizzo" },
-      "storage_used": { "name": "Utilizzato" },
+      "storage_usage": { "name": "Utilizzo (%)" },
+      "storage_used": { "name": "Usato" },
       "storage_available": { "name": "Disponibile" },
       "storage_total": { "name": "Totale" },
       "storage_type": { "name": "Tipo" },
@@ -129,39 +129,39 @@
 
       "version": { "name": "Versione" },
       "release": { "name": "Release" },
-      "auth_status": { "name": "Stato Autenticazione" },
-      "node_cpu": { "name": "Utilizzo CPU" },
-      "node_ram": { "name": "Utilizzo RAM" },
-      "ram_total": { "name": "RAM Totale" },
-      "ram_used": { "name": "RAM Utilizzata" },
-      "ram_free": { "name": "RAM Libera" },
+      "auth_status": { "name": "Stato autenticazione" },
+      "node_cpu": { "name": "Uso CPU" },
+      "node_ram": { "name": "Uso RAM" },
+      "ram_total": { "name": "RAM totale" },
+      "ram_used": { "name": "RAM usata" },
+      "ram_free": { "name": "RAM libera" },
 
-      "last_task_type": { "name": "Tipo Ultima Attività" },
-      "last_task_status": { "name": "Stato Ultima Attività" },
-      "last_task_message": { "name": "Messaggio Ultima Attività" },
-      "last_task_duration": { "name": "Durata Ultima Attività" },
-      "last_action": { "name": "Ultima Azione" },
+      "last_task_type": { "name": "Tipo ultima attività" },
+      "last_task_status": { "name": "Stato ultima attività" },
+      "last_task_message": { "name": "Messaggio ultima attività" },
+      "last_task_duration": { "name": "Durata ultima attività" },
+      "last_action": { "name": "Ultima azione" },
 
-      "datastore_usage": { "name": "Utilizzo" },
-      "datastore_total": { "name": "Dimensione Totale" },
-      "datastore_used": { "name": "Dimensione Utilizzata" },
-      "datastore_free": { "name": "Dimensione Libera" },
+      "datastore_usage": { "name": "Utilizzo (%)" },
+      "datastore_total": { "name": "Dimensione totale" },
+      "datastore_used": { "name": "Dimensione usata" },
+      "datastore_free": { "name": "Dimensione libera" },
       "datastore_dedup": { "name": "Deduplicazione" },
-      "datastore_backup_count": { "name": "Numero Backup" },
-      "datastore_last_backup_time": { "name": "Ora Ultimo Backup" },
-      "datastore_last_backup_size": { "name": "Dimensione Ultimo Backup" },
-      "datastore_last_backup_status": { "name": "Stato Ultimo Backup" },
-      "datastore_backup_errors": { "name": "Errori Backup" },
-      "datastore_backups_summary": { "name": "Riepilogo Backup" },
+      "datastore_backup_count": { "name": "Numero backup" },
+      "datastore_last_backup_time": { "name": "Ultimo backup" },
+      "datastore_last_backup_size": { "name": "Dimensione ultimo backup" },
+      "datastore_last_backup_status": { "name": "Stato ultimo backup" },
+      "datastore_backup_errors": { "name": "Errori backup" },
+      "datastore_backups_summary": { "name": "Riepilogo backup" },
       "datastore_gc_status": { "name": "Stato GC" },
       "proxmox_dimm": {
         "name": "Modulo RAM (DIMM)",
         "state_attributes": {
           "speed": { "name": "Velocità" },
           "configured_speed": { "name": "Velocità configurata" },
-          "type": { "name": "Tipo di memoria" },
+          "type": { "name": "Tipo memoria" },
           "manufacturer": { "name": "Produttore" },
-          "locator": { "name": "Posizione (Slot)" }
+          "locator": { "name": "Slot" }
         }
       }
     }

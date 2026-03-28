@@ -1,7 +1,6 @@
 """Sensors for Proxmox PBS."""
 
 from datetime import datetime
-import logging
 
 from homeassistant.const import PERCENTAGE, UnitOfInformation
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -10,7 +9,14 @@ from homeassistant.components.sensor import SensorEntity
 from ..const import DOMAIN
 from .base import ProxmoxPbsBaseSensor
 
-_LOGGER = logging.getLogger(__name__)
+
+def extract_store_from_task(task):
+    store = task.get("store") or task.get("datastore")
+    if not store:
+        worker_id = task.get("worker_id", "")
+        if "::" in worker_id:
+            store = worker_id.split("::")[0]
+    return store
 
 
 class ProxmoxPBSVersionSensor(ProxmoxPbsBaseSensor):
@@ -736,6 +742,185 @@ class ProxmoxPBSMaintenanceSensor(ProxmoxPbsBaseSensor):
             attrs[attr_name] = round(float(val) / (1024**3), 2) if val else 0.0
 
         return attrs
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, f"maintenance_{self._store}")},
+            "name": f"Maintenance: {self._store}",
+            "manufacturer": "Proxmox",
+            "model": "Backup Server Maintenance",
+        }
+
+
+class ProxmoxPBSVerifySensor(ProxmoxPbsBaseSensor):
+    """Sensor for PBS verify status."""
+
+    def __init__(self, coordinator, server_id, store):
+        super().__init__(
+            coordinator=coordinator,
+            server_id=server_id,
+            sensor_id=f"{store}_verify_status",
+            name="Verify Status",
+        )
+        self._store = store
+        self._attr_icon = "mdi:check-decagram"
+
+    def _get_task(self):
+        tasks = self.coordinator.data.get("pbs_tasks", [])
+
+        filtered = []
+
+        for t in tasks:
+            worker = t.get("worker_type", "").lower()
+
+            if "verify" not in worker:
+                continue
+
+            store = extract_store_from_task(t)
+
+            if store and store.lower() == self._store.lower():
+                filtered.append(t)
+
+        if not filtered:
+            return None
+
+        return sorted(filtered, key=lambda x: x.get("endtime", 0), reverse=True)[0]
+
+    def _get_value(self):
+        task = self._get_task()
+
+        if not task:
+            return "Idle"
+
+        if task.get("status") == "running" or not task.get("endtime"):
+            return "Running"
+
+        status = task.get("status", "").upper()
+
+        if status == "OK":
+            return "OK"
+
+        return "Error"
+
+    @property
+    def extra_state_attributes(self):
+        task = self._get_task()
+
+        if not task:
+            return {}
+
+        from datetime import datetime
+
+        duration = task.get("duration")
+        end = task.get("endtime")
+        status = task.get("status")
+
+        return {
+            "status": status.upper() if isinstance(status, str) else status,
+            "duration_sec": duration,
+            "duration_min": round(duration / 60, 2) if duration else None,
+            "last_run": (
+                datetime.fromtimestamp(end).strftime("%d/%m/%Y %H:%M:%S")
+                if isinstance(end, (int, float))
+                else None
+            ),
+            "upid": task.get("upid"),
+        }
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, f"maintenance_{self._store}")},
+            "name": f"Maintenance: {self._store}",
+            "manufacturer": "Proxmox",
+            "model": "Backup Server Maintenance",
+        }
+
+
+class ProxmoxPBSPruneSensor(ProxmoxPbsBaseSensor):
+    """Sensor for PBS prune status."""
+
+    def __init__(self, coordinator, server_id, store):
+        super().__init__(
+            coordinator=coordinator,
+            server_id=server_id,
+            sensor_id=f"{store}_prune_status",
+            name="Prune Status",
+        )
+        self._store = store
+        self._attr_icon = "mdi:delete-sweep"
+
+    def _get_task(self):
+        tasks = self.coordinator.data.get("pbs_tasks", [])
+
+        filtered = []
+
+        for t in tasks:
+            worker = t.get("worker_type", "").lower()
+
+            if "prune" not in worker:
+                continue
+
+            store = extract_store_from_task(t)
+
+            if store and store.lower() == self._store.lower():
+                filtered.append(t)
+
+        if not filtered:
+            return None
+
+        return sorted(filtered, key=lambda x: x.get("endtime", 0), reverse=True)[0]
+
+    def _get_value(self):
+        task = self._get_task()
+
+        if not task:
+            return "Idle"
+
+        if task.get("status") == "running" or not task.get("endtime"):
+            return "Running"
+
+        status = task.get("status", "").upper()
+
+        if status == "OK":
+            return "OK"
+
+        return "Error"
+
+    @property
+    def extra_state_attributes(self):
+        task = self._get_task()
+
+        if not task:
+            return {}
+
+        from datetime import datetime
+        import time
+
+        start = task.get("starttime")
+        end = task.get("endtime")
+        status = task.get("status")
+
+        duration = None
+
+        if start and end:
+            duration = int(end - start)
+        elif start and not end:
+            # tarea en curso
+            duration = int(time.time() - start)
+
+        return {
+            "status": status.upper() if isinstance(status, str) else status,
+            "duration_sec": duration,
+            "duration_min": round(duration / 60, 2) if duration else 0,
+            "last_run": (
+                datetime.fromtimestamp(end).strftime("%d/%m/%Y %H:%M:%S")
+                if isinstance(end, (int, float))
+                else None
+            ),
+            "upid": task.get("upid"),
+        }
 
     @property
     def device_info(self):

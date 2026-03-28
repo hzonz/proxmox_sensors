@@ -5,25 +5,21 @@ from ..const import DOMAIN
 
 
 class ProxmoxVMSensor(ProxmoxBaseSensor):
-    """Main VM status sensor."""
 
     def __init__(self, coordinator, vm_id, node, label):
         name = "Status"
         uid = f"proxmox_vm_{node}_{vm_id}_status_v1"
         self._label = label
         self._vm_id = vm_id
-        self._node = node
-        # Composite key for coordinator data lookup
-        self._vm_key = f"{node}_{vm_id}"
         super().__init__(coordinator, vm_id, name, None, uid, node)
         self._attr_icon = "mdi:monitor"
 
     @property
     def device_info(self):
-        """Return device info matching the VM device."""
         node_id = self._node.lower()
+
         return {
-            "identifiers": {(DOMAIN, f"proxmox_vm_{self._node}_{self._vm_id}_v1")},
+            "identifiers": {(DOMAIN, f"proxmox_vm_{self._sensor_id}_v1")},
             "name": f"4. VM: {self._label}-({self._vm_id})",
             "via_device": (DOMAIN, f"proxmox_node_{node_id}"),
             "manufacturer": "Proxmox",
@@ -31,21 +27,16 @@ class ProxmoxVMSensor(ProxmoxBaseSensor):
         }
 
     def _get_value(self):
-        """Get VM status value."""
-        vm_data = self.coordinator.data.get("vms", {}).get(self._vm_key, {})
+        vm_data = self.coordinator.data.get("vms", {}).get(self._sensor_id, {})
         return str(vm_data.get("status", "unknown")).capitalize()
 
 
 class ProxmoxVMAttributeSensor(ProxmoxBaseSensor):
-    """Attribute sensors for VMs (CPU, memory, disk, network, uptime)."""
 
     def __init__(self, coordinator, vm_id, node, label, attr_name, unit, icon):
         self._vm_id = vm_id
-        self._node = node
         self._label = label
         self._attr_key = attr_name
-        # Composite key for coordinator data lookup
-        self._vm_key = f"{node}_{vm_id}"
 
         display_name = attr_name.replace("_", " ").title()
         uid = f"proxmox_vm_{node}_{vm_id}_{attr_name.lower()}_v1"
@@ -55,10 +46,10 @@ class ProxmoxVMAttributeSensor(ProxmoxBaseSensor):
 
     @property
     def device_info(self):
-        """Return device info matching the VM device."""
         node_id = self._node.lower()
+
         return {
-            "identifiers": {(DOMAIN, f"proxmox_vm_{self._node}_{self._vm_id}_v1")},
+            "identifiers": {(DOMAIN, f"proxmox_vm_{self._sensor_id}_v1")},
             "name": f"4. VM: {self._label}-({self._vm_id})",
             "via_device": (DOMAIN, f"proxmox_node_{node_id}"),
             "manufacturer": "Proxmox",
@@ -66,8 +57,7 @@ class ProxmoxVMAttributeSensor(ProxmoxBaseSensor):
         }
 
     def _get_value(self):
-        """Get VM attribute value."""
-        vm_data = self.coordinator.data.get("vms", {}).get(self._vm_key, {})
+        vm_data = self.coordinator.data.get("vms", {}).get(self._sensor_id, {})
         if not vm_data:
             return None
 
@@ -105,3 +95,29 @@ class ProxmoxVMAttributeSensor(ProxmoxBaseSensor):
 
         except (ValueError, TypeError):
             return None
+
+    @property
+    def extra_state_attributes(self):
+        """Extra attributes for additional VM info."""
+        vm_data = self.coordinator.data.get("vms", {}).get(self._sensor_id, {})
+
+        if not vm_data:
+            return {}
+
+        attrs = {}
+
+        # CPU extra info
+        if self._attr_key == "cpu_usage":
+            cpu = vm_data.get("cpu")
+            cores = vm_data.get("cpus")
+
+            if cores:
+                attrs["cores"] = cores
+
+                if cpu is not None:
+                    try:
+                        attrs["cpu_per_core"] = round(float(cpu) * 100 / cores, 2)
+                    except (ValueError, TypeError, ZeroDivisionError):
+                        pass
+
+        return attrs

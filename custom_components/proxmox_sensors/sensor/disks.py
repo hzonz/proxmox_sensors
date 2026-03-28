@@ -149,7 +149,7 @@ class ProxmoxDiskSensor(ProxmoxBaseSensor):
             if disk_smart.get("pending_sectors") is not None:
                 pending = disk_smart.get("pending_sectors")
                 if pending > 0:
-                    attributes["Pending Sectors"] = f"🚨 CRÍTICO: {pending}"
+                    attributes["Pending Sectors"] = f"🚨 CRITICAL: {pending}"
                 else:
                     attributes["Pending Sectors"] = pending
 
@@ -192,7 +192,7 @@ class ProxmoxDiskSensor(ProxmoxBaseSensor):
             if disk_smart.get("returncode") is not None:
                 attributes["SMART Return Code"] = disk_smart.get("returncode")
 
-            # === ATRIBUTOS NVMe ===
+            # === NVMe ATTRIBUTES ===
 
             # Available Spare
             if disk_smart.get("available_spare") is not None:
@@ -269,7 +269,7 @@ class ProxmoxDiskSensor(ProxmoxBaseSensor):
         """Calculate health score 0-100 based on SMART."""
         score = 100
 
-        # Penalize by reassigned sectors
+        # Penalize by reallocated sectors
         reallocated = disk_smart.get("reallocated_sectors", 0) or 0
         if reallocated > 100:
             score -= 50
@@ -280,7 +280,7 @@ class ProxmoxDiskSensor(ProxmoxBaseSensor):
         elif reallocated > 0:
             score -= 5
 
-        # Penalizing for outstanding sectors
+        # Penalize for pending sectors
         pending = disk_smart.get("pending_sectors", 0) or 0
         if pending > 10:
             score -= 60
@@ -311,7 +311,7 @@ class ProxmoxDiskSensor(ProxmoxBaseSensor):
         if disk_smart.get("smart_passed") is False:
             score = 0
 
-        # Make sure it's not negative
+        # Ensure not negative
         return max(0, score)
 
     def _determine_health_status(self, disk_smart):
@@ -320,7 +320,7 @@ class ProxmoxDiskSensor(ProxmoxBaseSensor):
         if disk_smart.get("smart_passed") is False:
             return "🔴 FAILED"
 
-        # Verify critical attributes
+        # Check critical attributes
         pending = disk_smart.get("pending_sectors", 0) or 0
         uncorrectable = disk_smart.get("uncorrectable_errors", 0) or 0
         reallocated = disk_smart.get("reallocated_sectors", 0) or 0

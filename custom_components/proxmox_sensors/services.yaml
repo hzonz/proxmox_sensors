@@ -195,3 +195,20 @@ confirm_reboot_node:
       required: false
       selector:
         boolean:
+
+
+wake_node:
+  name: "Proxmox: Wake Node"
+  description: "Wake a Proxmox node using Wake-on-LAN"
+  fields:
+    node:
+      name: Node
+      required: true
+      selector:
+        text:
+    mac:
+      name: MAC Address
+      required: true
+      example: "AA:BB:CC:DD:EE:FF"
+      selector:
+        text:

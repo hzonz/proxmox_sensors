@@ -5,18 +5,35 @@ from ..const import DOMAIN
 
 
 class ProxmoxStorageSensor(ProxmoxBaseSensor):
+    """Main storage usage sensor."""
 
     def __init__(self, coordinator, storage_name, st, node=None):
         uid = f"proxmox_storage_{node}_{storage_name}_percent_v1"
         super().__init__(coordinator, storage_name, "Usage", "%", uid, node)
 
         self._storage_name = storage_name
-        self._attr_icon = "mdi:database"
         self._attr_state_class = "measurement"
+
+        stype = (st.get("type") or "").lower()
+
+        if stype == "pbs":
+            self._attr_icon = "mdi:database-sync"
+        elif stype == "nfs":
+            self._attr_icon = "mdi:nas"
+        elif stype in ["lvm", "lvmthin"]:
+            self._attr_icon = "mdi:harddisk"
+        elif stype == "dir":
+            self._attr_icon = "mdi:folder"
+        elif stype == "zfspool":
+            self._attr_icon = "mdi:database"
+        elif stype in ["ceph", "rbd"]:
+            self._attr_icon = "mdi:database-outline"
+        else:
+            self._attr_icon = "mdi:database"
 
     @property
     def device_info(self):
-        node_id = self._node.lower()
+        node_id = (self._node or "node").lower()
         return {
             "identifiers": {
                 (DOMAIN, f"proxmox_storage_{node_id}_{self._storage_name}")
@@ -31,14 +48,18 @@ class ProxmoxStorageSensor(ProxmoxBaseSensor):
         storage_data = self.coordinator.data.get("storage", {}).get(
             self._storage_name, {}
         )
+
         used = storage_data.get("used") or 0
         total = storage_data.get("total") or 0
+
         if total == 0:
             return 0
+
         return round((used / total) * 100, 2)
 
 
 class ProxmoxStorageAttributeSensor(ProxmoxBaseSensor):
+    """Additional sensors for storage attributes."""
 
     def __init__(self, coordinator, storage_name, st, label, key, node=None):
         uid = f"proxmox_storage_{node}_{storage_name}_{key}_v1"
@@ -49,14 +70,34 @@ class ProxmoxStorageAttributeSensor(ProxmoxBaseSensor):
         self._storage_name = storage_name
         self._key = key
 
-        icon_map = {
-            "used": "mdi:database-arrow-up",
-            "avail": "mdi:database-arrow-down",
-            "total": "mdi:database",
-            "type": "mdi:format-list-bulleted-type",
-            "path": "mdi:folder-network",
-        }
-        self._attr_icon = icon_map.get(key, "mdi:information-outline")
+        stype = (st.get("type") or "").lower()
+
+        if key == "type":
+
+            if stype == "pbs":
+                self._attr_icon = "mdi:database-sync"
+            elif stype == "nfs":
+                self._attr_icon = "mdi:nas"
+            elif stype in ["lvm", "lvmthin"]:
+                self._attr_icon = "mdi:harddisk"
+            elif stype == "dir":
+                self._attr_icon = "mdi:folder"
+            elif stype == "zfspool":
+                self._attr_icon = "mdi:database"
+            elif stype in ["ceph", "rbd"]:
+                self._attr_icon = "mdi:database-outline"
+            else:
+                self._attr_icon = "mdi:database"
+
+        else:
+            icon_map = {
+                "used": "mdi:database-arrow-up",
+                "avail": "mdi:database-arrow-down",
+                "total": "mdi:database",
+                "path": "mdi:folder-network",
+            }
+
+            self._attr_icon = icon_map.get(key, "mdi:information-outline")
 
         if key in ("used", "avail", "total"):
             self._attr_device_class = "data_size"
@@ -64,7 +105,7 @@ class ProxmoxStorageAttributeSensor(ProxmoxBaseSensor):
 
     @property
     def device_info(self):
-        node_id = self._node.lower()
+        node_id = (self._node or "node").lower()
         return {
             "identifiers": {
                 (DOMAIN, f"proxmox_storage_{node_id}_{self._storage_name}")
@@ -78,7 +119,7 @@ class ProxmoxStorageAttributeSensor(ProxmoxBaseSensor):
         )
 
         if self._key == "path":
-            return storage_data.get("content") or storage_data.get("storage") or "N/A"
+            return storage_data.get("path") or "N/A"
 
         value = storage_data.get(self._key)
 

@@ -8,7 +8,7 @@ from ..const import DOMAIN
 
 
 class ProxmoxBaseSensor(CoordinatorEntity, SensorEntity):
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
 
     def __init__(self, coordinator, sensor_id, name, unit, unique_id, node=None):
         super().__init__(coordinator)
@@ -35,16 +35,16 @@ class ProxmoxBaseSensor(CoordinatorEntity, SensorEntity):
     def device_info(self):
         node_id = self._node.lower()
         display_node = self._node.capitalize()
-        server_id = self.coordinator.config_entry.data.get(
-            "server_id", "default"
-        ).lower()
 
         return {
-            "identifiers": {(DOMAIN, f"pve_{server_id}_node_{node_id}")},
+            "identifiers": {(DOMAIN, f"proxmox_node_{node_id}")},
             "name": f"1. Node: {display_node}",
             "manufacturer": "Proxmox",
-            "model": "Physical Node",
+            "model": "Proxmox Node",
         }
+
+    def is_valid(self) -> bool:
+        return self.native_value is not None
 
 
 # ============ BASE SENSOR FOR PBS ===============
@@ -61,9 +61,14 @@ class ProxmoxPbsBaseSensor(CoordinatorEntity, SensorEntity):
         self._sensor_id = sensor_id
         self._attr_name = name
         self._attr_native_unit_of_measurement = unit
-        self._attr_unique_id = f"pbs_{self._server_id}_{sensor_id}".lower().replace(
-            " ", "_"
+        safe_id = (
+            f"pbs_{self._server_id}_{sensor_id}".lower()
+            .replace(" ", "_")
+            .replace("/", "_")
+            .replace("-", "_")
         )
+
+        self._attr_unique_id = safe_id
 
     @property
     def device_info(self):

@@ -63,12 +63,3 @@ class ProxmoxDimmSensor(ProxmoxBaseSensor):
             "manufacturer": dimm.get("manufacturer"),
             "locator": dimm.get("locator"),
         }
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"proxmox_node_{self._node}")},
-            "name": f"Node: {self._node}",
-            "manufacturer": "Proxmox",
-            "model": "Proxmox Node",
-        }

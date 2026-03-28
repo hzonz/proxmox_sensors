@@ -28,7 +28,11 @@ _LOGGER = logging.getLogger(__name__)
 
 ENTRY_VERSION = 2
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
+PLATFORMS: list[Platform] = [
+    Platform.SENSOR,
+    Platform.BUTTON,
+    Platform.BINARY_SENSOR,
+]
 
 
 async def async_migrate_entry(hass, config_entry):

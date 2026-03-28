@@ -1,148 +1,155 @@
 # 🔌 Schritt 3: Installation der Integration in Home Assistant
 
-Um die Daten (einschließlich Temperaturen, Hardware-Sensoren, Festplatten, PBS, VMs und CTs) anzuzeigen, verwenden wir die Integration **Proxmox Extended Sensors**.
-
-[Visuelle Installationsanleitung](#-Visuelle-Installationsanleitung)
+Um alle Daten (Temperaturen, Hardware-Sensoren, Festplatten, PBS, VMs und CTs) anzuzeigen, verwenden wir die Integration **Proxmox Extended Sensors**.
 
 ---
 
 ## 1. Installation über HACS
 
-Da es sich um eine benutzerdefinierte Integration handelt, müssen wir sie zuerst zu HACS hinzufügen:
+Da es sich um eine benutzerdefinierte Integration handelt, musst du sie zuerst zu HACS hinzufügen:
 
-1. Gehen Sie zu **HACS → Integrationen**  
-2. Klicken Sie auf die **drei Punkte** (oben rechts)  
-3. Wählen Sie **Benutzerdefinierte Repositorys**  
-4. Fügen Sie dieses Repository hinzu: `https://github.com/Javisen/proxmox_sensors/`
-5. Wählen Sie in **Kategorie** `Integration`  
-6. Installieren Sie sie und **starten Sie Home Assistant neu**
+1. Gehe zu **HACS → Integrationen**  
+2. Klicke auf die **drei Punkte** (oben rechts)  
+3. Wähle **Benutzerdefinierte Repositories**  
+4. Füge dieses Repository hinzu:  
+   `https://github.com/Javisen/proxmox_sensors/`  
+5. Wähle als **Kategorie** `Integration`  
+6. Installiere die Integration und **starte Home Assistant neu**
 
 ---
 
-## 2. Konfiguration der Integration
+## 2. Integration hinzufügen
 
 Nach dem Neustart:
 
-1. Gehen Sie zu **Einstellungen → Geräte & Dienste**  
-2. Klicken Sie auf **Integration hinzufügen**  
-3. Suchen Sie nach **Proxmox Extended Sensors**
+1. Gehe zu **Einstellungen → Geräte & Dienste**  
+2. Klicke auf **Integration hinzufügen**  
+3. Suche nach **Proxmox Extended Sensors**
 
 ---
 
-## 3. Verbindungsdaten
-
-Das Formular ist einfach, aber es gibt wichtige Details:
+## 3. Verbindungskonfiguration
 
 ### 🔹 Host
-- **Im lokalen Netzwerk:** nur die IP → `192.168.1.50`  
-*(Keinen Port oder http/https angeben)*  
-- **Von außen:** Ihre Domain → `proxmox.meinedomain.com`  
-*(Die Integration erkennt http/https automatisch)*
+- **Lokales Netzwerk:** `192.168.1.50`  
+- **Externer Zugriff:** `proxmox.meinedomain.com`  
+
+> Es ist nicht erforderlich, `http://` oder `https://` anzugeben. Dies wird automatisch erkannt.
+
+---
 
 ### 🔹 Servertyp
 - **PVE** → Proxmox Virtual Environment  
 - **PBS** → Proxmox Backup Server  
 
+---
+
 ### 🔹 Authentifizierungsmethode
-- **Traditionelle Anmeldung** (nur PVE)  
-- **API-Token** (obligatorisch für PBS)
+
+- **Benutzername + Passwort** → nur für PVE  
+- **API-Token** → Empfohlen und für PBS obligatorisch  
 
 ---
 
-## 🔐 Option A: Anmeldung mit Benutzer (ohne Token)
-
-Nur gültig für **PVE**.
+## 🔐 Option A: Benutzername und Passwort (nur PVE)
 
 Felder:
 
-- **Benutzer:** `benutzer@realm`  
-Beispiele:  
-- `homeassistant@pve`  
-- `root@pam`  
-- **Passwort:** das Passwort des Benutzers  
-- **Knotenname:** Knotenname (wie in Proxmox angezeigt)
+- **User:** `benutzer@realm`  
+  - Beispiel: `homeassistant@pve`  
+- **Password:** Passwort des Benutzers  
+
+> 💡 In V3 wird der Knoten automatisch erkannt. Eine manuelle Eingabe ist nicht erforderlich.
 
 ---
 
-## 🔐 Option B: Anmeldung mit Token (empfohlen und obligatorisch für PBS)
+## 🔐 Option B: API-Token (empfohlen)
 
 Felder:
 
-- **Benutzer:** `benutzer@realm`  
-- **token_id:** nur der Token-Name → `ha-token`  
-*(Nicht `benutzer@pve!token` angeben)*  
-- **Token_secret:** das von Proxmox generierte Secret  
+- **User:** `benutzer@realm`  
+- **Token ID:** nur der Name → `ha-token`  
+- **Token Secret:** das in Proxmox generierte Secret  
+
+> ⚠️ Verwende nicht das Format `benutzer@pve!token`
 
 ---
 
-## ✅ Auswahl der Entitäten (nur in PVE)
+## 🧠 Ressourcenauswahl (PVE)
 
-Nach der Verbindung scannt die Integration Ihren Server und Sie können auswählen, was überwacht werden soll:
+Nach der Verbindung erkennt die Integration automatisch die verfügbaren Ressourcen.
 
-- **VMs**  
-- **CTs**  
-- **Physische Festplatten**  
-- **Speicher**
+Du kannst auswählen:
 
-> [!TIP]  
-> Wählen Sie nur das aus, was Sie benötigen, um Home Assistant sauber und schnell zu halten.
+- Virtuelle Maschinen (VMs)  
+- Container (CTs)  
+- Physische Festplatten  
+- Speicher (Storages)  
+
+> 💡 Wähle nur das Nötigste aus, um Home Assistant sauber und effizient zu halten.
 
 ---
 
 ## 🧭 Visuelle Installationsanleitung
 
-**Unten finden Sie eine vollständige visuelle Schritt-für-Schritt-Anleitung des Konfigurationsprozesses, einschließlich Anmeldemethoden, Ressourcenauswahl und Konfigurationsschritte.**
+Im Folgenden wird der vollständige Prozess mit Screenshots dargestellt:
 
 <details>
-  <summary>🪪 Screenshot: Serververbindung</summary>
+  <summary>🪪 Serververbindung</summary>
   <p align="center">
-    <img src="../../img/install/setup_pve_1.png" alt="Login Proxmox" width="600">
+    <img src="../../img/install/setup_pve_1.png" alt="Proxmox Verbindung" width="600">
   </p>
-  > Verwenden Sie nicht "http://" oder "https://". Das übernehmen wir bereits für Sie.
+  <p align="center"><i>Es ist nicht erforderlich, http/https anzugeben.</i></p>
 </details>
 
 <details>
-  <summary>🪪 Screenshot: Anmeldung über Benutzer und Passwort (nur PVE)</summary>
+  <summary>🪪 Anmeldung mit Benutzername und Passwort (PVE)</summary>
   <p align="center">
-    <img src="../../img/install/access_passw.png" alt="Login Proxmox" width="600">
+    <img src="../../img/install/access_passw.png" alt="Benutzeranmeldung" width="600">
   </p>
-  > Stellen Sie sicher, dass Sie die Realm `pam` oder `pve` entsprechend Ihrer Benutzerkonfiguration verwenden.
-</details>
-
-<details> 
-  <summary>🪪 Screenshot: Anmeldung über Benutzer und Token (PVE und PBS)</summary>
-  <p align="center">
-    <img src="../../img/install/access_token.png" alt="Login Proxmox" width="600">
-  </p>
-  **Im Feld Token_id wird nur der Token-Name eingegeben**
+  <p align="center"><i>Verwende den richtigen Realm (pam oder pve).</i></p>
 </details>
 
 <details>
-  <summary>⚙️ Screenshot: Ressourcenauswahl</summary>
+  <summary>🪪 Anmeldung mit Token (PVE und PBS)</summary>
   <p align="center">
-    <img src="../../img/install/resources_select.png" alt="Login Proxmox" width="600">
+    <img src="../../img/install/access_token.png" alt="Token-Anmeldung" width="600">
   </p>
-  *Hinweis: Wählen Sie die CTs, VMs und Speicher aus, die Sie hinzufügen möchten, sowie die Optionen*
+  <p align="center"><i>Gib nur den Token-Namen bei Token ID ein.</i></p>
+</details>
+
+<details>
+  <summary>🧠 Knotenauswahl (V3)</summary>
+  <p align="center">
+    <img src="../../img/install/node_select.png" alt="Knotenauswahl" width="600">
+  </p>
+  <p align="center"><i>Die Knoten werden automatisch erkannt und können manuell ausgewählt werden.</i></p>
+</details>
+
+<details>
+  <summary>⚙️ Ressourcenauswahl</summary>
+  <p align="center">
+    <img src="../../img/install/resources_select.png" alt="Ressourcenauswahl" width="600">
+  </p>
 </details>
 
 ---
 
-## ⚠️ Wichtiger Hinweis für PBS in gemeinsam genutzten Umgebungen (Tuxis, Hetzner usw.)
+## ⚠️ Hinweis zu PBS in verwalteten Umgebungen
 
-Wenn Sie einen **verwalteten** oder **Multi‑Tenant** PBS verwenden, wie z.B. Tuxis Free PBS:
+Wenn du einen **verwalteten oder Multi-Tenant-PBS** (Tuxis, Hetzner, etc.) verwendest:
 
-- Sie werden keine Hardware-Sensoren sehen  
-- Sie werden keine Temperaturen sehen  
-- Sie werden keine physischen Festplatten sehen  
-- Sie werden keine Knotenmetriken sehen  
+- Du hast keinen Zugriff auf Hardware-Sensoren  
+- Du wirst keine Temperaturen oder physischen Festplatten sehen  
+- Es gibt keine Knoten-Metriken  
 
 Das ist normal, weil:
 
-- Sie keinen Zugriff auf die tatsächliche Hardware haben  
-- Der Anbieter die Infrastruktur verbirgt  
-- Sie keine Root-Berechtigungen haben  
-- Sie nicht auf das echte Dateisystem zugreifen können  
+- Du keinen Zugriff auf die tatsächliche Hardware hast  
+- Der Anbieter das System einschränkt  
+- Es keine Berechtigungen auf niedriger Ebene gibt  
 
 **Ergebnis:**  
-Die Integration zeigt nur leere Sensoren oder keine Daten an.  
-In zukünftigen Versionen werden wir versuchen, benutzerdefinierte Datastore-Metriken anzuzeigen.
+Es werden nur begrenzte Datastore-Daten angezeigt.
+
+---

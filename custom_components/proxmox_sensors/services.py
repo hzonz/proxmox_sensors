@@ -24,7 +24,6 @@ def register_services(hass: HomeAssistant, entry):
         mode = call.data.get("mode", "snapshot")
         compress = call.data.get("compress", "zstd")
 
-        # Opcionales (si quieres exponerlos también en este servicio)
         max_concurrent = call.data.get("max_concurrent", 1)
         delay_between = call.data.get("delay_between", 0)
 
@@ -39,7 +38,6 @@ def register_services(hass: HomeAssistant, entry):
 
         storage = str(storage).strip().replace("\n", "").replace("\r", "")
 
-        # Normalizar guests → lista
         if isinstance(guests, str):
             guests = [g.strip() for g in guests.split(",") if g.strip()]
         elif isinstance(guests, int):
@@ -296,3 +294,54 @@ def register_services(hass: HomeAssistant, entry):
             _LOGGER.error(f"Error rebooting node {node}: {e}")
 
     hass.services.async_register(DOMAIN, "confirm_reboot_node", handle_confirm_reboot)
+
+    # ======= WAKE NODE (WOL) ==========
+
+    async def handle_wake_node(call: ServiceCall):
+        node = call.data.get("node")
+        mac = call.data.get("mac")
+
+        cluster_nodes = coordinator.data.get("cluster_nodes", [])
+
+        # -------- AUTO NODE (single node setups) --------
+        if not node:
+            if len(cluster_nodes) == 1:
+                node = cluster_nodes[0]
+                _LOGGER.info(f"No node provided, using detected node: {node}")
+            elif cluster_nodes:
+                raise ValueError(
+                    f"Node is required. Available nodes: {', '.join(cluster_nodes)}"
+                )
+            else:
+                raise ValueError("Node is required and no cluster nodes detected yet")
+
+        # -------- VALIDATION --------
+        if cluster_nodes and node not in cluster_nodes:
+            raise ValueError(
+                f"Invalid node '{node}'. Available nodes: {', '.join(cluster_nodes)}"
+            )
+
+        # -------- MAC VALIDATION --------
+        if not mac:
+            raise ValueError("MAC address is required for WOL")
+
+        mac_clean = mac.replace(":", "").replace("-", "")
+        if len(mac_clean) != 12:
+            raise ValueError(f"Invalid MAC address format: {mac}")
+
+        try:
+            _LOGGER.info(f"Sending WOL packet to node {node} ({mac})")
+
+            await hass.services.async_call(
+                "wake_on_lan",
+                "send_magic_packet",
+                {"mac": mac},
+                blocking=True,
+            )
+
+            _LOGGER.info(f"WOL packet sent to {node}")
+
+        except Exception as e:
+            _LOGGER.error(f"Error sending WOL to node {node}: {e}")
+
+    hass.services.async_register(DOMAIN, "wake_node", handle_wake_node)

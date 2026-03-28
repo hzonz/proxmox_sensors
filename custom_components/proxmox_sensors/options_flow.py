@@ -1,4 +1,4 @@
-# =========OPTIONS FLOW — PROXMOX SENSORS EXTENDED===========
+# =========OPTIONS FLOW — PROXMOX EXTENDED SENSORS===========
 
 from __future__ import annotations
 import voluptuous as vol
@@ -27,12 +27,25 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
         conf = self.config_entry.data
         server_type = conf.get(CONF_PLATFORM_TYPE, "PVE")
 
-        # ========SAVE OPTIONS====================
+        coordinator = self.hass.data[DOMAIN][self.config_entry.entry_id]["coordinator"]
+        cluster_nodes = coordinator.data.get("cluster_nodes", [conf.get(CONF_NODE)])
+
+        options = self.config_entry.options or {}
+        wol_mac_map = options.get("wol_macs", {})
+
+        # ======== SAVE OPTIONS ====================
 
         if user_input is not None:
 
             new_data = dict(self.config_entry.data)
             new_data[CONF_VERIFY_SSL] = user_input.get(CONF_VERIFY_SSL, True)
+
+            # Save WOL MACs
+            wol_macs = {
+                node: user_input.get(f"wol_mac_{node}")
+                for node in cluster_nodes
+                if user_input.get(f"wol_mac_{node}")
+            }
 
             if server_type == "PVE":
                 new_data.update(
@@ -61,12 +74,15 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
                 )
 
             self.hass.config_entries.async_update_entry(
-                self.config_entry, data=new_data
+                self.config_entry,
+                data=new_data,
+                options={"wol_macs": wol_macs},
             )
+
             await self.hass.config_entries.async_reload(self.config_entry.entry_id)
             return self.async_create_entry(title="", data={})
 
-        # =======PBS — OPTIONS AVAILABLE==============
+        # ======= PBS — OPTIONS ====================
 
         if server_type == "PBS":
             return self.async_show_form(
@@ -74,13 +90,23 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
                 data_schema=vol.Schema(
                     {
                         vol.Optional(
-                            CONF_VERIFY_SSL, default=conf.get(CONF_VERIFY_SSL, False)
+                            CONF_VERIFY_SSL,
+                            default=conf.get(CONF_VERIFY_SSL, False),
                         ): bool,
+                        vol.Optional(
+                            "enable_pbs_node_controls",
+                            default=conf.get("enable_pbs_node_controls", True),
+                        ): bool,
+                        # WOL MAC
+                        vol.Optional(
+                            "wol_mac",
+                            default=conf.get("wol_mac", ""),
+                        ): str,
                     }
                 ),
             )
 
-        # ======PVE — LOAD RESOURCES AND SHOW FORM=============
+        # ====== PVE — LOAD RESOURCES ==============
 
         client = ProxmoxClient(
             host=conf[CONF_HOST],
@@ -93,35 +119,91 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
         )
 
         try:
+
             vms_data = await client.get_vms(self.hass, conf[CONF_NODE]) or []
             cts_data = await client.get_containers(self.hass, conf[CONF_NODE]) or []
             storage_data = await client.get_storages(self.hass, conf[CONF_NODE]) or []
 
+            # Auto MAC discovery
+            detected_macs = {}
+
+            for node in cluster_nodes:
+                try:
+                    net_data = await client.get_node_network(self.hass, node) or []
+                    for iface in net_data:
+                        if iface.get("active") and iface.get("mac-address"):
+                            detected_macs[node] = iface.get("mac-address")
+                            break
+                except Exception:
+                    continue
+
             vm_options = {
                 str(v["vmid"]): f"{v['vmid']} ({v.get('name', 'VM')})" for v in vms_data
             }
+
             ct_options = {
                 str(c["vmid"]): f"{c['vmid']} ({c.get('name', 'CT')})" for c in cts_data
             }
-            st_options = {str(s["storage"]): s["storage"] for s in storage_data}
 
+            st_options = {}
+
+            for s in storage_data or []:
+
+                st_name = s.get("storage")
+                if not st_name:
+                    continue
+
+                is_shared = s.get("shared", 0) == 1
+                storage_node = s.get("node")
+                storage_path = s.get("path", "")
+                total = s.get("total", 0) or 0
+                used = s.get("used", 0) or 0
+
+                if is_shared:
+                    st_options[st_name] = st_name
+                    continue
+
+                if storage_node and storage_node != conf[CONF_NODE]:
+                    continue
+
+                if storage_path.startswith("/mnt") or storage_path.startswith("/media"):
+                    if total == 0 and used == 0:
+                        continue
+
+                st_options[st_name] = st_name
+
+            # Clean old selections
+            selected_vms = conf.get("selected_vms") or list(vm_options.keys())
+            selected_vms = [v for v in selected_vms if v in vm_options]
+
+            selected_cts = conf.get("selected_cts") or list(ct_options.keys())
+            selected_cts = [c for c in selected_cts if c in ct_options]
+
+            selected_storage = conf.get("selected_storage") or list(st_options.keys())
+            selected_storage = [s for s in selected_storage if s in st_options]
+
+            # Build WOL fields
+            wol_fields = {
+                vol.Optional(
+                    f"wol_mac_{node}",
+                    default=wol_mac_map.get(node) or detected_macs.get(node, ""),
+                ): str
+                for node in cluster_nodes
+            }
+
+            # Show form
             return self.async_show_form(
                 step_id="init",
                 data_schema=vol.Schema(
                     {
+                        vol.Optional("vms", default=selected_vms): cv.multi_select(
+                            vm_options
+                        ),
+                        vol.Optional("cts", default=selected_cts): cv.multi_select(
+                            ct_options
+                        ),
                         vol.Optional(
-                            "vms",
-                            default=conf.get("selected_vms", list(vm_options.keys())),
-                        ): cv.multi_select(vm_options),
-                        vol.Optional(
-                            "cts",
-                            default=conf.get("selected_cts", list(ct_options.keys())),
-                        ): cv.multi_select(ct_options),
-                        vol.Optional(
-                            "storage",
-                            default=conf.get(
-                                "selected_storage", list(st_options.keys())
-                            ),
+                            "storage", default=selected_storage
                         ): cv.multi_select(st_options),
                         vol.Optional(
                             "enable_physical_disks",
@@ -152,13 +234,16 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
                             default=conf.get("enable_nodes_list", True),
                         ): bool,
                         vol.Optional(
-                            CONF_VERIFY_SSL, default=conf.get(CONF_VERIFY_SSL, False)
+                            CONF_VERIFY_SSL,
+                            default=conf.get(CONF_VERIFY_SSL, False),
                         ): bool,
+                        **wol_fields,
                     }
                 ),
             )
 
         except Exception:
+
             return self.async_show_form(
                 step_id="init",
                 data_schema=vol.Schema(
@@ -192,7 +277,8 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
                             default=conf.get("enable_nodes_list", True),
                         ): bool,
                         vol.Optional(
-                            CONF_VERIFY_SSL, default=conf.get(CONF_VERIFY_SSL, False)
+                            CONF_VERIFY_SSL,
+                            default=conf.get(CONF_VERIFY_SSL, False),
                         ): bool,
                     }
                 ),
