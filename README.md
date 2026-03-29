@@ -538,7 +538,7 @@ Below is a complete visual walkthrough of the setup process, including login met
 <details>
   <summary>🧠 Screenshot: Node Selection (V3)</summary>
   <p align="center">
-    <img src="../../img/install/node_select.png" alt="Node selection" width="600">
+    <img src="img/install/node_select.png" alt="Node selection" width="600">
   </p>
   <p align="center"><i>Select automatically detected nodes or manually define which ones to include.</i></p>
 </details>
