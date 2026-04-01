@@ -1,0 +1,94 @@
+name: Issue Helper
+
+on:
+  issues:
+    types: [opened]
+  schedule:
+    - cron: "0 2 * * *"  # cada día a las 2 AM
+
+jobs:
+  handle-issues:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Process issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const now = new Date();
+
+            // ----------- CUANDO SE ABRE UN ISSUE -----------
+            if (context.eventName === "issues") {
+              const issue = context.payload.issue;
+              const body = issue.body || "";
+
+              // Si el contenido es pobre
+              if (body.length < 200) {
+
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  labels: ['needs-info']
+                });
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: `Hi 👋
+
+Thanks for your report.
+
+Unfortunately, there isn’t enough information to properly diagnose the issue.
+
+Please update this issue with the required details using the bug report template:
+- Environment (HA / Proxmox versions)
+- Connection method (token or user)
+- Permissions (must be assigned at \`/\`)
+- Logs and/or screenshots
+
+Without this information, it’s not possible to investigate further.
+
+If no additional details are provided, this issue may be closed.
+
+Thanks for your understanding 👍`
+                });
+              }
+            }
+
+            // ----------- CIERRE AUTOMÁTICO -----------
+            if (context.eventName === "schedule") {
+
+              const issues = await github.paginate(
+                github.rest.issues.listForRepo,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  state: 'open',
+                  labels: 'needs-info'
+                }
+              );
+
+              for (const issue of issues) {
+                const created = new Date(issue.created_at);
+                const diffDays = (now - created) / (1000 * 60 * 60 * 24);
+
+                if (diffDays > 3) {
+
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    body: "Closing this issue due to lack of information. Feel free to open a new one with full details."
+                  });
+
+                  await github.rest.issues.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    state: "closed"
+                  });
+                }
+              }
+            }
