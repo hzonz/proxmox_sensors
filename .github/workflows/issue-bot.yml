@@ -36,23 +36,25 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: issue.number,
-                  body: `Hi 👋
-
-Thanks for your report.
-
-Unfortunately, there isn’t enough information to properly diagnose the issue.
-
-Please update this issue with the required details using the bug report template:
-- Environment (HA / Proxmox versions)
-- Connection method (token or user)
-- Permissions (must be assigned at \`/\`)
-- Logs and/or screenshots
-
-Without this information, it’s not possible to investigate further.
-
-If no additional details are provided, this issue may be closed.
-
-Thanks for your understanding 👍`
+                  body: [
+                    "Hi 👋",
+                    "",
+                    "Thanks for your report.",
+                    "",
+                    "Unfortunately, there isn’t enough information to properly diagnose the issue.",
+                    "",
+                    "Please update this issue with the required details using the bug report template:",
+                    "- Environment (HA / Proxmox versions)",
+                    "- Connection method (token or user)",
+                    "- Permissions (must be assigned at /)",
+                    "- Logs and/or screenshots",
+                    "",
+                    "Without this information, it’s not possible to investigate further.",
+                    "",
+                    "If no additional details are provided, this issue may be closed.",
+                    "",
+                    "Thanks for your understanding 👍"
+                  ].join("\n")
                 });
               }
             }
