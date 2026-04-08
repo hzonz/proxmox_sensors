@@ -6,6 +6,8 @@ from datetime import timedelta
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import CONF_NODE, CONF_PLATFORM_TYPE
+from .logic.cluster_notifications import build_cluster_notifications_data
+from .logic.guest_keys import make_guest_key, matches_selected_guest
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -155,6 +157,8 @@ async def create_proxmox_coordinator(hass, entry, client):
                         client.get_node_updates(hass, node),
                         client.get_node_network(hass, node),
                         client.get_cluster_tasks(hass),
+                        client.get(hass, "cluster/options"),
+                        client.get_cluster_notification_gotify_endpoints(hass),
                         client.get_vms(hass, node),
                         client.get_containers(hass, node),
                         client.get_storages(hass, node),
@@ -255,6 +259,19 @@ async def create_proxmox_coordinator(hass, entry, client):
                             "endtime": last.get("endtime"),
                         }
 
+                    # -------- Cluster notifications --------
+
+                    cluster_options = results[idx]
+                    idx += 1
+
+                    gotify_endpoints = results[idx]
+                    idx += 1
+
+                    result["cluster_notifications"] = build_cluster_notifications_data(
+                        cluster_options if isinstance(cluster_options, dict) else {},
+                        gotify_endpoints if isinstance(gotify_endpoints, list) else [],
+                    )
+
                     # -------- VMS --------
 
                     vms = results[idx]
@@ -269,11 +286,13 @@ async def create_proxmox_coordinator(hass, entry, client):
                         if vmid is None:
                             continue
 
-                        if selected_vms and str(vmid) not in selected_vms:
+                        guest_key = make_guest_key(node, vmid)
+                        if not matches_selected_guest(selected_vms, node, vmid, guest_key):
                             continue
 
                         base = dict(vm)
                         base["node"] = node
+                        base["guest_key"] = guest_key
 
                         for field in [
                             "cpu",
@@ -289,7 +308,7 @@ async def create_proxmox_coordinator(hass, entry, client):
 
                         base.setdefault("status", "unknown")
 
-                        vms_dict[vmid] = base
+                        vms_dict[guest_key] = base
 
                     result["vms"] = vms_dict
 
@@ -307,11 +326,13 @@ async def create_proxmox_coordinator(hass, entry, client):
                         if vmid is None:
                             continue
 
-                        if selected_cts and str(vmid) not in selected_cts:
+                        guest_key = make_guest_key(node, vmid)
+                        if not matches_selected_guest(selected_cts, node, vmid, guest_key):
                             continue
 
                         base = dict(ct)
                         base["node"] = node
+                        base["guest_key"] = guest_key
 
                         for field in [
                             "cpu",
@@ -327,7 +348,7 @@ async def create_proxmox_coordinator(hass, entry, client):
 
                         base.setdefault("status", "unknown")
 
-                        cts_dict[vmid] = base
+                        cts_dict[guest_key] = base
 
                     result["cts"] = cts_dict
 

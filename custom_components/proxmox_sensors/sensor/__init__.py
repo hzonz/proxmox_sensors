@@ -14,6 +14,7 @@ from .zfs import ProxmoxZFSPoolSensor
 from .memory import ProxmoxDimmSensor
 from .sensor_last_action import PBSLastActionSensor
 from ..const import DOMAIN, CONF_NODE, CONF_PLATFORM_TYPE
+from ..logic.guest_keys import matches_selected_guest
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,6 +34,8 @@ from .node import (
     ProxmoxNodeLoadAverageSensor,
     ProxmoxNodeScoreSensor,
     ProxmoxStoragesSensor,
+    ProxmoxClusterNotificationsSensor,
+    ProxmoxPackageUpdatesModeSensor,
 )
 
 # Hardware Sensors (lm-sensors)
@@ -299,6 +302,8 @@ async def async_setup_entry(
             entities.append(ProxmoxNodeIOWaitSensor(coordinator, node))
             entities.append(ProxmoxNodeLoadAverageSensor(coordinator, node))
             entities.append(ProxmoxNodeScoreSensor(coordinator, node))
+            entities.append(ProxmoxClusterNotificationsSensor(coordinator, node))
+            entities.append(ProxmoxPackageUpdatesModeSensor(coordinator, node))
 
             mapping = {
                 "cpuinfo": ProxmoxCPUInfoSensor,
@@ -405,10 +410,20 @@ async def async_setup_entry(
 
         # Virtual Machines
         vm_map = c_data.get("vms", {})
-        for vm_id, vm_data in vm_map.items():
-            if str(vm_id) in selected_vms:
+        for vm_key, vm_data in vm_map.items():
+            vm_id = vm_data.get("vmid", vm_key)
+            vm_node = vm_data.get("node", node)
+            if matches_selected_guest(selected_vms, vm_node, vm_id, vm_key):
                 label = vm_data.get("name", vm_id)
-                entities.append(ProxmoxVMSensor(coordinator, vm_id, node, label))
+                entities.append(
+                    ProxmoxVMSensor(
+                        coordinator,
+                        vm_id,
+                        vm_node,
+                        label,
+                        guest_key=vm_key,
+                    )
+                )
                 for attr, unit, icon in [
                     ("cpu_usage", "%", "mdi:cpu-64-bit"),
                     ("memory_used", "GB", "mdi:memory"),
@@ -420,16 +435,33 @@ async def async_setup_entry(
                 ]:
                     entities.append(
                         ProxmoxVMAttributeSensor(
-                            coordinator, vm_id, node, label, attr, unit, icon
+                            coordinator,
+                            vm_id,
+                            vm_node,
+                            label,
+                            attr,
+                            unit,
+                            icon,
+                            guest_key=vm_key,
                         )
                     )
 
         # Containers (LXC)
         ct_map = c_data.get("cts", {})
-        for ct_id, ct_data in ct_map.items():
-            if str(ct_id) in selected_cts:
+        for ct_key, ct_data in ct_map.items():
+            ct_id = ct_data.get("vmid", ct_key)
+            ct_node = ct_data.get("node", node)
+            if matches_selected_guest(selected_cts, ct_node, ct_id, ct_key):
                 label = ct_data.get("name", ct_id)
-                entities.append(ProxmoxContainerSensor(coordinator, ct_id, node, label))
+                entities.append(
+                    ProxmoxContainerSensor(
+                        coordinator,
+                        ct_id,
+                        ct_node,
+                        label,
+                        guest_key=ct_key,
+                    )
+                )
                 for attr, unit, icon in [
                     ("cpu_usage", "%", "mdi:cpu-64-bit"),
                     ("memory_used", "GB", "mdi:memory"),
@@ -442,7 +474,14 @@ async def async_setup_entry(
                 ]:
                     entities.append(
                         ProxmoxContainerAttributeSensor(
-                            coordinator, ct_id, node, label, attr, unit, icon
+                            coordinator,
+                            ct_id,
+                            ct_node,
+                            label,
+                            attr,
+                            unit,
+                            icon,
+                            guest_key=ct_key,
                         )
                     )
 

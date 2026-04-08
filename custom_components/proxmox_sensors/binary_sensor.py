@@ -4,6 +4,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.binary_sensor import BinarySensorEntity
 
 from .const import DOMAIN
+from .logic.cluster_notifications import is_notification_enabled
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -174,6 +175,33 @@ class ProxmoxNodeStressedBinarySensor(CoordinatorEntity, BinarySensorEntity):
         }
 
 
+class ProxmoxReplicationEnabledBinarySensor(CoordinatorEntity, BinarySensorEntity):
+    """Binary sensor showing whether cluster replication notifications are enabled."""
+
+    def __init__(self, coordinator, node, entry_id):
+        super().__init__(coordinator)
+        self._node = node
+        self._entry_id = entry_id
+
+        self._attr_name = f"{node} Replication Enabled"
+        self._attr_unique_id = f"{entry_id}_replication_enabled_{node}"
+        self._attr_icon = "mdi:source-branch-sync"
+
+    @property
+    def is_on(self):
+        data = self.coordinator.data.get("cluster_notifications", {})
+        return is_notification_enabled(data.get("replication"))
+
+    @property
+    def extra_state_attributes(self):
+        data = self.coordinator.data.get("cluster_notifications", {})
+        return {
+            "replication": data.get("replication"),
+            "package_updates": data.get("package_updates"),
+            "fencing": data.get("fencing"),
+        }
+
+
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Proxmox binary sensors."""
     coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
@@ -181,6 +209,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     entities = []
 
     node = entry.data.get("node")
+    server_type = entry.data.get("platform_type", "PVE")
 
     if node:
         entities.append(
@@ -194,5 +223,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
         entities.append(
             ProxmoxNodeStressedBinarySensor(coordinator, node, entry.entry_id)
         )
+
+        if server_type == "PVE":
+            entities.append(
+                ProxmoxReplicationEnabledBinarySensor(
+                    coordinator, node, entry.entry_id
+                )
+            )
 
     async_add_entities(entities)

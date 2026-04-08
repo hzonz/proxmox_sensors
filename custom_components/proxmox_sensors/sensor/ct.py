@@ -2,18 +2,21 @@
 
 from .base import ProxmoxBaseSensor
 from ..const import DOMAIN
+from ..logic.guest_keys import make_guest_key
 
 
 class ProxmoxContainerSensor(ProxmoxBaseSensor):
     """Main CT status sensor."""
 
-    def __init__(self, coordinator, ct_id, node, label):
+    def __init__(self, coordinator, ct_id, node, label, guest_key=None):
         self._label = label
+        self._ct_id = ct_id
+        self._guest_key = guest_key or make_guest_key(node, ct_id)
         uid = f"proxmox_ct_{node}_{ct_id}_status_v1"
 
         super().__init__(
             coordinator,
-            ct_id,
+            self._guest_key,
             None,
             None,
             uid,
@@ -26,25 +29,40 @@ class ProxmoxContainerSensor(ProxmoxBaseSensor):
     @property
     def device_info(self):
         node_id = self._node.lower()
+        ctid = str(self._ct_id)
 
         return {
-            "identifiers": {(DOMAIN, f"proxmox_ct_{self._sensor_id}_v1")},
-            "name": f"3. CT: {self._label}-({self._sensor_id})",
+            "identifiers": {(DOMAIN, f"proxmox_ct_{node_id}_{ctid}_v1")},
+            "name": f"3. CT: {self._label}-({ctid})",
             "via_device": (DOMAIN, f"proxmox_node_{node_id}"),
             "manufacturer": "Proxmox",
             "model": "LXC Container",
         }
 
+    def _get_ct_data(self):
+        ct_map = self.coordinator.data.get("cts", {})
+        return (
+            ct_map.get(self._guest_key)
+            or ct_map.get(self._sensor_id)
+            or ct_map.get(str(self._ct_id))
+            or ct_map.get(self._ct_id)
+            or {}
+        )
+
     def _get_value(self):
-        ct_data = self.coordinator.data.get("cts", {}).get(self._sensor_id, {})
+        ct_data = self._get_ct_data()
         return str(ct_data.get("status", "unknown")).capitalize()
 
 
 class ProxmoxContainerAttributeSensor(ProxmoxBaseSensor):
     """Attribute sensors for CTs (CPU, memory, disk, network, uptime)."""
 
-    def __init__(self, coordinator, ct_id, node, label, attr_name, unit, icon):
+    def __init__(
+        self, coordinator, ct_id, node, label, attr_name, unit, icon, guest_key=None
+    ):
         self._label = label
+        self._ct_id = ct_id
+        self._guest_key = guest_key or make_guest_key(node, ct_id)
         self._attr_key = attr_name
 
         uid = f"proxmox_ct_{node}_{ct_id}_{attr_name}_v1"
@@ -65,7 +83,7 @@ class ProxmoxContainerAttributeSensor(ProxmoxBaseSensor):
 
         super().__init__(
             coordinator,
-            ct_id,
+            self._guest_key,
             name,
             unit,
             uid,
@@ -78,17 +96,28 @@ class ProxmoxContainerAttributeSensor(ProxmoxBaseSensor):
     @property
     def device_info(self):
         node_id = self._node.lower()
+        ctid = str(self._ct_id)
 
         return {
-            "identifiers": {(DOMAIN, f"proxmox_ct_{self._sensor_id}_v1")},
-            "name": f"3. CT: {self._label}-({self._sensor_id})",
+            "identifiers": {(DOMAIN, f"proxmox_ct_{node_id}_{ctid}_v1")},
+            "name": f"3. CT: {self._label}-({ctid})",
             "via_device": (DOMAIN, f"proxmox_node_{node_id}"),
             "manufacturer": "Proxmox",
             "model": "LXC Container",
         }
 
+    def _get_ct_data(self):
+        ct_map = self.coordinator.data.get("cts", {})
+        return (
+            ct_map.get(self._guest_key)
+            or ct_map.get(self._sensor_id)
+            or ct_map.get(str(self._ct_id))
+            or ct_map.get(self._ct_id)
+            or {}
+        )
+
     def _get_value(self):
-        ct_data = self.coordinator.data.get("cts", {}).get(self._sensor_id, {})
+        ct_data = self._get_ct_data()
         if not ct_data:
             return None
 
@@ -132,7 +161,7 @@ class ProxmoxContainerAttributeSensor(ProxmoxBaseSensor):
     @property
     def extra_state_attributes(self):
         """Extra attributes for additional CT info."""
-        ct_data = self.coordinator.data.get("cts", {}).get(self._sensor_id, {})
+        ct_data = self._get_ct_data()
 
         if not ct_data:
             return {}

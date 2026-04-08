@@ -9,6 +9,7 @@ from homeassistant.components import persistent_notification
 
 from .pbs_actions import run_gc, run_prune, run_verify, run_sync
 from .const import DOMAIN, CONF_NODE, CONF_PLATFORM_TYPE
+from .logic.guest_keys import make_guest_key, matches_selected_guest
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,8 +80,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
         # LXC buttons
         if features.get("enable_cts", True):
             ct_map = c_data.get("cts", {})
-            for ct_id, ct_data in ct_map.items():
-                if str(ct_id) in selected_cts:
+            for ct_key, ct_data in ct_map.items():
+                ct_id = ct_data.get("vmid", ct_key)
+                ct_node = ct_data.get("node", node)
+                if matches_selected_guest(selected_cts, ct_node, ct_id, ct_key):
                     label = ct_data.get("name", ct_id)
 
                     ct_commands = [
@@ -93,15 +96,24 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     for cmd, icon in ct_commands:
                         entities.append(
                             ProxmoxContainerButton(
-                                coordinator, client, ct_id, node, label, cmd, icon
+                                coordinator,
+                                client,
+                                ct_id,
+                                ct_node,
+                                label,
+                                cmd,
+                                icon,
+                                guest_key=ct_key,
                             )
                         )
 
         # VM buttons
         if features.get("enable_vms", True):
             vm_map = c_data.get("vms", {})
-            for vm_id, vm_data in vm_map.items():
-                if str(vm_id) in selected_vms:
+            for vm_key, vm_data in vm_map.items():
+                vm_id = vm_data.get("vmid", vm_key)
+                vm_node = vm_data.get("node", node)
+                if matches_selected_guest(selected_vms, vm_node, vm_id, vm_key):
                     label = vm_data.get("name", vm_id)
 
                     vm_commands = [
@@ -118,7 +130,14 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     for cmd, icon in vm_commands:
                         entities.append(
                             ProxmoxVMButton(
-                                coordinator, client, vm_id, node, label, cmd, icon
+                                coordinator,
+                                client,
+                                vm_id,
+                                vm_node,
+                                label,
+                                cmd,
+                                icon,
+                                guest_key=vm_key,
                             )
                         )
 
@@ -373,13 +392,26 @@ class PBSWakeButton(PBSNodeBaseButton):
 
 
 class ProxmoxBaseButton(CoordinatorEntity, ButtonEntity):
-    def __init__(self, coordinator, client, vmid, node, label, command, icon):
+    def __init__(
+        self,
+        coordinator,
+        client,
+        vmid,
+        node,
+        label,
+        command,
+        icon,
+        guest_type=None,
+        guest_key=None,
+    ):
         super().__init__(coordinator)
         self._client = client
         self._vmid = vmid
         self._node = node
         self._label = label
         self._command = command
+        self._guest_type = guest_type
+        self._guest_key = guest_key or make_guest_key(node, vmid)
 
         self._attr_unique_id = f"proxmox_{node}_{vmid}_{command}"
         self._attr_name = f"{command.capitalize()} {label}"
@@ -388,31 +420,33 @@ class ProxmoxBaseButton(CoordinatorEntity, ButtonEntity):
     async def async_press(self):
         try:
             data = self.coordinator.data
-            is_vm = False
-            is_ct = False
+            guest_type = self._guest_type
 
-            if "vms" in data:
-                vms_keys = [str(k) for k in data["vms"].keys()]
-                if str(self._vmid) in vms_keys:
-                    is_vm = True
-
-            if "cts" in data and not is_vm:
-                cts_keys = [str(k) for k in data["cts"].keys()]
-                if str(self._vmid) in cts_keys:
-                    is_ct = True
-
-            if not is_vm and not is_ct:
-                _LOGGER.error("VM/CT %s not found in coordinator data", self._vmid)
-                _LOGGER.debug(
-                    "Available VMs: %s", [str(k) for k in data.get("vms", {}).keys()]
-                )
-                _LOGGER.debug(
-                    "Available CTs: %s", [str(k) for k in data.get("cts", {}).keys()]
-                )
-                return
+            if guest_type is None:
+                vm_map = data.get("vms", {})
+                ct_map = data.get("cts", {})
+                if (
+                    self._guest_key in vm_map
+                    or str(self._vmid) in vm_map
+                    or self._vmid in vm_map
+                ):
+                    guest_type = "vm"
+                elif (
+                    self._guest_key in ct_map
+                    or str(self._vmid) in ct_map
+                    or self._vmid in ct_map
+                ):
+                    guest_type = "ct"
+                else:
+                    _LOGGER.error(
+                        "Guest %s (%s) not found in coordinator data",
+                        self._vmid,
+                        self._guest_key,
+                    )
+                    return
 
             result = False
-            if is_vm:
+            if guest_type == "vm":
                 result = await self._client.execute_vm_command(
                     self.hass, self._node, self._vmid, self._command
                 )
@@ -434,12 +468,28 @@ class ProxmoxBaseButton(CoordinatorEntity, ButtonEntity):
 
 
 class ProxmoxVMButton(ProxmoxBaseButton):
+    def __init__(
+        self, coordinator, client, vmid, node, label, command, icon, guest_key=None
+    ):
+        super().__init__(
+            coordinator,
+            client,
+            vmid,
+            node,
+            label,
+            command,
+            icon,
+            guest_type="vm",
+            guest_key=guest_key,
+        )
+
     @property
     def device_info(self):
         node_id = self._node.lower()
+        vmid = str(self._vmid)
 
         return {
-            "identifiers": {(DOMAIN, f"proxmox_vm_{self._vmid}_v1")},
+            "identifiers": {(DOMAIN, f"proxmox_vm_{node_id}_{vmid}_v1")},
             "manufacturer": "Proxmox",
             "model": "Virtual Machine",
             "name": f"4. VM: {self._label}-({self._vmid})",
@@ -448,12 +498,28 @@ class ProxmoxVMButton(ProxmoxBaseButton):
 
 
 class ProxmoxContainerButton(ProxmoxBaseButton):
+    def __init__(
+        self, coordinator, client, vmid, node, label, command, icon, guest_key=None
+    ):
+        super().__init__(
+            coordinator,
+            client,
+            vmid,
+            node,
+            label,
+            command,
+            icon,
+            guest_type="ct",
+            guest_key=guest_key,
+        )
+
     @property
     def device_info(self):
         node_id = self._node.lower()
+        vmid = str(self._vmid)
 
         return {
-            "identifiers": {(DOMAIN, f"proxmox_ct_{self._vmid}_v1")},
+            "identifiers": {(DOMAIN, f"proxmox_ct_{node_id}_{vmid}_v1")},
             "manufacturer": "Proxmox",
             "model": "Container",
             "name": f"3. CT: {self._label}-({self._vmid})",

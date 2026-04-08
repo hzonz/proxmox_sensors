@@ -109,6 +109,12 @@ class ProxmoxClient:
     async def get_cluster_tasks(self, hass):
         return await self.get(hass, "cluster/tasks") or []
 
+    async def get_cluster_notification_gotify_endpoints(self, hass):
+        """Return configured Gotify notification endpoints for the cluster."""
+        return (
+            await self.get(hass, "cluster/notifications/endpoints/gotify") or []
+        )
+
     async def get_nodes(self, hass):
         """Return nodes in cluster."""
         data = await self.get(hass, "nodes")

@@ -136,13 +136,25 @@ def register_services(hass: HomeAssistant, entry):
 
         # VMs
         if include_vms and "vms" in data:
-            for vmid in data["vms"].keys():
-                vm_list.append(str(vmid))
+            for vm_data in data["vms"].values():
+                if not isinstance(vm_data, dict):
+                    continue
+                if vm_data.get("node") != node:
+                    continue
+                vmid = vm_data.get("vmid")
+                if vmid is not None:
+                    vm_list.append(str(vmid))
 
         # CTs
         if include_cts and "cts" in data:
-            for ctid in data["cts"].keys():
-                ct_list.append(str(ctid))
+            for ct_data in data["cts"].values():
+                if not isinstance(ct_data, dict):
+                    continue
+                if ct_data.get("node") != node:
+                    continue
+                ctid = ct_data.get("vmid")
+                if ctid is not None:
+                    ct_list.append(str(ctid))
 
         targets = vm_list + ct_list
 
