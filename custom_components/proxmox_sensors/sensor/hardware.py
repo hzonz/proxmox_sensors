@@ -106,7 +106,7 @@ class ProxmoxHardwareSensor(ProxmoxBaseSensor):
             if cpu_critical is not None:
                 attrs["cpu_critical_temp"] = cpu_critical
 
-            # 🔥 Thermal margin (lo bueno)
+            # Thermal margin
             if cpu_critical is not None and package_temp is not None:
                 attrs["thermal_margin"] = round(cpu_critical - package_temp, 1)
 
@@ -166,12 +166,30 @@ class ProxmoxHardwareNVMeSensor(ProxmoxBaseSensor):
     def _get_value(self):
         hw = self.coordinator.data.get("hardware", {})
 
-        # Priority: composite
+        # nested (nvme-pci-xxxx → Composite / Sensor X)
+        for key, val in hw.items():
+            if not key.startswith(self._device_prefix):
+                continue
+
+            if isinstance(val, dict):
+                # Prioridad: Composite
+                for sub_name, sub_val in val.items():
+                    if "composite" in sub_name.lower():
+                        v = self._extract_current(sub_val)
+                        if v is not None:
+                            return v
+
+                # Fallback: primer valor válido
+                for sub_val in val.values():
+                    v = self._extract_current(sub_val)
+                    if v is not None:
+                        return v
+
+        # flatten
         for key, val in hw.items():
             if key.startswith(self._device_prefix) and "composite" in key.lower():
                 return self._extract_current(val)
 
-        # Fallback
         for key, val in hw.items():
             if key.startswith(self._device_prefix):
                 v = self._extract_current(val)
@@ -192,17 +210,49 @@ class ProxmoxHardwareNVMeSensor(ProxmoxBaseSensor):
             if not key.startswith(self._device_prefix):
                 continue
 
+            # 1 nested
+            if isinstance(val, dict) and any(isinstance(v, dict) for v in val.values()):
+                for sub_name, sub_val in val.items():
+
+                    raw_name = sub_name.strip().lower()
+
+                    # -------- Naming --------
+                    if not raw_name or raw_name == "composite":
+                        display_name = "Composite Temp"
+
+                    elif "sensor" in raw_name or "temp" in raw_name:
+                        import re
+                        match = re.search(r"(\d+)", raw_name)
+
+                        if match:
+                            num = int(match.group(1))
+                            if num == 1:
+                                display_name = "NAND Temp"
+                            elif num == 2:
+                                display_name = "Controller Temp"
+                            else:
+                                display_name = f"Sensor {num}"
+                        else:
+                            display_name = sub_name.replace("_", " ").title()
+                    else:
+                        display_name = sub_name.replace("_", " ").title()
+
+                    v = self._extract_current(sub_val)
+                    if v is not None:
+                        attrs[display_name] = v
+                        temps.append(v)
+
+                continue
+
+            # 2 flatten
             raw_name = key.replace(self._device_prefix, "").strip("_")
             kl = raw_name.lower()
-
-            # -------- Naming --------
 
             if not raw_name or kl == "composite":
                 display_name = "Composite Temp"
 
             elif "sensor" in kl or "temp" in kl:
                 import re
-
                 match = re.search(r"(\d+)", kl)
 
                 if match:
@@ -218,15 +268,13 @@ class ProxmoxHardwareNVMeSensor(ProxmoxBaseSensor):
             else:
                 display_name = raw_name.replace("_", " ").title()
 
-            # -------- Parse FULL data --------
-
+            # -------- Parse --------
             if isinstance(val, dict):
                 parsed = {}
 
                 for k, v in val.items():
                     try:
                         f = float(v)
-
                         kl = k.lower()
 
                         if "input" in kl:
@@ -255,7 +303,6 @@ class ProxmoxHardwareNVMeSensor(ProxmoxBaseSensor):
                     temps.append(v)
 
         # -------- Max temp global --------
-
         if temps:
             attrs["max_temp"] = round(max(temps), 1)
 
