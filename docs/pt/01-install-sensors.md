@@ -84,7 +84,7 @@ Description=PVE Sensors API (User Mode)
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 %h/.local/bin/pve-sensors-api.py
+ExecStart=/usr/bin/python3 /usr/local/bin/pve-sensors-api.py
 Restart=always
 RestartSec=10s
 
