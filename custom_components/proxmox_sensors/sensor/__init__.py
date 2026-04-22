@@ -232,14 +232,17 @@ async def async_setup_entry(
                     other_sensors.append(key)
 
             # Second: Group NVMe by device
-            nvme_devices = {}
-            for key in nvme_sensors:
-                if key.startswith("nvme-pci-"):
-                    parts = key.split("_")
-                    device_prefix = parts[0]
-                    nvme_devices[device_prefix] = True
+            import re
 
-            for device_prefix in nvme_devices.keys():
+            nvme_devices = set()
+
+            for key in nvme_sensors:
+                match = re.match(r"(nvme-pci-[^_]+)", key.lower())
+                if match:
+                    nvme_devices.add(match.group(1))
+
+            # Create sensors
+            for device_prefix in nvme_devices:
                 sensor = ProxmoxHardwareNVMeSensor(coordinator, device_prefix, node)
                 if sensor.is_valid():
                     entities.append(sensor)
@@ -248,7 +251,8 @@ async def async_setup_entry(
             ordered = cpu_sensors + pch_sensors + sata_sensors + other_sensors
 
             for key in ordered:
-                sid = key.lower()
+                if "nvme" in key.lower():
+                    continue
 
                 # Skip adapters/pwm
                 if any(x in sid for x in ["adapter", "pwm"]):
