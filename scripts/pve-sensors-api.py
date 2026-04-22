@@ -591,7 +591,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     port = 9000
-    server = HTTPServer(("127.0.0.1", port), Handler)
+    server = HTTPServer(("0.0.0.0", port), Handler)
     print(f"PVE Sensors API v2 started on port {port}")
     print("Endpoints:")
     print(f"  GET /sensors         - lm-sensors data")
