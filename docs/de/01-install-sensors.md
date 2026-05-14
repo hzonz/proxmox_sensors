@@ -2,7 +2,7 @@
 
 Diese Anleitung erklärt, wie der Proxmox-Knoten vorbereitet wird, um Hardware-Daten bereitzustellen und es Home Assistant zu ermöglichen, Temperaturen, physische Sensoren und SMART-Attribute der Festplatten zu erfassen.
 
-Diese Daten werden von der Integration genutzt, um **erweiterte Überwachung und System Insight (V3)** bereitzustellen.
+Diese Daten werden von der Integration genutzt, um **erweiterte Überwachung und System Insight (V3/V4)** bereitzustellen.
 
 ---
 
@@ -82,8 +82,11 @@ EOF
 ```
 5.3. **Aktivierung**
 
+```bash
 systemctl daemon-reload
 systemctl enable --now pve-sensors.service
+```
+
 
 5.4. **Abschließende Überprüfung**
 Öffne im Browser:
